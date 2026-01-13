@@ -1,0 +1,410 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.views.decorators.http import require_http_methods
+from django.db.models import Q, Avg, Count
+from django.utils import timezone
+from django.http import JsonResponse
+from farmer.models import Crop, Order, CropDisease, CropPrice, WeatherAlert, Message, FarmerRating
+from farmer.forms import CropForm, OrderForm, MessageForm, WeatherAlertForm, CropDiseaseForm
+from users.models import Notification, CustomUser
+from marketplace.models import CropListing
+from buyer.models import PurchaseRequest
+from ai_models import analyze_disease_image, predict_crop_prices, WeatherService, get_coordinates_from_location
+import numpy as np
+from sklearn.linear_model import LinearRegression
+import json
+
+
+@login_required(login_url='login')
+def farmer_dashboard(request):
+    """Farmer dashboard"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Access denied!')
+        return redirect('dashboard')
+    
+    crops = Crop.objects.filter(farmer=request.user)
+    orders = Order.objects.filter(farmer=request.user)
+    recent_messages = Message.objects.filter(recipient=request.user).order_by('-created_at')[:5]
+    unread_messages = recent_messages.filter(is_read=False).count()
+    
+    context = {
+        'crops': crops,
+        'orders': orders,
+        'recent_messages': recent_messages,
+        'unread_messages': unread_messages,
+        'crops_count': crops.count(),
+        'orders_count': orders.count(),
+        'total_revenue': sum([order.total_price for order in orders.filter(status='delivered')]),
+    }
+    return render(request, 'farmer/dashboard.html', context)
+
+
+@login_required(login_url='login')
+def add_crop(request):
+    """Add a new crop"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Only farmers can add crops!')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = CropForm(request.POST, request.FILES)
+        if form.is_valid():
+            crop = form.save(commit=False)
+            crop.farmer = request.user
+            crop.save()
+            
+            # Create crop listing
+            CropListing.objects.create(crop=crop)
+            
+            messages.success(request, 'Crop added successfully!')
+            return redirect('farmer_crops')
+    else:
+        form = CropForm()
+    
+    context = {'form': form, 'title': 'Add Crop'}
+    return render(request, 'farmer/add_crop.html', context)
+
+
+@login_required(login_url='login')
+def edit_crop(request, crop_id):
+    """Edit crop"""
+    crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
+    
+    if request.method == 'POST':
+        form = CropForm(request.POST, request.FILES, instance=crop)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Crop updated successfully!')
+            return redirect('farmer_crops')
+    else:
+        form = CropForm(instance=crop)
+    
+    context = {'form': form, 'crop': crop, 'title': 'Edit Crop'}
+    return render(request, 'farmer/edit_crop.html', context)
+
+
+@login_required(login_url='login')
+def delete_crop(request, crop_id):
+    """Delete crop"""
+    crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
+    crop.delete()
+    messages.success(request, 'Crop deleted successfully!')
+    return redirect('farmer_crops')
+
+
+@login_required(login_url='login')
+def farmer_crops(request):
+    """View all farmer crops"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Access denied!')
+        return redirect('dashboard')
+    
+    crops = Crop.objects.filter(farmer=request.user).order_by('-created_at')
+    
+    context = {'crops': crops, 'title': 'My Crops'}
+    return render(request, 'farmer/crops_list.html', context)
+
+
+@login_required(login_url='login')
+def farmer_orders(request):
+    """View all orders for farmer's crops"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Access denied!')
+        return redirect('dashboard')
+    
+    orders = Order.objects.filter(farmer=request.user).order_by('-order_date')
+    status_filter = request.GET.get('status')
+    
+    if status_filter:
+        orders = orders.filter(status=status_filter)
+    
+    context = {
+        'orders': orders,
+        'title': 'Orders Received',
+        'status_choices': Order.STATUS_CHOICES
+    }
+    return render(request, 'farmer/orders_list.html', context)
+
+
+@login_required(login_url='login')
+def order_detail(request, order_id):
+    """View order detail"""
+    order = get_object_or_404(Order, id=order_id)
+    
+    if request.user not in [order.farmer, order.buyer]:
+        messages.error(request, 'Access denied!')
+        return redirect('dashboard')
+    
+    if request.method == 'POST' and request.user == order.farmer:
+        new_status = request.POST.get('status')
+        if new_status in dict(Order.STATUS_CHOICES):
+            order.status = new_status
+            order.save()
+            
+            # Send notification to buyer
+            Notification.objects.create(
+                user=order.buyer,
+                notification_type='order',
+                title=f'Order Update: {order.crop.crop_name}',
+                message=f'Your order status has been updated to {new_status}'
+            )
+            messages.success(request, 'Order status updated!')
+            return redirect('order_detail', order_id=order.id)
+    
+    context = {'order': order, 'title': 'Order Detail'}
+    return render(request, 'farmer/order_detail.html', context)
+
+
+@login_required(login_url='login')
+def disease_detection(request, crop_id=None):
+    """AI Crop Disease Detection"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Only farmers can use disease detection!')
+        return redirect('dashboard')
+    
+    farmer_crops = Crop.objects.filter(farmer=request.user)
+    
+    if request.method == 'POST':
+        form = CropDiseaseForm(request.POST, request.FILES)
+        selected_crop_id = request.POST.get('crop')
+        
+        if form.is_valid() and selected_crop_id:
+            crop = get_object_or_404(Crop, id=selected_crop_id, farmer=request.user)
+            
+            # Get the uploaded image
+            image_file = request.FILES.get('disease_image')
+            
+            if image_file:
+                # Use AI to analyze the disease
+                try:
+                    disease_info = analyze_disease_image(image_file)
+                    
+                    # Create disease record
+                    disease = CropDisease.objects.create(
+                        crop=crop,
+                        disease_name=disease_info.get('name', 'Unknown Disease'),
+                        disease_type=disease_info.get('type', 'unknown'),
+                        confidence_score=disease_info.get('confidence', 0),
+                        disease_image=image_file,
+                        treatment_recommendation=disease_info.get('treatment', ''),
+                        ai_model_used=disease_info.get('model_used', 'ResNet50')
+                    )
+                    
+                    # Send notification
+                    Notification.objects.create(
+                        user=request.user,
+                        notification_type='disease',
+                        title=f'Disease Detected: {disease.disease_name}',
+                        message=f'Disease detected on {crop.crop_name} with {disease.confidence_score:.1f}% confidence. Confidence: {disease.confidence_score:.1f}%'
+                    )
+                    
+                    messages.success(request, f'Disease analysis complete! {disease.disease_name} detected with {disease.confidence_score:.1f}% confidence.')
+                    return redirect('disease_history', crop_id=crop.id)
+                
+                except Exception as e:
+                    messages.error(request, f'Error analyzing image: {str(e)}')
+    else:
+        form = CropDiseaseForm()
+    
+    context = {
+        'form': form,
+        'crops': farmer_crops,
+        'selected_crop_id': crop_id,
+        'title': 'AI Disease Detection'
+    }
+    return render(request, 'farmer/disease_detection.html', context)
+
+
+@login_required(login_url='login')
+def disease_history(request, crop_id):
+    """View disease detection history"""
+    crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
+    diseases = crop.diseases.all().order_by('-detected_date')
+    
+    context = {
+        'crop': crop,
+        'diseases': diseases,
+        'title': f'{crop.crop_name} - Disease History'
+    }
+    return render(request, 'farmer/disease_history.html', context)
+
+
+@login_required(login_url='login')
+def price_prediction(request):
+    """Crop Price Prediction with visualizations"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Only farmers can view price predictions!')
+        return redirect('dashboard')
+    
+    crops = Crop.objects.filter(farmer=request.user)
+    selected_crop_id = request.GET.get('crop')
+    price_data = None
+    prediction_result = None
+    
+    if selected_crop_id:
+        crop = get_object_or_404(Crop, id=selected_crop_id, farmer=request.user)
+        
+        try:
+            # Generate new predictions
+            current_price = crop.price_per_unit
+            volatility = request.GET.get('volatility', '0.05')
+            
+            try:
+                volatility = float(volatility)
+            except:
+                volatility = 0.05
+            
+            prediction_result = predict_crop_prices(current_price, days_ahead=30, volatility=volatility)
+            
+            # Store predictions in database for historical tracking
+            for pred in prediction_result['predictions']:
+                # Only store first prediction of each day to avoid duplicates
+                existing = CropPrice.objects.filter(
+                    crop=crop,
+                    prediction_date=pred['date']
+                ).first()
+                
+                if not existing:
+                    CropPrice.objects.create(
+                        crop=crop,
+                        predicted_price=pred['price'],
+                        prediction_date=pred['date'],
+                        forecast_days=30,
+                        confidence_level=75.0
+                    )
+            
+            # Get historical data
+            price_data = CropPrice.objects.filter(crop=crop).order_by('-prediction_date')[:30]
+        
+        except Exception as e:
+            messages.error(request, f'Error generating predictions: {str(e)}')
+    
+    # Prepare data for chart.js visualization
+    chart_data = None
+    if prediction_result:
+        predictions = prediction_result['predictions']
+        chart_data = {
+            'labels': [p['date'] for p in predictions],
+            'prices': [p['price'] for p in predictions],
+            'current_price': crop.price_per_unit if selected_crop_id else 0,
+        }
+    
+    context = {
+        'crops': crops,
+        'price_data': price_data,
+        'selected_crop_id': selected_crop_id,
+        'prediction_result': prediction_result,
+        'chart_data': json.dumps(chart_data) if chart_data else None,
+        'title': 'Price Prediction & Analysis'
+    }
+    return render(request, 'farmer/price_prediction.html', context)
+
+
+@login_required(login_url='login')
+def weather_alerts(request):
+    """View real-time weather and disaster alerts"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Access denied!')
+        return redirect('dashboard')
+    
+    alerts = WeatherAlert.objects.filter(farmer=request.user, is_active=True).order_by('-created_at')
+    
+    # Get live weather data for farmer's location
+    weather_summary = None
+    try:
+        farmer_location = request.user.farmer_profile.farm_location or request.user.location
+        if farmer_location:
+            coords = get_coordinates_from_location(farmer_location)
+            if coords:
+                weather_summary = WeatherService.get_weather_summary(
+                    coords['latitude'],
+                    coords['longitude']
+                )
+    except Exception as e:
+        print(f"Error fetching weather: {str(e)}")
+    
+    context = {
+        'alerts': alerts,
+        'weather_summary': weather_summary,
+        'title': 'Weather & Disaster Alerts'
+    }
+    return render(request, 'farmer/weather_alerts.html', context)
+
+
+@login_required(login_url='login')
+def messages_view(request):
+    """View messages"""
+    messages_list = Message.objects.filter(
+        Q(recipient=request.user) | Q(sender=request.user)
+    ).order_by('-created_at')
+    
+    # Mark as read
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'mark_read':
+            message_id = request.POST.get('message_id')
+            msg = get_object_or_404(Message, id=message_id)
+            if msg.recipient == request.user:
+                msg.is_read = True
+                msg.save()
+    
+    context = {
+        'messages': messages_list,
+        'unread_count': messages_list.filter(recipient=request.user, is_read=False).count(),
+        'title': 'Messages'
+    }
+    return render(request, 'farmer/messages.html', context)
+
+
+@login_required(login_url='login')
+def send_message(request, recipient_id):
+    """Send message to a user"""
+    recipient = get_object_or_404(CustomUser, id=recipient_id)
+    
+    if request.method == 'POST':
+        form = MessageForm(request.POST, request.FILES)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.sender = request.user
+            message.recipient = recipient
+            message.save()
+            
+            # Create notification
+            Notification.objects.create(
+                user=recipient,
+                notification_type='message',
+                title=f'New message from {request.user.username}',
+                message=form.cleaned_data.get('subject')
+            )
+            
+            messages.success(request, 'Message sent successfully!')
+            return redirect('messages')
+    else:
+        form = MessageForm()
+    
+    context = {
+        'form': form,
+        'recipient': recipient,
+        'title': f'Send Message to {recipient.username}'
+    }
+    return render(request, 'farmer/send_message.html', context)
+
+
+@login_required(login_url='login')
+def ratings_view(request):
+    """View ratings received"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Access denied!')
+        return redirect('dashboard')
+    
+    ratings = FarmerRating.objects.filter(farmer=request.user).order_by('-created_at')
+    avg_rating = ratings.aggregate(Avg('rating'))['rating__avg'] or 0
+    
+    context = {
+        'ratings': ratings,
+        'avg_rating': avg_rating,
+        'total_ratings': ratings.count(),
+        'title': 'My Ratings'
+    }
+    return render(request, 'farmer/ratings.html', context)
