@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <h2 class="card-title text-center mb-4 text-success">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </h2>
+                    
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Email Field -->
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                   id="id_email" name="email" value="{{ form.email.value|default:'' }}" required>
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.email.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Username Field -->
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                                   id="id_username" name="username" value="{{ form.username.value|default:'' }}" required>
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.username.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Full Name Field -->
+                        <div class="mb-3">
+                            <label for="id_first_name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="id_first_name" name="first_name" 
+                                   value="{{ form.first_name.value|default:'' }}">
+                        </div>
+                        
+                        <!-- Role Selection -->
+                        <div class="mb-3">
+                            <label class="form-label">I am a:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="role_farmer" 
+                                       value="farmer" required {% if form.role.value == 'farmer' %}checked{% endif %}>
+                                <label class="form-check-label" for="role_farmer">
+                                    <i class="fas fa-seedling"></i> Farmer
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="role_buyer" 
+                                       value="buyer" required {% if form.role.value == 'buyer' %}checked{% endif %}>
+                                <label class="form-check-label" for="role_buyer">
+                                    <i class="fas fa-shopping-cart"></i> Buyer
+                                </label>
+                            </div>
+                            {% if form.role.errors %}
+                                <div class="text-danger mt-2">{{ form.role.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Password Field -->
+                        <div class="mb-3">
+                            <label for="id_password1" class="form-label">Password</label>
+                            <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                                   id="id_password1" name="password1" required>
+                            {% if form.password1.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.password1.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-2">
+                                Must be at least 8 characters with uppercase, lowercase, and numbers.
+                            </small>
+                        </div>
+                        
+                        <!-- Confirm Password Field -->
+                        <div class="mb-3">
+                            <label for="id_password2" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                   id="id_password2" name="password2" required>
+                            {% if form.password2.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.password2.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Non-field errors -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                {{ form.non_field_errors.0 }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endif %}
+                        
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+                            <i class="fas fa-user-check"></i> Create Account
+                        </button>
+                    </form>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted">Already have an account? 
+                            <a href="{% url 'login' %}" class="text-success fw-bold">Login here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
