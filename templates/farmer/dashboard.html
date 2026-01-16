@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Farmer Dashboard - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-tractor text-success"></i> Farmer Dashboard
+            </h1>
+            <p class="text-muted">Welcome, {{ user.get_full_name|default:user.username }}!</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'add_crop' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add New Crop
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Active Crops</p>
+                            <h3 class="fw-bold text-success">{{ crops_count }}</h3>
+                        </div>
+                        <i class="fas fa-leaf fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Pending Orders</p>
+                            <h3 class="fw-bold text-info">{{ orders_count }}</h3>
+                        </div>
+                        <i class="fas fa-shopping-bag fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Unread Messages</p>
+                            <h3 class="fw-bold text-warning">{{ unread_messages }}</h3>
+                        </div>
+                        <i class="fas fa-envelope fa-2x text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Farm Rating</p>
+                            <h3 class="fw-bold text-warning">
+                                {% if farmer_profile.rating %}{{ farmer_profile.rating|floatformat:1 }}⭐{% else %}—{% endif %}
+                            </h3>
+                        </div>
+                        <i class="fas fa-star fa-2x text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'add_crop' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus text-success"></i> Add New Crop
+                    </a>
+                    <a href="{% url 'farmer_crops' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-leaf text-info"></i> View All Crops
+                    </a>
+                    <a href="{% url 'disease_detection' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-virus text-danger"></i> Disease Detection
+                    </a>
+                    <a href="{% url 'price_prediction' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-line text-warning"></i> Price Prediction
+                    </a>
+                    <a href="{% url 'weather_alerts' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-cloud-sun text-primary"></i> Weather Alerts
+                    </a>
+                    <a href="{% url 'farmer_messages' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-envelope text-secondary"></i> Messages
+                    </a>
+                </div>
+            </div>
+
+            <!-- Farm Info -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Farm Information</h5>
+                </div>
+                <div class="card-body">
+                    {% if farmer_profile %}
+                        <p><strong>Farm Name:</strong> {{ farmer_profile.farm_name|default:"Not set" }}</p>
+                        <p><strong>Farm Size:</strong> {{ farmer_profile.farm_size|default:"Not set" }} acres</p>
+                        <p><strong>Location:</strong> {{ user.location|default:"Not set" }}</p>
+                        <p>
+                            <strong>Status:</strong> 
+                            {% if farmer_profile.is_approved %}
+                                <span class="badge bg-success">Approved</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending Approval</span>
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'profile_edit' %}" class="btn btn-sm btn-outline-success w-100 mt-3">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </a>
+                    {% else %}
+                        <p class="text-muted">No farm profile found. <a href="{% url 'profile_edit' %}">Complete your profile</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-8">
+            <!-- Recent Orders -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-shopping-bag"></i> Recent Orders</h5>
+                    <a href="{% url 'farmer_orders' %}" class="btn btn-sm btn-light">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Crop</th>
+                                <th>Quantity</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_orders %}
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td><strong>#{{ order.id }}</strong></td>
+                                    <td>{{ order.crop.name }}</td>
+                                    <td>{{ order.quantity }} {{ order.crop.unit }}</td>
+                                    <td>
+                                        {% if order.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif order.status == 'confirmed' %}
+                                            <span class="badge bg-info">Confirmed</span>
+                                        {% elif order.status == 'shipped' %}
+                                            <span class="badge bg-primary">Shipped</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Delivered</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-success">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">No orders yet</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Crops -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-leaf"></i> Your Crops</h5>
+                    <a href="{% url 'farmer_crops' %}" class="btn btn-sm btn-light">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Crop Name</th>
+                                <th>Quantity</th>
+                                <th>Price/Unit</th>
+                                <th>Harvest Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if recent_crops %}
+                                {% for crop in recent_crops %}
+                                <tr>
+                                    <td><strong>{{ crop.name }}</strong></td>
+                                    <td>{{ crop.quantity }} {{ crop.unit }}</td>
+                                    <td>₹{{ crop.price_per_unit }}</td>
+                                    <td>{{ crop.harvest_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if crop.is_available %}
+                                            <span class="badge bg-success">Available</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Sold Out</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'edit_crop' crop.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">No crops listed yet</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

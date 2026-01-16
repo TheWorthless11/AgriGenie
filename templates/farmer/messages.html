@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messages - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-envelope"></i> Messages</h4>
+                    {% if unread_count > 0 %}
+                        <span class="badge bg-danger">{{ unread_count }} unread</span>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if messages_list %}
+                        <div class="message-container" style="max-height: 600px; overflow-y: auto;">
+                            {% for msg in messages_list %}
+                                <div class="card mb-3 {% if msg.recipient == user and not msg.is_read %}border-primary border-2{% endif %}">
+                                    <div class="card-header">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <strong>
+                                                    {% if msg.sender == user %}
+                                                        To: <i class="fas fa-arrow-right"></i> {{ msg.recipient.username }}
+                                                    {% else %}
+                                                        From: <i class="fas fa-arrow-left"></i> {{ msg.sender.username }}
+                                                    {% endif %}
+                                                </strong>
+                                                {% if msg.crop %}
+                                                    <br><small class="text-muted">About: {{ msg.crop.crop_name }}</small>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-4 text-end">
+                                                <small class="text-muted">{{ msg.created_at|date:"M d, Y H:i" }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6><strong>{{ msg.subject }}</strong></h6>
+                                        <p>{{ msg.message }}</p>
+                                        {% if msg.attachment %}
+                                            <p>
+                                                <i class="fas fa-paperclip"></i>
+                                                <a href="{{ msg.attachment.url }}" download>Download Attachment</a>
+                                            </p>
+                                        {% endif %}
+                                        {% if msg.recipient == user and not msg.is_read %}
+                                            <form method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="mark_read">
+                                                <input type="hidden" name="message_id" value="{{ msg.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">Mark as Read</button>
+                                            </form>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info text-center py-5">
+                            <h5><i class="fas fa-inbox"></i> No Messages</h5>
+                            <p>You don't have any messages yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer bg-light">
+                    <a href="{% url 'farmer_dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

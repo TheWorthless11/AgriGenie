@@ -1,0 +1,357 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Weather & Disaster Alerts - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .alert-card {
+        border-left: 5px solid;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .alert-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .severity-critical {
+        border-left-color: #dc3545;
+        background-color: #fff5f5;
+    }
+    
+    .severity-high {
+        border-left-color: #fd7e14;
+        background-color: #fff8f5;
+    }
+    
+    .severity-medium {
+        border-left-color: #ffc107;
+        background-color: #fffbf0;
+    }
+    
+    .severity-low {
+        border-left-color: #28a745;
+        background-color: #f0fff4;
+    }
+    
+    .weather-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+    }
+    
+    .weather-metric {
+        text-align: center;
+        padding: 15px;
+        border-right: 1px solid #dee2e6;
+    }
+    
+    .weather-metric:last-child {
+        border-right: none;
+    }
+    
+    .metric-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #28a745;
+    }
+    
+    .metric-label {
+        font-size: 12px;
+        color: #6c757d;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="fas fa-cloud-sun"></i> Weather & Disaster Alerts</h2>
+            <p class="text-muted">Real-time weather updates and disaster warnings for your farm</p>
+        </div>
+    </div>
+
+    <!-- Live Weather Summary -->
+    {% if weather_summary %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-map-marker-alt"></i> Current Weather - {{ weather_summary.location }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-12 mb-3">
+                            <div class="weather-icon">
+                                <i class="fas fa-{{ weather_summary.description|lower|cut:' '|replace:'sunny':'sun'|replace:'cloudy':'cloud'|replace:'rainy':'cloud-rain'|replace:'clear':'sun' }}"></i>
+                            </div>
+                            <h4>{{ weather_summary.description }}</h4>
+                            <p class="text-muted">Last updated: {{ weather_summary.timestamp }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 weather-metric">
+                            <div class="metric-label">Temperature</div>
+                            <div class="metric-value">{{ weather_summary.temperature }}°C</div>
+                        </div>
+                        <div class="col-md-3 weather-metric">
+                            <div class="metric-label">Feels Like</div>
+                            <div class="metric-value">{{ weather_summary.feels_like }}°C</div>
+                        </div>
+                        <div class="col-md-3 weather-metric">
+                            <div class="metric-label">Humidity</div>
+                            <div class="metric-value">{{ weather_summary.humidity }}%</div>
+                        </div>
+                        <div class="col-md-3 weather-metric">
+                            <div class="metric-label">Wind Speed</div>
+                            <div class="metric-value">{{ weather_summary.wind_speed|floatformat:1 }} km/h</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weather Alerts from Live Data -->
+    {% if weather_summary.alerts %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h4><i class="fas fa-exclamation-circle"></i> Active Weather Alerts</h4>
+        </div>
+    </div>
+    <div class="row">
+        {% for alert in weather_summary.alerts %}
+        <div class="col-md-6 mb-3">
+            <div class="card alert-card severity-{{ alert.severity }}">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ alert.type|title }} ({{ alert.severity|upper }})
+                    </h5>
+                    <p class="card-text">{{ alert.message }}</p>
+                    <div class="alert alert-light mt-3">
+                        <strong>Recommendation:</strong> {{ alert.recommendation }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-info-circle"></i> Unable to fetch live weather data. Please update your farm location in your profile.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Historical/Manual Alerts -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h4><i class="fas fa-history"></i> Alert History</h4>
+        </div>
+    </div>
+
+    {% if alerts %}
+    <div class="row">
+        {% for alert in alerts %}
+        <div class="col-md-6 mb-3">
+            <div class="card alert-card severity-{{ alert.severity }}">
+                <div class="card-header" style="background-color: rgba(0,0,0,0.03); border-bottom: 1px solid rgba(0,0,0,0.1);">
+                    <h5 class="mb-0">
+                        {% if alert.alert_type == 'flood' %}
+                            <i class="fas fa-water"></i>
+                        {% elif alert.alert_type == 'drought' %}
+                            <i class="fas fa-sun"></i>
+                        {% elif alert.alert_type == 'cyclone' %}
+                            <i class="fas fa-wind"></i>
+                        {% elif alert.alert_type == 'frost' %}
+                            <i class="fas fa-snowflake"></i>
+                        {% elif alert.alert_type == 'heat_wave' %}
+                            <i class="fas fa-fire"></i>
+                        {% else %}
+                            <i class="fas fa-cloud"></i>
+                        {% endif %}
+                        {{ alert.get_alert_type_display }}
+                        <span class="badge bg-{{ alert.severity }}">{{ alert.severity|upper }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text"><strong>Location:</strong> {{ alert.location }}</p>
+                    <p class="card-text">{{ alert.message }}</p>
+                    
+                    <div class="alert alert-light mt-3">
+                        <strong><i class="fas fa-lightbulb"></i> What to do:</strong>
+                        <p class="mb-0">{{ alert.recommendation }}</p>
+                    </div>
+                    
+                    <div class="row mt-3 text-muted" style="font-size: 12px;">
+                        <div class="col-6">
+                            <strong>Started:</strong> {{ alert.start_time }}
+                        </div>
+                        <div class="col-6 text-end">
+                            <strong>Status:</strong>
+                            {% if alert.is_active %}
+                                <span class="badge bg-danger">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Resolved</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-md-12">
+            <div class="alert alert-success" role="alert">
+                <i class="fas fa-check-circle"></i> No active alerts. Your farm is in good condition!
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Alert Types Information -->
+    <div class="row mt-4 mb-4">
+        <div class="col-md-12">
+            <div class="card bg-light border-0">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Understanding Alert Severity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6><span class="badge bg-success">LOW</span></h6>
+                            <p class="small">Minor weather changes. Monitor situation.</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><span class="badge bg-warning text-dark">MEDIUM</span></h6>
+                            <p class="small">Noticeable weather impact. Take precautions.</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><span class="badge bg-danger">HIGH</span></h6>
+                            <p class="small">Significant threat. Immediate action needed.</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6><span class="badge bg-dark">CRITICAL</span></h6>
+                            <p class="small">Severe danger. Take emergency measures now.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Disaster Preparedness Guide -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Disaster Preparedness Guide</h5>
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="preparednessAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#flood">
+                                    <i class="fas fa-water"></i> Flood Protection
+                                </button>
+                            </h2>
+                            <div id="flood" class="accordion-collapse collapse" data-bs-parent="#preparednessAccordion">
+                                <div class="accordion-body">
+                                    <ul>
+                                        <li>Ensure proper drainage systems are in place</li>
+                                        <li>Create water diversion channels around fields</li>
+                                        <li>Install flood barriers or bunds</li>
+                                        <li>Monitor water levels regularly during heavy rain</li>
+                                        <li>Keep pumps and equipment ready for water removal</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#drought">
+                                    <i class="fas fa-sun"></i> Drought Management
+                                </button>
+                            </h2>
+                            <div id="drought" class="accordion-collapse collapse" data-bs-parent="#preparednessAccordion">
+                                <div class="accordion-body">
+                                    <ul>
+                                        <li>Maintain adequate irrigation systems</li>
+                                        <li>Use mulching to retain soil moisture</li>
+                                        <li>Plant drought-resistant crop varieties</li>
+                                        <li>Create water harvesting structures</li>
+                                        <li>Monitor soil moisture regularly</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cyclone">
+                                    <i class="fas fa-wind"></i> Cyclone Safety
+                                </button>
+                            </h2>
+                            <div id="cyclone" class="accordion-collapse collapse" data-bs-parent="#preparednessAccordion">
+                                <div class="accordion-body">
+                                    <ul>
+                                        <li>Secure loose structures and equipment</li>
+                                        <li>Prune weak branches from trees</li>
+                                        <li>Ensure proper ventilation in storage</li>
+                                        <li>Install wind barriers or windbreaks</li>
+                                        <li>Keep emergency supplies ready</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#frost">
+                                    <i class="fas fa-snowflake"></i> Frost Protection
+                                </button>
+                            </h2>
+                            <div id="frost" class="accordion-collapse collapse" data-bs-parent="#preparednessAccordion">
+                                <div class="accordion-body">
+                                    <ul>
+                                        <li>Use frost cloths or covers on sensitive plants</li>
+                                        <li>Apply frost-protective sprays</li>
+                                        <li>Avoid overhead irrigation during frost nights</li>
+                                        <li>Use heaters or smudge pots in orchards</li>
+                                        <li>Select frost-hardy crop varieties</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#heatwave">
+                                    <i class="fas fa-fire"></i> Heat Wave Management
+                                </button>
+                            </h2>
+                            <div id="heatwave" class="accordion-collapse collapse" data-bs-parent="#preparednessAccordion">
+                                <div class="accordion-body">
+                                    <ul>
+                                        <li>Increase irrigation frequency</li>
+                                        <li>Use shade nets or mulching</li>
+                                        <li>Apply anti-transpirants to reduce water loss</li>
+                                        <li>Harvest early if crops are mature</li>
+                                        <li>Monitor for heat stress symptoms</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

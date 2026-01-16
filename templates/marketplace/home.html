@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Marketplace - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-store text-success"></i> Marketplace
+            </h1>
+            <p class="text-muted">Browse fresh crops from local farmers</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'wishlist' %}" class="btn btn-outline-success">
+                <i class="fas fa-heart"></i> Wishlist ({{ wishlist_count }})
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" id="filterForm">
+                        <!-- Search -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Search</label>
+                            <input type="text" class="form-control" id="searchInput" 
+                                   name="search" placeholder="Crop name..." 
+                                   value="{{ search|default:'' }}"
+                                   onkeyup="debounce(function() { document.getElementById('filterForm').submit(); }, 500)()">
+                        </div>
+
+                        <!-- Category -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Category</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="category" 
+                                       id="cat_vegetables" value="vegetables"
+                                       {% if 'vegetables' in selected_categories %}checked{% endif %}>
+                                <label class="form-check-label" for="cat_vegetables">
+                                    Vegetables
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="category" 
+                                       id="cat_fruits" value="fruits"
+                                       {% if 'fruits' in selected_categories %}checked{% endif %}>
+                                <label class="form-check-label" for="cat_fruits">
+                                    Fruits
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="category" 
+                                       id="cat_grains" value="grains"
+                                       {% if 'grains' in selected_categories %}checked{% endif %}>
+                                <label class="form-check-label" for="cat_grains">
+                                    Grains
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="category" 
+                                       id="cat_spices" value="spices"
+                                       {% if 'spices' in selected_categories %}checked{% endif %}>
+                                <label class="form-check-label" for="cat_spices">
+                                    Spices
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Price Range -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Price Range</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="number" class="form-control form-control-sm" 
+                                           name="min_price" placeholder="Min" 
+                                           value="{{ min_price|default:'' }}">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control form-control-sm" 
+                                           name="max_price" placeholder="Max" 
+                                           value="{{ max_price|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sorting -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Sort By</label>
+                            <select class="form-select form-select-sm" name="sort">
+                                <option value="latest" {% if sort == 'latest' %}selected{% endif %}>Newest</option>
+                                <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                                <option value="price_high" {% if sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                                <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Top Rated</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 mb-2">
+                            <i class="fas fa-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'marketplace' %}" class="btn btn-outline-secondary w-100">
+                            <i class="fas fa-redo"></i> Reset
+                        </a>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Featured Farmers -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Featured Farmers</h5>
+                </div>
+                <div class="card-body">
+                    {% for farmer in featured_farmers %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <p class="mb-1">
+                            <strong>{{ farmer.farm_name }}</strong>
+                            <span class="badge bg-success">{{ farmer.rating }}⭐</span>
+                        </p>
+                        <p class="text-muted small mb-2">{{ farmer.crops.count }} crops</p>
+                        <a href="{% url 'farmer_storefront' farmer.user_id %}" class="btn btn-sm btn-outline-success w-100">
+                            Visit Store
+                        </a>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No featured farmers</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-lg-9">
+            {% if crops %}
+                <div class="row g-4">
+                    {% for crop_listing in crops %}
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <!-- Image -->
+                            <div class="position-relative">
+                                {% if crop_listing.crop.image %}
+                                    <img src="{{ crop_listing.crop.image.url }}" class="card-img-top" 
+                                         alt="{{ crop_listing.crop.name }}" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light d-flex align-items-center justify-content-center" 
+                                         style="height: 200px;">
+                                        <i class="fas fa-leaf fa-3x text-success opacity-50"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Wishlist Button -->
+                                <button class="btn btn-sm btn-light position-absolute top-2 end-2" 
+                                        onclick="toggleWishlist({{ crop_listing.crop.id }}, this)">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                            </div>
+
+                            <!-- Content -->
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title fw-bold">{{ crop_listing.crop.name }}</h6>
+                                
+                                <p class="text-muted small mb-2">
+                                    <i class="fas fa-user"></i> {{ crop_listing.crop.farmer.farm_name }}
+                                </p>
+
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <p class="mb-0">
+                                                <strong class="text-success fs-5">₹{{ crop_listing.crop.price_per_unit }}</strong>
+                                                <span class="text-muted small">/ {{ crop_listing.crop.unit }}</span>
+                                            </p>
+                                        </div>
+                                        {% if crop_listing.crop.farmer.rating %}
+                                        <div>
+                                            <span class="badge bg-warning">{{ crop_listing.crop.farmer.rating }}⭐</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <p class="text-muted small mb-3">
+                                    <i class="fas fa-cube"></i> 
+                                    {{ crop_listing.crop.quantity }} {{ crop_listing.crop.unit }} available
+                                </p>
+
+                                <div class="mt-auto">
+                                    {% if crop_listing.crop.is_available %}
+                                        <a href="{% url 'crop_detail' crop_listing.crop.id %}" 
+                                           class="btn btn-success btn-sm w-100">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-secondary btn-sm w-100" disabled>
+                                            Out of Stock
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav class="mt-5" aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info text-center py-5">
+                    <i class="fas fa-search fa-3x mb-3 d-block"></i>
+                    <h5>No crops found</h5>
+                    <p class="text-muted">Try adjusting your filters or search terms</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleWishlist(cropId, button) {
+    const url = `/buyer/wishlist/toggle/${cropId}/`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.in_wishlist) {
+            button.classList.add('btn-danger');
+            button.classList.remove('btn-light');
+        } else {
+            button.classList.remove('btn-danger');
+            button.classList.add('btn-light');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+}
+</script>
+{% endblock %}

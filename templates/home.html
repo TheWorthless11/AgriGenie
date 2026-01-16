@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - AgriGenie{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-light py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold text-success mb-4">Welcome to AgriGenie</h1>
+                <p class="lead text-muted mb-4">
+                    The intelligent marketplace connecting farmers with buyers. Access AI-powered crop insights, 
+                    real-time market prices, and disease detection to maximize your agricultural potential.
+                </p>
+                <div class="d-flex gap-3">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'register' %}" class="btn btn-success btn-lg">Get Started</a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-success btn-lg">Login</a>
+                    {% else %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-success btn-lg">Go to Dashboard</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="text-center">
+                    <img src="{% static 'images/hero.svg' %}" onerror="this.src='https://via.placeholder.com/400x300?text=AgriGenie+Hero'" alt="Hero Image" class="img-fluid rounded">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Why Choose AgriGenie?</h2>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">AI-Powered Insights</h5>
+                        <p class="card-text text-muted">Disease detection and price predictions powered by machine learning.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <i class="fas fa-cloud fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Weather Alerts</h5>
+                        <p class="card-text text-muted">Real-time weather updates and alerts to protect your crops.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Market Trends</h5>
+                        <p class="card-text text-muted">Track market prices and trends to make informed decisions.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm text-center">
+                    <div class="card-body">
+                        <i class="fas fa-handshake fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Direct Trade</h5>
+                        <p class="card-text text-muted">Connect directly with farmers and buyers without intermediaries.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">How It Works</h2>
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="step-number bg-success text-white rounded-circle mx-auto mb-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 32px;">1</div>
+                <h5>Sign Up</h5>
+                <p class="text-muted">Register as a farmer or buyer with your basic information.</p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="step-number bg-success text-white rounded-circle mx-auto mb-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 32px;">2</div>
+                <h5>List/Browse</h5>
+                <p class="text-muted">Farmers list crops, buyers browse and find what they need.</p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="step-number bg-success text-white rounded-circle mx-auto mb-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 32px;">3</div>
+                <h5>Trade & Track</h5>
+                <p class="text-muted">Connect, negotiate, and track orders with ease.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">What Our Users Say</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">"AgriGenie has transformed my farming business. The AI insights helped me prevent crop disease and increase yield by 30%."</p>
+                        <h6 class="card-title">Rajesh Kumar - Farmer</h6>
+                        <small class="text-muted">Maharashtra</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">"The platform makes sourcing quality crops from local farmers incredibly easy. Great prices and reliable service."</p>
+                        <h6 class="card-title">Priya Sharma - Buyer</h6>
+                        <small class="text-muted">Delhi</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">"Price prediction feature helped me time my sells perfectly. Definitely increased my profit margins."</p>
+                        <h6 class="card-title">Amit Patel - Farmer</h6>
+                        <small class="text-muted">Gujarat</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-success text-white">
+    <div class="container text-center">
+        <h2 class="mb-4">Ready to Get Started?</h2>
+        <p class="lead mb-4">Join thousands of farmers and buyers using AgriGenie</p>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'register' %}" class="btn btn-light btn-lg">Create Account Now</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

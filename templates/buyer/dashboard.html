@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buyer Dashboard - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-shopping-cart text-success"></i> Buyer Dashboard
+            </h1>
+            <p class="text-muted">Welcome, {{ user.get_full_name|default:user.username }}!</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'marketplace' %}" class="btn btn-success">
+                <i class="fas fa-store"></i> Browse Marketplace
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Active Orders</p>
+                            <h3 class="fw-bold text-success">{{ active_orders_count }}</h3>
+                        </div>
+                        <i class="fas fa-shopping-bag fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Wishlist Items</p>
+                            <h3 class="fw-bold text-info">{{ wishlist_count }}</h3>
+                        </div>
+                        <i class="fas fa-heart fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Saved Crops</p>
+                            <h3 class="fw-bold text-warning">{{ saved_crops_count }}</h3>
+                        </div>
+                        <i class="fas fa-bookmark fa-2x text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Total Spent</p>
+                            <h3 class="fw-bold text-danger">₹{{ total_spent|default:"0" }}</h3>
+                        </div>
+                        <i class="fas fa-rupee-sign fa-2x text-danger opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Quick Actions -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'marketplace' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-store text-success"></i> Browse Marketplace
+                    </a>
+                    <a href="{% url 'buyer_orders' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shopping-bag text-info"></i> My Orders
+                    </a>
+                    <a href="{% url 'wishlist' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-heart text-danger"></i> Wishlist
+                    </a>
+                    <a href="{% url 'saved_crops' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bookmark text-warning"></i> Saved Crops
+                    </a>
+                    <a href="{% url 'buyer_history' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-history text-secondary"></i> Purchase History
+                    </a>
+                </div>
+            </div>
+
+            <!-- Profile Info -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Profile</h5>
+                </div>
+                <div class="card-body">
+                    {% if buyer_profile %}
+                        <p><strong>Company:</strong> {{ buyer_profile.company_name|default:"Not set" }}</p>
+                        <p><strong>Location:</strong> {{ user.location|default:"Not set" }}</p>
+                        <p><strong>Phone:</strong> {{ user.phone_number|default:"Not set" }}</p>
+                        <p>
+                            <strong>Status:</strong> 
+                            {% if buyer_profile.is_approved %}
+                                <span class="badge bg-success">Approved</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending Approval</span>
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'profile_edit' %}" class="btn btn-sm btn-outline-success w-100 mt-3">
+                            <i class="fas fa-edit"></i> Edit Profile
+                        </a>
+                    {% else %}
+                        <p class="text-muted">No profile found. <a href="{% url 'profile_edit' %}">Complete your profile</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders & Activity -->
+        <div class="col-lg-8">
+            <!-- Active Orders -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-shopping-bag"></i> Active Orders</h5>
+                    <a href="{% url 'buyer_orders' %}" class="btn btn-sm btn-light">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Crop</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if active_orders %}
+                                {% for order in active_orders %}
+                                <tr>
+                                    <td><strong>#{{ order.id }}</strong></td>
+                                    <td>{{ order.crop_listing.crop.name }}</td>
+                                    <td>{{ order.quantity }} {{ order.crop_listing.crop.unit }}</td>
+                                    <td>₹{{ order.total_price }}</td>
+                                    <td>
+                                        {% if order.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif order.status == 'confirmed' %}
+                                            <span class="badge bg-info">Confirmed</span>
+                                        {% elif order.status == 'shipped' %}
+                                            <span class="badge bg-primary">Shipped</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Delivered</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-success">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-3">No active orders</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Wishlist Preview -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-heart"></i> Wishlist</h5>
+                    <a href="{% url 'wishlist' %}" class="btn btn-sm btn-light">View All</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Crop</th>
+                                <th>Price/Unit</th>
+                                <th>Farmer</th>
+                                <th>Availability</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if wishlist_items %}
+                                {% for item in wishlist_items %}
+                                <tr>
+                                    <td><strong>{{ item.crop.name }}</strong></td>
+                                    <td>₹{{ item.crop.price_per_unit }}</td>
+                                    <td>{{ item.crop.farmer.farm_name }}</td>
+                                    <td>
+                                        {% if item.crop.is_available %}
+                                            <span class="badge bg-success">Available</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Out of Stock</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'crop_detail' item.crop.id %}" class="btn btn-sm btn-outline-success">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-3">No items in wishlist</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

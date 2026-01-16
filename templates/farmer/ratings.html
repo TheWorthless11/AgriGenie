@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Ratings - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-star"></i> My Ratings</h4>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="display-4 text-warning">{{ avg_rating|floatformat:1 }} / 5.0</h1>
+                    <p class="text-muted">Based on {{ total_ratings }} ratings</p>
+                    <div>
+                        {% for i in "x"|rjust:"5" %}
+                            {% if forloop.counter <= avg_rating %}
+                                <i class="fas fa-star text-warning" style="font-size: 1.5rem;"></i>
+                            {% else %}
+                                <i class="far fa-star text-warning" style="font-size: 1.5rem;"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% if ratings %}
+                <div class="card shadow">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Detailed Ratings</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for rating in ratings %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-md-8">
+                                            <strong>{{ rating.buyer.get_full_name|default:rating.buyer.username }}</strong>
+                                            <small class="text-muted d-block">Order: {{ rating.order.crop.crop_name }}</small>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <div>
+                                                {% for i in "x"|rjust:rating.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% endfor %}
+                                                {% for i in "x"|rjust:""|add:5|add:-rating.rating %}
+                                                    <i class="far fa-star text-warning"></i>
+                                                {% endfor %}
+                                            </div>
+                                            <small class="text-muted">{{ rating.created_at|date:"M d, Y" }}</small>
+                                        </div>
+                                    </div>
+                                    {% if rating.review %}
+                                        <p class="mb-0">{{ rating.review }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center py-5">
+                    <h5><i class="fas fa-inbox"></i> No Ratings Yet</h5>
+                    <p>You'll receive ratings after successful crop deliveries</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

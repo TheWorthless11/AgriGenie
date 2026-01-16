@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Crops - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-leaf"></i> My Crops</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'add_crop' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Crop
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if crops %}
+        <div class="row">
+            {% for crop in crops %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        {% if crop.crop_image %}
+                            <img src="{{ crop.crop_image.url }}" class="card-img-top" alt="{{ crop.crop_name }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="fas fa-image text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ crop.crop_name }}</h5>
+                            <p class="card-text text-muted">{{ crop.crop_type }}</p>
+                            
+                            <div class="mb-3">
+                                <small class="badge bg-success">{{ crop.quantity }} {{ crop.unit }}</small>
+                                <small class="badge bg-info">₹{{ crop.price_per_unit }}/{{ crop.unit }}</small>
+                                <small class="badge bg-warning">Grade {{ crop.quality_grade }}</small>
+                            </div>
+
+                            <p class="small text-muted mb-2">
+                                <i class="fas fa-map-marker-alt"></i> {{ crop.location }}
+                            </p>
+                            <p class="small text-muted mb-3">
+                                {% if crop.is_available %}
+                                    <i class="fas fa-check-circle text-success"></i> Available
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger"></i> Not Available
+                                {% endif %}
+                            </p>
+
+                            <div class="d-grid gap-2">
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'edit_crop' crop.id %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <a href="{% url 'delete_crop' crop.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </a>
+                                </div>
+                                <a href="{% url 'disease_history' crop.id %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-virus"></i> Disease History
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light small text-muted">
+                            <i class="far fa-calendar"></i> Harvest: {{ crop.harvest_date|date:"M d, Y" }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center py-5">
+            <h5><i class="fas fa-inbox"></i> No Crops Added Yet</h5>
+            <p>Start by adding your first crop for sale</p>
+            <a href="{% url 'add_crop' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Crop
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: none;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+    .badge {
+        margin-right: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}

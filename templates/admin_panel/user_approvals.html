@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Approvals - AgriGenie Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-user-check"></i> User Approvals</h2>
+        </div>
+        <div class="col-md-4">
+            <form method="GET" class="d-flex gap-2">
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Status</option>
+                    {% for val, label in status_choices %}
+                        <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">All Roles</option>
+                    {% for val, label in role_choices %}
+                        <option value="{{ val }}" {% if request.GET.role == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        {% if approvals %}
+            {% for approval in approvals %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h5 class="mb-0">{{ approval.user.get_full_name|default:approval.user.username }}</h5>
+                            <small class="text-muted">{{ approval.user.get_role_display }}</small>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2">
+                                <strong>Email:</strong> {{ approval.user.email }}
+                            </p>
+                            <p class="mb-2">
+                                <strong>Phone:</strong> {{ approval.user.phone_number|default:'N/A' }}
+                            </p>
+                            <p class="mb-2">
+                                <strong>Status:</strong>
+                                {% if approval.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif approval.status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </p>
+                            {% if approval.documents %}
+                                <p class="mb-2">
+                                    <a href="{{ approval.documents.url }}" target="_blank" class="btn btn-sm btn-info">
+                                        <i class="fas fa-file"></i> View Documents
+                                    </a>
+                                </p>
+                            {% endif %}
+                            {% if approval.reason_for_rejection %}
+                                <p class="mb-2 text-danger">
+                                    <strong>Rejection Reason:</strong><br>{{ approval.reason_for_rejection }}
+                                </p>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer">
+                            {% if approval.status == 'pending' %}
+                                <a href="{% url 'approve_user' approval.id %}" class="btn btn-sm btn-success">
+                                    <i class="fas fa-check"></i> Approve
+                                </a>
+                                <a href="{% url 'reject_user' approval.id %}" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-times"></i> Reject
+                                </a>
+                            {% else %}
+                                <span class="text-muted small">Reviewed by {{ approval.reviewed_by.username|default:'Admin' }}</span><br>
+                                <small class="text-muted">{{ approval.reviewed_at|date:"M d, Y H:i" }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info text-center py-5">
+                    <h5><i class="fas fa-inbox"></i> No Pending Approvals</h5>
+                    <p>All user applications have been processed</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
