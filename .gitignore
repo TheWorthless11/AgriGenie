@@ -22,3 +22,12 @@ media/
 
 # macOS
 .DS_Store
+
+# ===== ML / AI Models =====
+ai_models/*.h5
+ai_models/archive/
+
+# ===== OS / Editor =====
+Thumbs.db
+.idea/
+
