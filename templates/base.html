@@ -78,8 +78,8 @@
                                 <ul class="dropdown-menu" aria-labelledby="adminDropdown">
                                     <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">Dashboard</a></li>
                                     <li><a class="dropdown-item" href="{% url 'user_approvals' %}">Approvals</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'admin_users' %}">Users</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'admin_crops' %}">Crops</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'master_crops_list' %}">Master Crops</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'crop_management' %}">Crop Listings</a></li>
                                     <li><a class="dropdown-item" href="{% url 'admin_reports' %}">Reports</a></li>
                                 </ul>
                             </li>
@@ -87,7 +87,7 @@
                         
                         <!-- Notifications -->
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'notifications' %}">
+                            <a class="nav-link" href="{% url 'notifications' %}"">>
                                 <i class="fas fa-bell"></i>
                                 <span class="badge bg-danger">
                                     {% if unread_notifications %}{{ unread_notifications }}{% endif %}
