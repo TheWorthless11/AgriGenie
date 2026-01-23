@@ -86,13 +86,13 @@
                     <a href="{% url 'user_approvals' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-check-circle text-warning"></i> User Approvals
                     </a>
-                    <a href="{% url 'admin_users' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-users text-success"></i> Manage Users
+                    <a href="{% url 'master_crops_list' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-seedling text-success"></i> Master Crops
                     </a>
-                    <a href="{% url 'admin_crops' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-leaf text-info"></i> Manage Crops
+                    <a href="{% url 'crop_management' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-leaf text-info"></i> Crop Listings
                     </a>
-                    <a href="{% url 'admin_alerts' %}" class="list-group-item list-group-item-action">
+                    <a href="{% url 'system_alerts_admin' %}" class="list-group-item list-group-item-action">
                         <i class="fas fa-bell text-danger"></i> System Alerts
                     </a>
                     <a href="{% url 'admin_reports' %}" class="list-group-item list-group-item-action">
@@ -206,7 +206,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-exclamation-circle"></i> Recent System Alerts</h5>
-                    <a href="{% url 'admin_alerts' %}" class="btn btn-sm btn-light">View All</a>
+                    <a href="{% url 'system_alerts_admin' %}" class="btn btn-sm btn-light">View All</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
