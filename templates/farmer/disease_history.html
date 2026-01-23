@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Disease History - {{ crop.master_crop.crop_name }} - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-history text-success"></i> Disease Detection History</h2>
+            <p class="text-muted">
+                <i class="fas fa-leaf"></i> 
+                {{ crop.master_crop.crop_name }} - {{ crop.master_crop.get_crop_type_display }}
+                <span class="badge bg-info">{{ crop.quantity }}{{ crop.unit }}</span>
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'disease_detection' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> New Detection
+            </a>
+            <a href="{% url 'farmer_crops' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Crops
+            </a>
+        </div>
+    </div>
+
+    {% if diseases %}
+    <div class="row">
+        {% for disease in diseases %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center
+                    {% if disease.disease_type == 'fungal' %}bg-danger text-white
+                    {% elif disease.disease_type == 'bacterial' %}bg-primary text-white
+                    {% elif disease.disease_type == 'viral' %}bg-success text-white
+                    {% elif disease.disease_type == 'healthy' %}bg-success text-white
+                    {% else %}bg-warning text-dark{% endif %}">
+                    <h5 class="mb-0">{{ disease.disease_name }}</h5>
+                    <span class="badge bg-light text-dark">{{ disease.detected_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="card-body">
+                    {% if disease.disease_image %}
+                    <div class="text-center mb-3">
+                        <img src="{{ disease.disease_image.url }}" alt="{{ disease.disease_name }}" 
+                             class="img-fluid rounded" style="max-height: 200px;">
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong>Disease Type:</strong>
+                        {% if disease.disease_type == 'fungal' %}
+                            <span class="badge bg-danger">Fungal</span>
+                        {% elif disease.disease_type == 'bacterial' %}
+                            <span class="badge bg-primary">Bacterial</span>
+                        {% elif disease.disease_type == 'viral' %}
+                            <span class="badge bg-info">Viral</span>
+                        {% elif disease.disease_type == 'healthy' %}
+                            <span class="badge bg-success">Healthy</span>
+                        {% elif disease.disease_type == 'pest' %}
+                            <span class="badge bg-warning text-dark">Pest</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ disease.disease_type }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Confidence Score:</strong>
+                        <div class="progress mt-1" style="height: 25px;">
+                            <div class="progress-bar 
+                                {% if disease.confidence_score >= 80 %}bg-success
+                                {% elif disease.confidence_score >= 50 %}bg-warning
+                                {% else %}bg-danger{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ disease.confidence_score }}%;">
+                                {{ disease.confidence_score|floatformat:1 }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if disease.treatment_recommendation %}
+                    <div class="mb-3">
+                        <strong><i class="fas fa-medkit text-success"></i> Treatment Recommendation:</strong>
+                        <div class="alert alert-success mt-2 mb-0">
+                            {{ disease.treatment_recommendation }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="small text-muted">
+                        <i class="fas fa-robot"></i> AI Model: {{ disease.ai_model_used|default:"plant_disease_model" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No disease detections recorded for this crop yet.
+        <a href="{% url 'disease_detection' %}" class="alert-link">Run a new detection</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

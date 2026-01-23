@@ -49,6 +49,94 @@
         </div>
     </div>
 
+    <!-- DETECTION RESULT - Shows after analysis -->
+    {% if detection_result and detection_result.success %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-header bg-{% if detection_result.disease.disease_type == 'healthy' %}success{% else %}danger{% endif %} text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-{% if detection_result.disease.disease_type == 'healthy' %}check-circle{% else %}exclamation-triangle{% endif %}"></i>
+                        Detection Result
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Uploaded Image -->
+                        <div class="col-md-4 text-center">
+                            {% if detection_result.disease.disease_image %}
+                            <img src="{{ detection_result.disease.disease_image.url }}" alt="Analyzed Image" 
+                                 class="img-fluid rounded shadow" style="max-height: 250px;">
+                            <p class="text-muted mt-2"><small>Analyzed Image</small></p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Results -->
+                        <div class="col-md-8">
+                            <h3 class="text-{% if detection_result.disease.disease_type == 'healthy' %}success{% else %}danger{% endif %}">
+                                {{ detection_result.disease.disease_name }}
+                            </h3>
+                            
+                            <div class="mb-3">
+                                <strong>Crop:</strong> {{ selected_crop.master_crop.crop_name }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Disease Type:</strong>
+                                {% if detection_result.disease.disease_type == 'fungal' %}
+                                    <span class="badge bg-danger fs-6">Fungal</span>
+                                {% elif detection_result.disease.disease_type == 'bacterial' %}
+                                    <span class="badge bg-primary fs-6">Bacterial</span>
+                                {% elif detection_result.disease.disease_type == 'viral' %}
+                                    <span class="badge bg-info fs-6">Viral</span>
+                                {% elif detection_result.disease.disease_type == 'pest' %}
+                                    <span class="badge bg-warning text-dark fs-6">Pest</span>
+                                {% elif detection_result.disease.disease_type == 'healthy' %}
+                                    <span class="badge bg-success fs-6">Healthy</span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">{{ detection_result.disease.disease_type }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Confidence Score:</strong>
+                                <div class="progress mt-2" style="height: 30px;">
+                                    <div class="progress-bar 
+                                        {% if detection_result.disease.confidence_score >= 80 %}bg-success
+                                        {% elif detection_result.disease.confidence_score >= 50 %}bg-warning
+                                        {% else %}bg-danger{% endif %} fs-6" 
+                                         role="progressbar" 
+                                         style="width: {{ detection_result.disease.confidence_score }}%;">
+                                        {{ detection_result.disease.confidence_score|floatformat:1 }}%
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if detection_result.disease.treatment_recommendation %}
+                            <div class="mb-3">
+                                <strong><i class="fas fa-medkit text-success"></i> Treatment Recommendation:</strong>
+                                <div class="alert alert-success mt-2">
+                                    {{ detection_result.disease.treatment_recommendation }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="mt-4">
+                                <a href="{% url 'disease_history' selected_crop.id %}" class="btn btn-info">
+                                    <i class="fas fa-history"></i> View Full History
+                                </a>
+                                <a href="{% url 'disease_detection' %}" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> Analyze Another Image
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Disease Detection Form -->
     <div class="row mt-4">
         <div class="col-md-8">
@@ -66,8 +154,10 @@
                                 <option value="">-- Choose a crop --</option>
                                 {% for crop in crops %}
                                     <option value="{{ crop.id }}" {% if crop.id|stringformat:"s" == selected_crop_id %}selected{% endif %}>
-                                        {{ crop.crop_name }} - {{ crop.crop_type }}
+                                        {{ crop.master_crop.crop_name }} - {{ crop.master_crop.get_crop_type_display }} ({{ crop.quantity }}{{ crop.unit }})
                                     </option>
+                                {% empty %}
+                                    <option value="" disabled>No crops available - please add crops first</option>
                                 {% endfor %}
                             </select>
                             {% if form.crop.errors %}
@@ -191,7 +281,7 @@
                                 <div class="accordion-item">
                                     <h2 class="accordion-header">
                                         <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#crop-{{ crop.id }}">
-                                            <i class="fas fa-leaf"></i> {{ crop.crop_name }}
+                                            <i class="fas fa-leaf"></i> {{ crop.master_crop.crop_name }}
                                             <span class="badge bg-warning ms-2">{{ crop.diseases.count }} detection(s)</span>
                                         </button>
                                     </h2>

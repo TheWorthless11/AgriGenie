@@ -1,6 +1,6 @@
 """
 AI/ML utilities for crop disease detection
-Uses pre-trained CNN models for accurate disease detection
+Uses custom-trained CNN model (plant_disease_model.h5) for accurate disease detection
 """
 
 import os
@@ -12,68 +12,85 @@ import tempfile
 
 try:
     import tensorflow as tf
-    from tensorflow.keras.applications import MobileNetV2, ResNet50
+    from tensorflow.keras.models import load_model
     from tensorflow.keras.preprocessing import image
     HAS_TENSORFLOW = True
 except ImportError:
     HAS_TENSORFLOW = False
 
+# Path to custom trained model
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "plant_disease_model.h5")
+
+# Model input size (determined from model inspection: 256x256x3)
+MODEL_INPUT_SIZE = (256, 256)
+
 
 class DiseaseDetectionModel:
     """
-    Handles crop disease detection using pre-trained deep learning models
-    Supports both TensorFlow/Keras and fallback implementations
+    Handles crop disease detection using custom-trained deep learning model
+    Model: plant_disease_model.h5 (15 classes, 256x256 input)
     """
     
-    # Disease mapping for common crop diseases
+    # Disease mapping for 15 PlantVillage classes
+    # Standard PlantVillage folder naming order (alphabetical with underscores)
     DISEASE_MAPPING = {
-        0: {'name': 'Healthy Leaf', 'type': 'healthy', 'confidence': 0},
-        1: {'name': 'Early Blight', 'type': 'fungal', 'confidence': 0},
-        2: {'name': 'Late Blight', 'type': 'fungal', 'confidence': 0},
-        3: {'name': 'Leaf Spot', 'type': 'bacterial', 'confidence': 0},
-        4: {'name': 'Powdery Mildew', 'type': 'fungal', 'confidence': 0},
-        5: {'name': 'Rust', 'type': 'fungal', 'confidence': 0},
-        6: {'name': 'Septoria Leaf Blotch', 'type': 'fungal', 'confidence': 0},
-        7: {'name': 'Target Spot', 'type': 'fungal', 'confidence': 0},
-        8: {'name': 'Tomato Yellow Leaf Curl', 'type': 'viral', 'confidence': 0},
-        9: {'name': 'Mosaic Virus', 'type': 'viral', 'confidence': 0},
-        10: {'name': 'Aphid Damage', 'type': 'pest', 'confidence': 0},
+        0: {'name': 'Pepper Bell Bacterial Spot', 'type': 'bacterial'},
+        1: {'name': 'Pepper Bell Healthy', 'type': 'healthy'},
+        2: {'name': 'Potato Early Blight', 'type': 'fungal'},
+        3: {'name': 'Potato Healthy', 'type': 'healthy'},
+        4: {'name': 'Potato Late Blight', 'type': 'fungal'},
+        5: {'name': 'Tomato Bacterial Spot', 'type': 'bacterial'},
+        6: {'name': 'Tomato Early Blight', 'type': 'fungal'},
+        7: {'name': 'Tomato Healthy', 'type': 'healthy'},
+        8: {'name': 'Tomato Late Blight', 'type': 'fungal'},
+        9: {'name': 'Tomato Leaf Mold', 'type': 'fungal'},
+        10: {'name': 'Tomato Septoria Leaf Spot', 'type': 'fungal'},
+        11: {'name': 'Tomato Spider Mites', 'type': 'pest'},
+        12: {'name': 'Tomato Target Spot', 'type': 'fungal'},
+        13: {'name': 'Tomato Mosaic Virus', 'type': 'viral'},
+        14: {'name': 'Tomato Yellow Leaf Curl Virus', 'type': 'viral'},
     }
     
     # Treatment recommendations for each disease
     TREATMENT_RECOMMENDATIONS = {
-        'Healthy Leaf': 'Leaf is healthy. Continue regular monitoring and maintenance.',
-        'Early Blight': 'Remove infected leaves, improve air circulation, apply fungicide (mancozeb or chlorothalonil)',
-        'Late Blight': 'Remove affected leaves immediately, apply copper or systemic fungicide, improve ventilation',
-        'Leaf Spot': 'Remove infected leaves, apply bactericide containing copper, avoid overhead watering',
-        'Powdery Mildew': 'Remove infected leaves, apply sulfur powder or fungicide, ensure proper air flow',
-        'Rust': 'Remove infected leaves, apply copper or sulfur fungicide, reduce humidity',
-        'Septoria Leaf Blotch': 'Remove infected leaves, apply fungicide, sanitize pruning tools',
-        'Target Spot': 'Remove infected leaves, apply fungicide, improve air circulation',
-        'Tomato Yellow Leaf Curl': 'Remove infected plants, control whitefly vectors using insecticide',
-        'Mosaic Virus': 'Remove infected plants immediately, control aphid vectors, sanitize tools',
-        'Aphid Damage': 'Spray with water, apply insecticidal soap or neem oil, encourage natural predators',
+        'Pepper Bell Bacterial Spot': 'Remove infected leaves, apply copper-based bactericide, avoid overhead watering, rotate crops.',
+        'Pepper Bell Healthy': 'Plant is healthy. Continue regular monitoring and maintenance.',
+        'Potato Early Blight': 'Remove infected leaves, apply fungicide (mancozeb or chlorothalonil), improve air circulation, water at base.',
+        'Potato Healthy': 'Plant is healthy. Continue regular monitoring and maintenance.',
+        'Potato Late Blight': 'Remove affected plants immediately, apply copper or systemic fungicide, destroy infected debris, improve ventilation.',
+        'Tomato Bacterial Spot': 'Remove infected leaves, apply copper-based spray, avoid wetting foliage, use disease-free seeds.',
+        'Tomato Early Blight': 'Remove lower infected leaves, apply fungicide, mulch around plants, stake for air flow.',
+        'Tomato Healthy': 'Plant is healthy. Continue regular monitoring and maintenance.',
+        'Tomato Late Blight': 'Remove affected plants immediately, apply fungicide preventatively, avoid overhead watering.',
+        'Tomato Leaf Mold': 'Improve ventilation, reduce humidity, remove infected leaves, apply fungicide if severe.',
+        'Tomato Septoria Leaf Spot': 'Remove infected leaves from bottom up, apply fungicide, mulch to prevent splash, rotate crops.',
+        'Tomato Spider Mites': 'Spray with water to dislodge mites, apply insecticidal soap or neem oil, introduce predatory mites.',
+        'Tomato Target Spot': 'Remove infected leaves, apply fungicide, improve air circulation, avoid overhead irrigation.',
+        'Tomato Mosaic Virus': 'Remove infected plants immediately, sanitize tools, control aphid vectors, wash hands before handling plants.',
+        'Tomato Yellow Leaf Curl Virus': 'Remove infected plants, control whitefly vectors with insecticide, use reflective mulches, plant resistant varieties.',
     }
     
     def __init__(self):
         """Initialize the disease detection model"""
         self.model = None
-        self.model_type = 'tensorflow' if HAS_TENSORFLOW else 'opencv'
+        self.model_type = 'custom_cnn' if HAS_TENSORFLOW else 'opencv'
         self._initialize_model()
     
     def _initialize_model(self):
-        """Initialize TensorFlow or OpenCV based model"""
+        """Load the custom trained plant disease model"""
         if HAS_TENSORFLOW:
             try:
-                # Use pre-trained MobileNetV2 for faster inference
-                self.model = MobileNetV2(
-                    input_shape=(224, 224, 3),
-                    include_top=False,
-                    weights='imagenet'
-                )
-                self.model_type = 'mobilenetv2'
+                if os.path.exists(MODEL_PATH):
+                    # Load custom trained model (compile=False to avoid version issues)
+                    self.model = load_model(MODEL_PATH, compile=False)
+                    self.model_type = 'plant_disease_model'
+                    print(f"Successfully loaded plant disease model from {MODEL_PATH}")
+                else:
+                    print(f"Model file not found at {MODEL_PATH}")
+                    self.model = None
+                    self.model_type = 'opencv'
             except Exception as e:
-                print(f"Error loading TensorFlow model: {e}")
+                print(f"Error loading plant disease model: {e}")
                 self.model = None
                 self.model_type = 'opencv'
     
@@ -83,7 +100,7 @@ class DiseaseDetectionModel:
         Args:
             image_data: PIL Image, file path, or file object
         Returns:
-            Preprocessed image array (224, 224, 3)
+            Preprocessed image array (256, 256, 3) normalized to [0, 1]
         """
         try:
             # Convert different input types to PIL Image
@@ -103,10 +120,10 @@ class DiseaseDetectionModel:
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             
-            # Resize to model input size
-            img = img.resize((224, 224))
+            # Resize to model input size (256x256)
+            img = img.resize(MODEL_INPUT_SIZE)
             
-            # Convert to array and normalize
+            # Convert to array and normalize to [0, 1]
             img_array = np.array(img, dtype=np.float32)
             img_array /= 255.0
             
@@ -115,38 +132,9 @@ class DiseaseDetectionModel:
             print(f"Error preprocessing image: {e}")
             return None
     
-    def extract_image_features(self, image_array):
-        """
-        Extract features from image using pre-trained model
-        Args:
-            image_array: Preprocessed image array
-        Returns:
-            Feature vector
-        """
-        try:
-            if self.model is not None and HAS_TENSORFLOW:
-                # Get features from MobileNetV2
-                features = self.model.predict(image_array, verbose=0)
-                return features.flatten()
-            else:
-                # Fallback: Use color histogram features
-                img = (image_array[0] * 255).astype(np.uint8)
-                hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-                
-                # Calculate histogram features
-                hist_h = cv2.calcHist([hsv], [0], None, [256], [0, 256])
-                hist_s = cv2.calcHist([hsv], [1], None, [256], [0, 256])
-                hist_v = cv2.calcHist([hsv], [2], None, [256], [0, 256])
-                
-                features = np.concatenate([hist_h.flatten(), hist_s.flatten(), hist_v.flatten()])
-                return features
-        except Exception as e:
-            print(f"Error extracting features: {e}")
-            return None
-    
     def predict_disease(self, image_path_or_file):
         """
-        Predict disease from image
+        Predict disease from image using the trained model
         Args:
             image_path_or_file: File path or file object
         Returns:
@@ -158,38 +146,82 @@ class DiseaseDetectionModel:
             if img_array is None:
                 return self._get_default_prediction('Unknown')
             
-            # Extract features
-            features = self.extract_image_features(img_array)
-            if features is None:
-                return self._get_default_prediction('Unknown')
-            
-            # Calculate disease prediction based on features
-            disease_scores = self._calculate_disease_scores(features, img_array)
-            
-            # Get top prediction
-            top_disease_idx = np.argmax(disease_scores)
-            confidence = float(np.max(disease_scores))
-            
-            # Ensure confidence is between 0-1
-            confidence = np.clip(confidence, 0.0, 1.0)
-            
-            disease_info = self.DISEASE_MAPPING[top_disease_idx]
-            
-            return {
-                'disease_name': disease_info['name'],
-                'disease_type': disease_info['type'],
-                'confidence': round(confidence * 100, 2),
-                'is_mock': False,
-                'model_used': self.model_type
-            }
+            # Use the trained model for prediction
+            if self.model is not None and HAS_TENSORFLOW:
+                # Get predictions from the model
+                predictions = self.model.predict(img_array, verbose=0)
+                
+                # Get the predicted class index and confidence
+                top_disease_idx = int(np.argmax(predictions[0]))
+                confidence = float(predictions[0][top_disease_idx])
+                
+                # Debug: Print all predictions sorted by confidence
+                print("=" * 50)
+                print("DEBUG: Raw model predictions:")
+                sorted_indices = np.argsort(predictions[0])[::-1]  # Sort descending
+                for idx in sorted_indices[:5]:  # Top 5 predictions
+                    print(f"  Class {idx}: {predictions[0][idx]:.4f} -> {self.DISEASE_MAPPING.get(idx, {}).get('name', 'Unknown')}")
+                print(f"Top prediction: Class {top_disease_idx} with confidence {confidence:.4f}")
+                print("=" * 50)
+                
+                # Handle case where predicted index is out of range
+                if top_disease_idx >= len(self.DISEASE_MAPPING):
+                    return self._get_default_prediction('Unknown')
+                
+                disease_info = self.DISEASE_MAPPING[top_disease_idx]
+                
+                return {
+                    'disease_name': disease_info['name'],
+                    'disease_type': disease_info['type'],
+                    'confidence': round(confidence * 100, 2),
+                    'is_mock': False,
+                    'model_used': self.model_type,
+                    'all_predictions': {
+                        self.DISEASE_MAPPING[i]['name']: round(float(predictions[0][i]) * 100, 2)
+                        for i in range(min(len(predictions[0]), len(self.DISEASE_MAPPING)))
+                    }
+                }
+            else:
+                # Fallback: Use color-based heuristics when model is unavailable
+                features = self._extract_fallback_features(img_array)
+                disease_scores = self._calculate_disease_scores(features, img_array)
+                
+                top_disease_idx = np.argmax(disease_scores)
+                confidence = float(np.max(disease_scores))
+                
+                disease_info = self.DISEASE_MAPPING.get(top_disease_idx, self.DISEASE_MAPPING[0])
+                
+                return {
+                    'disease_name': disease_info['name'],
+                    'disease_type': disease_info['type'],
+                    'confidence': round(confidence * 100, 2),
+                    'is_mock': True,
+                    'model_used': 'opencv_fallback'
+                }
         except Exception as e:
             print(f"Error predicting disease: {e}")
             return self._get_default_prediction('Unknown')
     
+    def _extract_fallback_features(self, image_array):
+        """Extract color histogram features for fallback mode"""
+        try:
+            img = (image_array[0] * 255).astype(np.uint8)
+            hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+            
+            hist_h = cv2.calcHist([hsv], [0], None, [256], [0, 256])
+            hist_s = cv2.calcHist([hsv], [1], None, [256], [0, 256])
+            hist_v = cv2.calcHist([hsv], [2], None, [256], [0, 256])
+            
+            features = np.concatenate([hist_h.flatten(), hist_s.flatten(), hist_v.flatten()])
+            return features
+        except Exception as e:
+            print(f"Error extracting features: {e}")
+            return np.zeros(768)
+    
     def _calculate_disease_scores(self, features, image_array):
         """
-        Calculate disease likelihood scores based on image features
-        Uses color analysis and feature extraction
+        Fallback: Calculate disease likelihood scores based on image color features
+        Only used when the trained model is unavailable
         """
         scores = np.zeros(len(self.DISEASE_MAPPING))
         
@@ -206,34 +238,20 @@ class DiseaseDetectionModel:
             s_mean = np.mean(hsv[:, :, 1])
             v_mean = np.mean(hsv[:, :, 2])
             
-            # Disease color patterns (heuristic)
-            # Healthy leaves: high saturation, medium-high value
-            # Diseased leaves: varied patterns
-            
             s_ratio = s_mean / 255.0
             v_ratio = v_mean / 255.0
-            
-            # Healthy leaf score (high saturation, good color)
-            scores[0] = (s_ratio * 0.6 + v_ratio * 0.4) if s_ratio > 0.4 else 0.3
-            
-            # Fungal diseases (tend to reduce saturation)
-            scores[1] = max(0.3, 1.0 - s_ratio) * 0.7  # Early Blight
-            scores[2] = max(0.3, 1.0 - s_ratio) * 0.8  # Late Blight
-            scores[4] = (1.0 - s_ratio) * 0.6  # Powdery Mildew
-            scores[5] = (1.0 - s_ratio) * 0.65  # Rust
-            scores[6] = (1.0 - s_ratio) * 0.55  # Septoria
-            scores[7] = (1.0 - s_ratio) * 0.6  # Target Spot
-            
-            # Bacterial disease
-            scores[3] = (1.0 - s_ratio) * 0.5  # Leaf Spot
-            
-            # Viral diseases (color change)
             h_ratio = h_mean / 180.0
-            scores[8] = abs(h_ratio - 0.5) * 0.4  # Yellow symptoms
-            scores[9] = abs(h_ratio - 0.4) * 0.35  # Mosaic pattern
             
-            # Pest damage
-            scores[10] = features.std() * 0.3 if len(features) > 0 else 0.2
+            # Healthy classes get higher scores with high saturation
+            healthy_score = (s_ratio * 0.6 + v_ratio * 0.4) if s_ratio > 0.4 else 0.3
+            scores[1] = healthy_score   # Pepper Bell Healthy
+            scores[4] = healthy_score   # Potato Healthy
+            scores[14] = healthy_score  # Tomato Healthy
+            
+            # Disease classes get higher scores with lower saturation
+            disease_score = max(0.3, 1.0 - s_ratio)
+            for i in [0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13]:
+                scores[i] = disease_score * (0.5 + 0.1 * (i % 3))
             
             # Normalize scores to sum to 1
             scores = np.exp(scores) / np.sum(np.exp(scores))
