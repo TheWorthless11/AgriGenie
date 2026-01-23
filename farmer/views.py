@@ -163,14 +163,17 @@ def disease_detection(request, crop_id=None):
         messages.error(request, 'Only farmers can use disease detection!')
         return redirect('dashboard')
     
-    farmer_crops = Crop.objects.filter(farmer=request.user)
+    # Only show crops that have master_crop assigned
+    farmer_crops = Crop.objects.filter(farmer=request.user, master_crop__isnull=False).select_related('master_crop')
+    detection_result = None
+    selected_crop = None
     
     if request.method == 'POST':
         form = CropDiseaseForm(request.POST, request.FILES)
         selected_crop_id = request.POST.get('crop')
         
-        if form.is_valid() and selected_crop_id:
-            crop = get_object_or_404(Crop, id=selected_crop_id, farmer=request.user)
+        if selected_crop_id:
+            selected_crop = get_object_or_404(Crop, id=selected_crop_id, farmer=request.user)
             
             # Get the uploaded image
             image_file = request.FILES.get('disease_image')
@@ -182,28 +185,41 @@ def disease_detection(request, crop_id=None):
                     
                     # Create disease record
                     disease = CropDisease.objects.create(
-                        crop=crop,
+                        crop=selected_crop,
                         disease_name=disease_info.get('name', 'Unknown Disease'),
                         disease_type=disease_info.get('type', 'unknown'),
                         confidence_score=disease_info.get('confidence', 0),
                         disease_image=image_file,
                         treatment_recommendation=disease_info.get('treatment', ''),
-                        ai_model_used=disease_info.get('model_used', 'ResNet50')
+                        ai_model_used=disease_info.get('model_used', 'plant_disease_model')
                     )
                     
+                    # Store result for display
+                    detection_result = {
+                        'disease': disease,
+                        'disease_info': disease_info,
+                        'crop': selected_crop,
+                        'success': True
+                    }
+                    
                     # Send notification
+                    crop_name = selected_crop.master_crop.crop_name if selected_crop.master_crop else 'Unknown Crop'
                     Notification.objects.create(
                         user=request.user,
                         notification_type='disease',
                         title=f'Disease Detected: {disease.disease_name}',
-                        message=f'Disease detected on {crop.crop_name} with {disease.confidence_score:.1f}% confidence. Confidence: {disease.confidence_score:.1f}%'
+                        message=f'Disease detected on {crop_name} with {disease.confidence_score:.1f}% confidence.'
                     )
                     
-                    messages.success(request, f'Disease analysis complete! {disease.disease_name} detected with {disease.confidence_score:.1f}% confidence.')
-                    return redirect('disease_history', crop_id=crop.id)
+                    messages.success(request, f'Disease analysis complete!')
                 
                 except Exception as e:
                     messages.error(request, f'Error analyzing image: {str(e)}')
+                    detection_result = {'success': False, 'error': str(e)}
+            else:
+                messages.error(request, 'Please upload an image!')
+        else:
+            messages.error(request, 'Please select a crop!')
     else:
         form = CropDiseaseForm()
     
@@ -211,6 +227,8 @@ def disease_detection(request, crop_id=None):
         'form': form,
         'crops': farmer_crops,
         'selected_crop_id': crop_id,
+        'detection_result': detection_result,
+        'selected_crop': selected_crop,
         'title': 'AI Disease Detection'
     }
     return render(request, 'farmer/disease_detection.html', context)

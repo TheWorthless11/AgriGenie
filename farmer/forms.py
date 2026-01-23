@@ -1,24 +1,67 @@
 from django import forms
 from farmer.models import Crop, Order, Message, WeatherAlert, CropDisease
+from admin_panel.models import MasterCrop
 
 
 class CropForm(forms.ModelForm):
+    """Form for Farmer to post crops for sale - must select from admin's master crop list"""
     class Meta:
         model = Crop
-        fields = ('crop_name', 'crop_type', 'quantity', 'unit', 'price_per_unit', 'description', 'crop_image', 'location', 'harvest_date', 'availability_date', 'quality_grade')
+        fields = ('master_crop', 'quantity', 'unit', 'price_per_unit', 'location', 'harvest_date', 'availability_date', 'quality_grade', 'description', 'crop_image')
         widgets = {
-            'crop_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter crop name'}),
-            'crop_type': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Vegetable, Grain, Fruit'}),
-            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'unit': forms.TextInput(attrs={'class': 'form-control'}),
-            'price_per_unit': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'crop_image': forms.FileInput(attrs={'class': 'form-control'}),
-            'location': forms.TextInput(attrs={'class': 'form-control'}),
-            'harvest_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'availability_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'master_crop': forms.Select(attrs={
+                'class': 'form-control',
+                'required': True
+            }),
+            'quantity': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'Enter quantity available'
+            }),
+            'unit': forms.Select(attrs={'class': 'form-control'}),
+            'price_per_unit': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'placeholder': 'Price per unit'
+            }),
+            'location': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Farm/pickup location'
+            }),
+            'harvest_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'availability_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
             'quality_grade': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Additional details about your crop (optional)'
+            }),
+            'crop_image': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
         }
+        labels = {
+            'master_crop': 'Select Crop Type',
+            'price_per_unit': 'Price Per Unit',
+            'crop_image': 'Upload Photo of Your Crop (Optional)',
+        }
+        help_texts = {
+            'master_crop': 'Select the type of crop you want to sell',
+            'crop_image': 'Upload a photo of YOUR actual crop. If not provided, generic crop image will be used.',
+            'quality_grade': 'Quality grade of your crop',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show active master crops
+        self.fields['master_crop'].queryset = MasterCrop.objects.filter(is_active=True)
 
 
 class OrderForm(forms.ModelForm):

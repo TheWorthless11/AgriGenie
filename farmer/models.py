@@ -5,31 +5,53 @@ from django.utils import timezone
 
 
 class Crop(models.Model):
+    """
+    Farmer's Crop Listing - Actual crops posted for sale by farmers.
+    Must reference a MasterCrop template created by admin.
+    """
     farmer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='crops')
-    crop_name = models.CharField(max_length=100)
-    crop_type = models.CharField(max_length=100)
-    quantity = models.FloatField(validators=[MinValueValidator(0)])
-    unit = models.CharField(max_length=20, default='kg')  # kg, tons, etc.
-    price_per_unit = models.FloatField(validators=[MinValueValidator(0)])
-    description = models.TextField(blank=True, null=True)
-    crop_image = models.ImageField(upload_to='crops/')
-    location = models.CharField(max_length=255)
-    harvest_date = models.DateField()
-    availability_date = models.DateField()
+    master_crop = models.ForeignKey('admin_panel.MasterCrop', on_delete=models.PROTECT, related_name='listings', null=True, blank=True, help_text="Select crop type from admin's master list")
+    
+    # Farmer-specific details for their listing
+    quantity = models.FloatField(validators=[MinValueValidator(0)], help_text="Available quantity")
+    unit = models.CharField(max_length=20, default='kg', choices=[('kg', 'Kilograms'), ('tons', 'Tons'), ('quintals', 'Quintals'), ('pieces', 'Pieces')])
+    price_per_unit = models.FloatField(validators=[MinValueValidator(0)], help_text="Price per unit")
+    location = models.CharField(max_length=255, help_text="Farm/pickup location")
+    harvest_date = models.DateField(help_text="When was this crop harvested?")
+    availability_date = models.DateField(help_text="When is it available for sale/pickup?")
     quality_grade = models.CharField(
         max_length=20,
-        choices=[('A', 'Grade A'), ('B', 'Grade B'), ('C', 'Grade C')],
-        default='B'
+        choices=[('A', 'Grade A - Premium'), ('B', 'Grade B - Standard'), ('C', 'Grade C - Basic')],
+        default='B',
+        help_text="Quality grade of your crop"
     )
+    
+    # Optional farmer details
+    description = models.TextField(blank=True, null=True, help_text="Additional details about your specific crop listing")
+    crop_image = models.ImageField(upload_to='crops/', blank=True, null=True, help_text="Photo of YOUR actual crop (optional)")
+    
+    # System fields
     is_available = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         ordering = ['-created_at']
+        verbose_name = 'Crop Listing'
+        verbose_name_plural = 'Crop Listings'
     
     def __str__(self):
-        return f"{self.crop_name} - {self.farmer.username}"
+        return f"{self.master_crop.crop_name} - {self.farmer.username} ({self.quantity}{self.unit})"
+    
+    @property
+    def crop_name(self):
+        """For backward compatibility with existing code"""
+        return self.master_crop.crop_name
+    
+    @property
+    def crop_type(self):
+        """For backward compatibility with existing code"""
+        return self.master_crop.crop_type
 
 
 class Order(models.Model):
