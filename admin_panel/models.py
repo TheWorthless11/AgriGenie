@@ -3,6 +3,46 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import CustomUser
 
 
+class MasterCrop(models.Model):
+    """
+    Master Crop Template - Admin creates these to define what crops are allowed on the platform.
+    Farmers select from these when posting their crops for sale.
+    """
+    CROP_CATEGORIES = (
+        ('vegetables', 'Vegetables'),
+        ('fruits', 'Fruits'),
+        ('grains', 'Grains'),
+        ('pulses', 'Pulses'),
+        ('spices', 'Spices'),
+        ('cash_crops', 'Cash Crops'),
+        ('other', 'Other'),
+    )
+    
+    CROP_TYPES = (
+        ('organic', 'Organic'),
+        ('conventional', 'Conventional'),
+        ('hybrid', 'Hybrid'),
+    )
+    
+    crop_name = models.CharField(max_length=100, unique=True, help_text="Name of the crop (e.g., Tomato, Rice)")
+    crop_type = models.CharField(max_length=50, choices=CROP_TYPES, default='conventional')
+    category = models.CharField(max_length=50, choices=CROP_CATEGORIES)
+    description = models.TextField(blank=True, null=True, help_text="General description of this crop")
+    generic_image = models.ImageField(upload_to='master_crops/', blank=True, null=True, help_text="Generic crop image")
+    is_active = models.BooleanField(default=True, help_text="Is this crop available for farmers to list?")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='created_master_crops')
+    
+    class Meta:
+        ordering = ['crop_name']
+        verbose_name = 'Master Crop Template'
+        verbose_name_plural = 'Master Crop Templates'
+    
+    def __str__(self):
+        return f"{self.crop_name} ({self.get_category_display()})"
+
+
 class UserApproval(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='approval_request')
     status = models.CharField(
@@ -148,3 +188,34 @@ class ActivityLog(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.get_action_display()}"
+
+class FarmerListing(models.Model):
+    """
+    Farmer's actual stock for sale, linked to a MasterCrop template.
+    """
+    QUALITY_GRADES = (
+        ('grade_a', 'Grade A (Excellent)'),
+        ('grade_b', 'Grade B (Good)'),
+        ('grade_c', 'Grade C (Standard)'),
+    )
+
+    farmer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='listings')
+    crop_template = models.ForeignKey(MasterCrop, on_delete=models.CASCADE, related_name='farmer_listings')
+    
+    quantity = models.FloatField(validators=[MinValueValidator(0.1)])
+    unit = models.CharField(max_length=20, default='kg') # e.g., kg, ton, piece
+    price_per_unit = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    location = models.CharField(max_length=255)
+    harvest_date = models.DateField()
+    availability_date = models.DateField()
+    quality_grade = models.CharField(max_length=20, choices=QUALITY_GRADES, default='grade_b')
+    
+    is_available = models.BooleanField(default=True)
+    specific_description = models.TextField(blank=True, null=True, help_text="Details about THIS specific batch")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.farmer.username} - {self.crop_template.crop_name} ({self.quantity}{self.unit})"

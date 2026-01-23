@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - AgriGenie Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-seedling text-success"></i> {{ title }}
+            </h1>
+            <p class="text-muted">Manage crop templates that farmers can list on the platform</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'add_master_crop' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Add Master Crop
+            </a>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" placeholder="Search by name..." value="{{ request.GET.search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="">All Categories</option>
+                                {% for value, label in categories %}
+                                    <option value="{{ value }}" {% if request.GET.category == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{% url 'master_crops_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Master Crops Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Master Crop Templates</h5>
+                    <span class="badge bg-light text-dark">{{ master_crops|length }} crops</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Crop Name</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Listings</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if master_crops %}
+                                {% for crop in master_crops %}
+                                <tr>
+                                    <td>
+                                        <div class="bg-success bg-opacity-10 rounded d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-seedling text-success"></i>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ crop.crop_name }}</strong>
+                                        {% if crop.description %}
+                                            <br><small class="text-muted">{{ crop.description|truncatewords:10 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ crop.get_category_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if crop.crop_type == 'organic' %}
+                                            <span class="badge bg-success">Organic</span>
+                                        {% elif crop.crop_type == 'hybrid' %}
+                                            <span class="badge bg-warning text-dark">Hybrid</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Conventional</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if crop.is_active %}
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger"><i class="fas fa-times"></i> Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ crop.listings_count }} listings</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ crop.created_at|date:"M d, Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'edit_master_crop' crop.id %}" class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if crop.is_active %}
+                                                <a href="{% url 'toggle_master_crop_status' crop.id %}" class="btn btn-outline-warning" title="Deactivate">
+                                                    <i class="fas fa-ban"></i>
+                                                </a>
+                                            {% else %}
+                                                <a href="{% url 'toggle_master_crop_status' crop.id %}" class="btn btn-outline-success" title="Activate">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                            {% endif %}
+                                            <a href="{% url 'delete_master_crop' crop.id %}" class="btn btn-outline-danger" title="Delete" 
+                                               onclick="return confirm('Are you sure you want to delete this crop template?');">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <i class="fas fa-seedling fa-3x text-muted mb-3"></i>
+                                        <h5 class="text-muted">No Master Crops Found</h5>
+                                        <p class="text-muted">Start by adding a master crop template for farmers to use.</p>
+                                        <a href="{% url 'add_master_crop' %}" class="btn btn-success">
+                                            <i class="fas fa-plus"></i> Add First Crop
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h4>{{ master_crops|length }}</h4>
+                    <small>Total Crops</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-leaf fa-2x mb-2"></i>
+                    <h4>{% with active_count=0 %}{% for crop in master_crops %}{% if crop.is_active %}{% with active_count=active_count|add:1 %}{% endwith %}{% endif %}{% endfor %}{{ active_count }}{% endwith %}</h4>
+                    <small>Active Crops</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark">
+                <div class="card-body text-center">
+                    <i class="fas fa-tags fa-2x mb-2"></i>
+                    <h4>{{ categories|length }}</h4>
+                    <small>Categories</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-store fa-2x mb-2"></i>
+                    <h4>{% with total_listings=0 %}{% for crop in master_crops %}{% with total_listings=total_listings|add:crop.listings_count %}{% endwith %}{% endfor %}{{ total_listings }}{% endwith %}</h4>
+                    <small>Total Listings</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

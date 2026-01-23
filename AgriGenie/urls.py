@@ -83,6 +83,13 @@ urlpatterns = [
     path('admin-panel/reports/', admin_views.system_reports, name='admin_reports'),
     path('admin-panel/ai-monitoring/', admin_views.ai_monitoring, name='ai_monitoring'),
     path('admin-panel/activity-logs/', admin_views.activity_logs, name='activity_logs'),
+    
+    # Master Crop Management (Admin)
+    path('admin-panel/master-crops/', admin_views.master_crops_list, name='master_crops_list'),
+    path('admin-panel/master-crops/add/', admin_views.add_master_crop, name='add_master_crop'),
+    path('admin-panel/master-crops/<int:crop_id>/edit/', admin_views.edit_master_crop, name='edit_master_crop'),
+    path('admin-panel/master-crops/<int:crop_id>/delete/', admin_views.delete_master_crop, name='delete_master_crop'),
+    path('admin-panel/master-crops/<int:crop_id>/toggle/', admin_views.toggle_master_crop_status, name='toggle_master_crop_status'),
 ]
 
 if settings.DEBUG:

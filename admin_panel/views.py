@@ -508,3 +508,130 @@ def admin_remove_crop(request, crop_id):
     crop.delete()
     messages.success(request, f'Crop "{crop.crop_name}" has been removed.')
     return redirect('crop_management')
+
+
+# ========== MASTER CROP MANAGEMENT ==========
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def master_crops_list(request):
+    """View and manage all master crop templates"""
+    from admin_panel.models import MasterCrop
+    
+    master_crops = MasterCrop.objects.all().order_by('crop_name')
+    
+    # Filters
+    category_filter = request.GET.get('category')
+    status_filter = request.GET.get('status')
+    
+    if category_filter:
+        master_crops = master_crops.filter(category=category_filter)
+    
+    if status_filter == 'active':
+        master_crops = master_crops.filter(is_active=True)
+    elif status_filter == 'inactive':
+        master_crops = master_crops.filter(is_active=False)
+    
+    # Count listings for each master crop
+    for crop in master_crops:
+        crop.listings_count = crop.listings.count()
+    
+    context = {
+        'master_crops': master_crops,
+        'title': 'Master Crop Templates',
+        'categories': MasterCrop.CROP_CATEGORIES,
+    }
+    return render(request, 'admin_panel/master_crops_list.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def add_master_crop(request):
+    """Admin adds a new master crop template"""
+    from admin_panel.forms import MasterCropForm
+    
+    if request.method == 'POST':
+        form = MasterCropForm(request.POST, request.FILES)
+        if form.is_valid():
+            master_crop = form.save(commit=False)
+            master_crop.created_by = request.user
+            master_crop.save()
+            messages.success(request, f'Master Crop "{master_crop.crop_name}" created successfully! Farmers can now list this crop.')
+            return redirect('master_crops_list')
+    else:
+        form = MasterCropForm()
+    
+    context = {
+        'form': form,
+        'title': 'Add Master Crop Template',
+    }
+    return render(request, 'admin_panel/add_master_crop.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def edit_master_crop(request, crop_id):
+    """Edit an existing master crop template"""
+    from admin_panel.models import MasterCrop
+    from admin_panel.forms import MasterCropForm
+    
+    master_crop = get_object_or_404(MasterCrop, id=crop_id)
+    
+    if request.method == 'POST':
+        form = MasterCropForm(request.POST, request.FILES, instance=master_crop)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Master Crop "{master_crop.crop_name}" updated successfully!')
+            return redirect('master_crops_list')
+    else:
+        form = MasterCropForm(instance=master_crop)
+    
+    context = {
+        'form': form,
+        'master_crop': master_crop,
+        'title': f'Edit Master Crop: {master_crop.crop_name}',
+    }
+    return render(request, 'admin_panel/edit_master_crop.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def delete_master_crop(request, crop_id):
+    """Delete a master crop template"""
+    from admin_panel.models import MasterCrop
+    
+    master_crop = get_object_or_404(MasterCrop, id=crop_id)
+    
+    # Check if there are any active listings using this master crop
+    listings_count = master_crop.listings.count()
+    
+    if request.method == 'POST':
+        if listings_count > 0:
+            messages.error(request, f'Cannot delete "{master_crop.crop_name}" - {listings_count} farmer listing(s) are using this crop. Please deactivate it instead.')
+        else:
+            crop_name = master_crop.crop_name
+            master_crop.delete()
+            messages.success(request, f'Master Crop "{crop_name}" deleted successfully!')
+        return redirect('master_crops_list')
+    
+    context = {
+        'master_crop': master_crop,
+        'listings_count': listings_count,
+        'title': f'Delete Master Crop: {master_crop.crop_name}',
+    }
+    return render(request, 'admin_panel/delete_master_crop.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def toggle_master_crop_status(request, crop_id):
+    """Toggle active/inactive status of a master crop"""
+    from admin_panel.models import MasterCrop
+    
+    master_crop = get_object_or_404(MasterCrop, id=crop_id)
+    master_crop.is_active = not master_crop.is_active
+    master_crop.save()
+    
+    status = "activated" if master_crop.is_active else "deactivated"
+    messages.success(request, f'Master Crop "{master_crop.crop_name}" has been {status}.')
+    return redirect('master_crops_list')

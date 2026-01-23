@@ -1,5 +1,22 @@
 from django.contrib import admin
-from .models import UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog
+from .models import MasterCrop, UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog
+from .models import (
+    MasterCrop, UserApproval, SystemAlert, SystemReport, 
+    AIDiseaseMonitor, AIPricePredictor, ActivityLog, FarmerListing # Add this
+)
+
+@admin.register(MasterCrop)
+class MasterCropAdmin(admin.ModelAdmin):
+    list_display = ['crop_name', 'category', 'crop_type', 'is_active', 'created_at', 'created_by']
+    list_filter = ['category', 'crop_type', 'is_active', 'created_at']
+    search_fields = ['crop_name', 'description']
+    readonly_fields = ['created_at', 'updated_at', 'created_by']
+    list_editable = ['is_active']
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # If creating new object
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(UserApproval)
@@ -47,3 +64,12 @@ class ActivityLogAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'description']
     readonly_fields = ['timestamp']
     date_hierarchy = 'timestamp'
+
+@admin.register(FarmerListing)
+class FarmerListingAdmin(admin.ModelAdmin):
+    list_display = ['crop_template', 'farmer', 'quantity', 'unit', 'price_per_unit', 'is_available', 'harvest_date']
+    list_filter = ['is_available', 'quality_grade', 'harvest_date', 'crop_template__category']
+    search_fields = ['crop_template__crop_name', 'farmer__username', 'location']
+    readonly_fields = ['created_at', 'updated_at']
+    list_editable = ['is_available', 'price_per_unit']
+    date_hierarchy = 'harvest_date'

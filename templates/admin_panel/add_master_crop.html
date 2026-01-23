@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - AgriGenie Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-plus-circle text-success"></i> {{ title }}
+            </h1>
+            <p class="text-muted">Create a new crop template for farmers to use when listing their produce</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'master_crops_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Master Crops
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-seedling"></i> Crop Details</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong><i class="fas fa-exclamation-circle"></i> Please correct the errors below:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li>{{ field.label }}: {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.crop_name.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tag text-success"></i> Crop Name <span class="text-danger">*</span>
+                                </label>
+                                {{ form.crop_name }}
+                                {% if form.crop_name.help_text %}
+                                    <small class="form-text text-muted">{{ form.crop_name.help_text }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">
+                                    <i class="fas fa-folder text-info"></i> Category <span class="text-danger">*</span>
+                                </label>
+                                {{ form.category }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.crop_type.id_for_label }}" class="form-label">
+                                <i class="fas fa-layer-group text-warning"></i> Crop Type <span class="text-danger">*</span>
+                            </label>
+                            {{ form.crop_type }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left text-secondary"></i> Description
+                            </label>
+                            {{ form.description }}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    <i class="fas fa-check-circle text-success"></i> Active (Available for farmer listings)
+                                </label>
+                            </div>
+                            {% if form.is_active.help_text %}
+                                <small class="form-text text-muted">{{ form.is_active.help_text }}</small>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'master_crops_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> Create Master Crop
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Help Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> About Master Crops</h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">
+                        Master Crops are templates that define which crops farmers can list on the platform. 
+                        When you create a master crop:
+                    </p>
+                    <ul class="small text-muted">
+                        <li>Farmers can select it when posting their produce</li>
+                        <li>It helps maintain consistency across listings</li>
+                        <li>Buyers can easily search and filter by crop type</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Categories Info -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-tags"></i> Available Categories</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><span class="badge bg-success">Vegetables</span> - Tomatoes, Peppers, etc.</li>
+                        <li class="mb-2"><span class="badge bg-danger">Fruits</span> - Apples, Oranges, etc.</li>
+                        <li class="mb-2"><span class="badge bg-warning text-dark">Grains</span> - Rice, Wheat, etc.</li>
+                        <li class="mb-2"><span class="badge bg-info">Pulses</span> - Lentils, Beans, etc.</li>
+                        <li class="mb-2"><span class="badge bg-secondary">Spices</span> - Turmeric, Chili, etc.</li>
+                        <li class="mb-2"><span class="badge bg-primary">Cash Crops</span> - Cotton, Sugarcane, etc.</li>
+                        <li><span class="badge bg-dark">Other</span> - Miscellaneous crops</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
