@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Edit Profile</h2>
+            <p class="text-muted">Update your account information.</p>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback d-block">{{ form.username.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">First name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Last name</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            {{ form.phone_number }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            {{ form.location }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Profile picture</label>
+                            {{ form.profile_picture }}
+                            {% if user.profile_picture %}
+                                <div class="mt-2"><img src="{{ user.profile_picture.url }}" alt="avatar" class="rounded" style="width:80px;height:80px;object-fit:cover;"></div>
+                            {% endif %}
+                        </div>
+
+                        {% if farmer_form %}
+                            <hr>
+                            <h5>Farm Details</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Farm name</label>
+                                {{ farmer_form.farm_name }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Farm size (acres)</label>
+                                {{ farmer_form.farm_size }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Farm location</label>
+                                {{ farmer_form.farm_location }}
+                            </div>
+                        {% endif %}
+
+                        {% if buyer_form %}
+                            <hr>
+                            <h5>Business Details</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Company name</label>
+                                {{ buyer_form.company_name }}
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Business type</label>
+                                {{ buyer_form.business_type }}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success">Save Changes</button>
+                            <a href="{% url 'profile' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

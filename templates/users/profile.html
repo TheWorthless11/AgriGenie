@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profile - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Profile</h2>
+            <p class="text-muted">Manage your account details.</p>
+
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                    <p><strong>Full name:</strong> {{ user.get_full_name|default:user.username }}</p>
+                    <p><strong>Email:</strong> {{ user.email|default:"Not set" }}</p>
+                    <p><strong>Location:</strong> {{ user.location|default:"Not set" }}</p>
+                    {% if user.farmer_profile %}
+                        <hr>
+                        <h5>Farm Details</h5>
+                        <p><strong>Farm name:</strong> {{ user.farmer_profile.farm_name|default:"Not set" }}</p>
+                        <p><strong>Farm size:</strong> {{ user.farmer_profile.farm_size|default:"Not set" }} acres</p>
+                        <p><strong>Rating:</strong> {% if user.farmer_profile.rating %}{{ user.farmer_profile.rating|floatformat:1 }}{% else %}—{% endif %}</p>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <a href="{% url 'profile_edit' %}" class="btn btn-sm btn-outline-success">Edit Profile</a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-secondary ms-2">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
