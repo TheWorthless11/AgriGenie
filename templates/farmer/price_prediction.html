@@ -65,7 +65,7 @@
                                 <option value="">-- Select a crop --</option>
                                 {% for crop in crops %}
                                     <option value="{{ crop.id }}" {% if crop.id|stringformat:"s" == selected_crop_id %}selected{% endif %}>
-                                        {{ crop.crop_name }} (₹{{ crop.price_per_unit }}/{{ crop.unit }})
+                                        {{ crop.crop_name }} (Tk {{ crop.price_per_unit }}/{{ crop.unit }})
                                     </option>
                                 {% endfor %}
                             </select>
@@ -91,7 +91,7 @@
                 <div class="card prediction-card">
                     <div class="card-body">
                         <h6 class="card-title text-muted">Current Price</h6>
-                        <h3>₹{{ prediction_result.insights.average_price }}</h3>
+                        <h3>Tk {{ prediction_result.insights.average_price }}</h3>
                         <small class="text-muted">Current market rate</small>
                     </div>
                 </div>
@@ -100,7 +100,7 @@
                 <div class="card prediction-card">
                     <div class="card-body">
                         <h6 class="card-title text-muted">Expected Max Price</h6>
-                        <h3 class="trend-positive">₹{{ prediction_result.insights.max_price }}</h3>
+                        <h3 class="trend-positive">Tk {{ prediction_result.insights.max_price }}</h3>
                         <small class="text-muted">Highest predicted price</small>
                     </div>
                 </div>
@@ -140,7 +140,7 @@
                     {% if prediction_result.best_sell_date %}
                         <hr>
                         <p><strong>Best time to sell:</strong> {{ prediction_result.best_sell_date.best_date }}</p>
-                        <p><strong>Expected price:</strong> ₹{{ prediction_result.best_sell_date.expected_price }}/unit</p>
+                        <p><strong>Expected price:</strong> Tk {{ prediction_result.best_sell_date.expected_price }}/unit</p>
                         <p><strong>Days to wait:</strong> {{ prediction_result.best_sell_date.days_to_wait }} days</p>
                     {% endif %}
                 </div>
@@ -158,15 +158,15 @@
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Average Price:</strong></td>
-                                <td class="text-end">₹{{ prediction_result.insights.average_price }}</td>
+                                <td class="text-end">Tk {{ prediction_result.insights.average_price }}</td>
                             </tr>
                             <tr>
                                 <td><strong>Minimum Price:</strong></td>
-                                <td class="text-end">₹{{ prediction_result.insights.min_price }}</td>
+                                <td class="text-end">Tk {{ prediction_result.insights.min_price }}</td>
                             </tr>
                             <tr>
                                 <td><strong>Maximum Price:</strong></td>
-                                <td class="text-end">₹{{ prediction_result.insights.max_price }}</td>
+                                <td class="text-end">Tk {{ prediction_result.insights.max_price }}</td>
                             </tr>
                             <tr>
                                 <td><strong>Price Volatility:</strong></td>
@@ -245,7 +245,7 @@
                                     <tr>
                                         <th>Day</th>
                                         <th>Date</th>
-                                        <th>Predicted Price (₹)</th>
+                                        <th>Predicted Price (Tk)</th>
                                         <th>Status</th>
                                     </tr>
                                 </thead>
@@ -255,7 +255,7 @@
                                         <td><strong>Day {{ pred.day }}</strong></td>
                                         <td>{{ pred.date }}</td>
                                         <td>
-                                            <strong>₹{{ pred.price }}</strong>
+                                            <strong>Tk {{ pred.price }}</strong>
                                             {% if forloop.first %}
                                                 <span class="badge bg-secondary">Current</span>
                                             {% elif pred.price == prediction_result.insights.max_price %}
@@ -296,7 +296,7 @@
                                 <thead>
                                     <tr>
                                         <th>Date</th>
-                                        <th>Predicted Price (₹)</th>
+                                        <th>Predicted Price (Tk)</th>
                                         <th>Confidence Level</th>
                                         <th>Forecast Days</th>
                                     </tr>
@@ -305,7 +305,7 @@
                                     {% for price in price_data %}
                                     <tr>
                                         <td>{{ price.prediction_date }}</td>
-                                        <td>₹{{ price.predicted_price }}</td>
+                                        <td>Tk {{ price.predicted_price }}</td>
                                         <td>
                                             <div class="progress" style="width: 100px;">
                                                 <div class="progress-bar bg-success" role="progressbar" 
@@ -368,7 +368,7 @@
         data: {
             labels: chartData.labels,
             datasets: [{
-                label: 'Predicted Price (₹)',
+                label: 'Predicted Price (Tk)',
                 data: chartData.prices,
                 borderColor: '#28a745',
                 backgroundColor: 'rgba(40, 167, 69, 0.1)',
@@ -399,7 +399,7 @@
                     beginAtZero: false,
                     ticks: {
                         callback: function(value) {
-                            return '₹' + value.toFixed(2);
+                            return 'Tk ' + value.toFixed(2);
                         }
                     }
                 }

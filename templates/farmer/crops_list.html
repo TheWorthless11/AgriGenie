@@ -43,7 +43,7 @@
                             
                             <div class="mb-3">
                                 <small class="badge bg-success">{{ crop.quantity }} {{ crop.unit }}</small>
-                                <small class="badge bg-info">₹{{ crop.price_per_unit }}/{{ crop.unit }}</small>
+                                <small class="badge bg-info">Tk {{ crop.price_per_unit }}/{{ crop.unit }}</small>
                                 <small class="badge bg-warning">Grade {{ crop.quality_grade }}</small>
                             </div>
 
@@ -67,9 +67,7 @@
                                         <i class="fas fa-trash"></i> Delete
                                     </a>
                                 </div>
-                                <a href="{% url 'disease_history' crop.id %}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-virus"></i> Disease History
-                                </a>
+                                <!-- Disease history removed from selling listing to avoid showing on sell page -->
                             </div>
                         </div>
                         <div class="card-footer bg-light small text-muted">

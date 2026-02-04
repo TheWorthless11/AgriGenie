@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Disease Detection Result - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .result-header {
+        padding: 25px;
+    }
+    
+    .result-header.healthy {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+    
+    .result-header.diseased {
+        background: linear-gradient(135deg, #dc3545, #fd7e14);
+    }
+    
+    .disease-image {
+        max-height: 350px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    
+    .confidence-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin: 0 auto;
+    }
+    
+    .confidence-high {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .confidence-medium {
+        background: linear-gradient(135deg, #ffc107, #fd7e14);
+        color: white;
+    }
+    
+    .confidence-low {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+    }
+    
+    .treatment-box {
+        background-color: #f8fff9;
+        border-left: 5px solid #28a745;
+        padding: 20px;
+        border-radius: 0 10px 10px 0;
+    }
+    
+    .info-badge {
+        font-size: 1rem;
+        padding: 10px 20px;
+        border-radius: 25px;
+    }
+    
+    .action-btn {
+        padding: 12px 30px;
+        font-size: 1rem;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'disease_detection' %}">Disease Detection</a></li>
+                    <li class="breadcrumb-item active">Result</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Result Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card result-card border-0">
+                <!-- Result Header -->
+                <div class="result-header {% if disease.disease_type == 'healthy' %}healthy{% else %}diseased{% endif %} text-white text-center">
+                    <h2 class="mb-2">
+                        {% if disease.disease_type == 'healthy' %}
+                            <i class="fas fa-check-circle fa-2x mb-3 d-block"></i>
+                            Your Crop is Healthy!
+                        {% else %}
+                            <i class="fas fa-exclamation-triangle fa-2x mb-3 d-block"></i>
+                            Disease Detected
+                        {% endif %}
+                    </h2>
+                    <h3 class="mb-0">{{ disease.disease_name }}</h3>
+                </div>
+                
+                <!-- Result Body -->
+                <div class="card-body p-4">
+                    <div class="row">
+                        <!-- Image Section -->
+                        <div class="col-md-5 text-center mb-4 mb-md-0">
+                            {% if disease.disease_image %}
+                            <img src="{{ disease.disease_image.url }}" alt="Analyzed Image" class="img-fluid disease-image">
+                            <p class="text-muted mt-2"><small><i class="fas fa-camera"></i> Analyzed Image</small></p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Details Section -->
+                        <div class="col-md-7">
+                            <!-- Crop Info -->
+                            <div class="mb-4">
+                                <h5 class="text-muted mb-2"><i class="fas fa-leaf text-success"></i> Crop Analyzed</h5>
+                                <h4>{{ crop_name }}</h4>
+                            </div>
+                            
+                            <!-- Confidence Score -->
+                            <div class="mb-4 text-center">
+                                <h5 class="text-muted mb-3"><i class="fas fa-chart-pie"></i> Confidence Score</h5>
+                                <div class="confidence-circle {% if disease.confidence_score >= 80 %}confidence-high{% elif disease.confidence_score >= 50 %}confidence-medium{% else %}confidence-low{% endif %}">
+                                    {{ disease.confidence_score|floatformat:0 }}%
+                                </div>
+                                <p class="mt-2 text-muted">
+                                    {% if disease.confidence_score >= 80 %}
+                                        <span class="text-success"><i class="fas fa-check"></i> High Confidence</span>
+                                    {% elif disease.confidence_score >= 50 %}
+                                        <span class="text-warning"><i class="fas fa-exclamation"></i> Medium Confidence</span>
+                                    {% else %}
+                                        <span class="text-danger"><i class="fas fa-question"></i> Low Confidence</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            
+                            <!-- Disease Type -->
+                            <div class="mb-4">
+                                <h5 class="text-muted mb-2"><i class="fas fa-virus"></i> Disease Type</h5>
+                                {% if disease.disease_type == 'fungal' %}
+                                    <span class="badge info-badge bg-danger"><i class="fas fa-disease"></i> Fungal Disease</span>
+                                {% elif disease.disease_type == 'bacterial' %}
+                                    <span class="badge info-badge bg-primary"><i class="fas fa-bacteria"></i> Bacterial Disease</span>
+                                {% elif disease.disease_type == 'viral' %}
+                                    <span class="badge info-badge bg-info"><i class="fas fa-viruses"></i> Viral Disease</span>
+                                {% elif disease.disease_type == 'pest' %}
+                                    <span class="badge info-badge bg-warning text-dark"><i class="fas fa-bug"></i> Pest Damage</span>
+                                {% elif disease.disease_type == 'healthy' %}
+                                    <span class="badge info-badge bg-success"><i class="fas fa-heart"></i> Healthy</span>
+                                {% else %}
+                                    <span class="badge info-badge bg-secondary">{{ disease.disease_type }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Detection Info -->
+                            <div class="row text-muted small">
+                                <div class="col-6">
+                                    <i class="fas fa-calendar"></i> {{ disease.detected_date|date:"M d, Y H:i" }}
+                                </div>
+                                <div class="col-6">
+                                    <i class="fas fa-robot"></i> {{ disease.ai_model_used }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Treatment Recommendation -->
+                    {% if disease.treatment_recommendation and disease.disease_type != 'healthy' %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="treatment-box">
+                                <h5 class="text-success mb-3">
+                                    <i class="fas fa-medkit"></i> Treatment Recommendation
+                                </h5>
+                                <p class="mb-0">{{ disease.treatment_recommendation|linebreaks }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if disease.disease_type == 'healthy' %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-success">
+                                <h5 class="alert-heading"><i class="fas fa-thumbs-up"></i> Great News!</h5>
+                                <p class="mb-0">Your crop appears to be healthy. Continue with regular care and monitoring to maintain its health.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="card-footer bg-light text-center py-4">
+                    <a href="{% url 'disease_detection' %}" class="btn btn-success action-btn me-2">
+                        <i class="fas fa-plus-circle"></i> Analyze Another Image
+                    </a>
+                    {% if crop %}
+                    <a href="{% url 'disease_history' crop.id %}" class="btn btn-info action-btn me-2">
+                        <i class="fas fa-history"></i> View History
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary action-btn">
+                        <i class="fas fa-home"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Info Card -->
+    <div class="row mt-4 justify-content-center">
+        <div class="col-lg-10">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle text-info"></i> About This Detection</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-brain text-primary"></i> AI Model</h6>
+                            <p class="text-muted small">Our deep learning model is trained on thousands of plant disease images to provide accurate diagnoses.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-percentage text-success"></i> Confidence Level</h6>
+                            <p class="text-muted small">Higher confidence means the model is more certain about the diagnosis. Consider consulting an expert for low confidence results.</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-user-md text-warning"></i> Professional Advice</h6>
+                            <p class="text-muted small">For severe cases or uncertain diagnoses, we recommend consulting a local agricultural extension officer.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -52,7 +52,7 @@
                             <td>{{ order.crop.crop_name }}</td>
                             <td>{{ order.buyer.username }}</td>
                             <td>{{ order.quantity }} {{ order.crop.unit }}</td>
-                            <td><strong>₹{{ order.total_price }}</strong></td>
+                            <td><strong>Tk {{ order.total_price }}</strong></td>
                             <td>
                                 {% if order.status == 'pending' %}
                                     <span class="badge bg-warning">Pending</span>
