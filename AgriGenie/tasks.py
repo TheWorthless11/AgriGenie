@@ -169,7 +169,7 @@ def send_price_alerts():
                     user=crop.farmer,
                     notification_type='price',
                     title=f'Price Change Alert: {crop.crop_name}',
-                    message=f'Predicted price will change by {change_percent:.1f}%. Current: ₹{previous_price}, Predicted: ₹{predicted_price:.2f}'
+                    message=f'Predicted price will change by {change_percent:.1f}%. Current: ৳{previous_price}, Predicted: ৳{predicted_price:.2f}'
                 )
                 logger.info(f"Price alert sent for {crop.crop_name}")
         

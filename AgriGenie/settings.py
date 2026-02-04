@@ -26,23 +26,26 @@ SECRET_KEY = 'django-insecure-c_d(!7w@5y3p#d=x29gs=nlf4sinvydu4axb(*!@9g2im#$(nw
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # MUST be first for ASGI support
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',  # Django Channels for WebSocket support
     'users',
     'farmer',
     'buyer',
     'admin_panel',
     'marketplace',
+    'chat',  # Real-time chat application
     'rest_framework',
     'django_celery_beat',
     'django_celery_results',
@@ -52,7 +55,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = 'users.CustomUser'
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
+    #'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -81,6 +84,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'AgriGenie.wsgi.application'
 
+# ASGI application for WebSocket support (use with: daphne AgriGenie.asgi:application)
+ASGI_APPLICATION = 'AgriGenie.asgi.application'
+
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -93,6 +99,14 @@ DATABASES = {
         'PASSWORD': 'agrigenie_pass',
         'HOST': 'localhost',
         'PORT': '3306',
+        # Keep connections alive a short while and enable health checks to avoid
+        # using stale closed connections from the DB (helps with 'Lost connection').
+        'CONN_MAX_AGE': 60,
+        'CONN_HEALTH_CHECKS': True,
+        'OPTIONS': {
+            # client-side connect timeout in seconds
+            'connect_timeout': 10,
+        },
     }
 }
 
@@ -207,3 +221,13 @@ CORS_ALLOWED_ORIGINS = [
 
 # Weather API Configuration
 WEATHER_API_KEY = os.environ.get('WEATHER_API_KEY', 'demo_key')
+
+# Django Channels Configuration (for WebSocket real-time chat)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}

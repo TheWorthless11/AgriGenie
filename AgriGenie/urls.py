@@ -26,8 +26,8 @@ urlpatterns = [
     
     # User Profile
     path('profile/', user_views.profile_view, name='profile'),
-    path('profile/<str:username>/', user_views.profile_view, name='profile_detail'),
     path('profile/edit/', user_views.profile_edit, name='profile_edit'),
+    path('profile/<str:username>/', user_views.profile_view, name='profile_detail'),
     path('notifications/', user_views.notifications_view, name='notifications'),
     path('notification/<int:notification_id>/read/', user_views.mark_notification_read, name='mark_notification_read'),
     
@@ -38,6 +38,7 @@ urlpatterns = [
     path('farmer/edit-crop/<int:crop_id>/', farmer_views.edit_crop, name='edit_crop'),
     path('farmer/delete-crop/<int:crop_id>/', farmer_views.delete_crop, name='delete_crop'),
     path('farmer/disease-detection/', farmer_views.disease_detection, name='disease_detection'),
+    path('farmer/disease-result/<int:disease_id>/', farmer_views.disease_result, name='disease_result'),
     path('farmer/disease-history/<int:crop_id>/', farmer_views.disease_history, name='disease_history'),
     path('farmer/price-prediction/', farmer_views.price_prediction, name='price_prediction'),
     path('farmer/weather-alerts/', farmer_views.weather_alerts, name='weather_alerts'),
@@ -90,6 +91,9 @@ urlpatterns = [
     path('admin-panel/master-crops/<int:crop_id>/edit/', admin_views.edit_master_crop, name='edit_master_crop'),
     path('admin-panel/master-crops/<int:crop_id>/delete/', admin_views.delete_master_crop, name='delete_master_crop'),
     path('admin-panel/master-crops/<int:crop_id>/toggle/', admin_views.toggle_master_crop_status, name='toggle_master_crop_status'),
+    
+    # Chat URLs (Real-time messaging between farmers and buyers)
+    path('chat/', include('chat.urls')),
 ]
 
 if settings.DEBUG:

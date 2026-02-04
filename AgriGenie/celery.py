@@ -196,7 +196,7 @@ def send_price_alerts():
                         user=crop.farmer,
                         notification_type='price',
                         title=f'Price Alert: {crop.crop_name}',
-                        message=f'Price has {direction} by {abs(change_percent):.1f}% to ₹{price_record.predicted_price:.2f}'
+                        message=f'Price has {direction} by {abs(change_percent):.1f}% to ৳{price_record.predicted_price:.2f}'
                     )
         except Exception as e:
             print(f"Error sending price alert: {str(e)}")
@@ -239,7 +239,7 @@ def send_new_listing_alerts():
                         user=buyer,
                         notification_type='order',
                         title=f'New Listing: {crop.crop_name}',
-                        message=f'New {crop.crop_type} listing available at ₹{crop.price_per_unit} per {crop.unit}'
+                        message=f'New {crop.crop_type} listing available at ৳{crop.price_per_unit} per {crop.unit}'
                     )
                     alert_count += 1
         except Exception as e:
