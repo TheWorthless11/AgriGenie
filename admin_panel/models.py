@@ -30,6 +30,7 @@ class MasterCrop(models.Model):
     description = models.TextField(blank=True, null=True, help_text="General description of this crop")
     generic_image = models.ImageField(upload_to='master_crops/', blank=True, null=True, help_text="Generic crop image")
     is_active = models.BooleanField(default=True, help_text="Is this crop available for farmers to list?")
+    allow_detection = models.BooleanField(default=True, help_text="Allow farmers to run AI disease detection on this crop type")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='created_master_crops')
