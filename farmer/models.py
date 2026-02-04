@@ -89,9 +89,14 @@ class CropDisease(models.Model):
         ('bacterial', 'Bacterial Disease'),
         ('viral', 'Viral Disease'),
         ('pest', 'Pest Damage'),
+        ('healthy', 'Healthy'),
     )
-    
-    crop = models.ForeignKey(Crop, on_delete=models.CASCADE, related_name='diseases')
+
+    # Either `crop` (a farmer's listing) OR `master_crop` (admin template) should be provided.
+    crop = models.ForeignKey(Crop, on_delete=models.SET_NULL, related_name='diseases', null=True, blank=True)
+    master_crop = models.ForeignKey('admin_panel.MasterCrop', on_delete=models.SET_NULL, related_name='master_diseases', null=True, blank=True)
+    farmer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='disease_detections', null=True, blank=True)
+
     disease_name = models.CharField(max_length=100)
     disease_type = models.CharField(max_length=20, choices=DISEASE_TYPES)
     confidence_score = models.FloatField(
@@ -101,9 +106,10 @@ class CropDisease(models.Model):
     treatment_recommendation = models.TextField()
     detected_date = models.DateTimeField(auto_now_add=True)
     ai_model_used = models.CharField(max_length=100, default='ResNet50')
-    
+
     def __str__(self):
-        return f"{self.disease_name} on {self.crop.crop_name}"
+        crop_name = self.crop.crop_name if self.crop else (self.master_crop.crop_name if self.master_crop else 'Unknown')
+        return f"{self.disease_name} on {crop_name}"
 
 
 class CropPrice(models.Model):

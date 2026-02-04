@@ -104,10 +104,16 @@ class WeatherAlertForm(forms.ModelForm):
 class CropDiseaseForm(forms.ModelForm):
     class Meta:
         model = CropDisease
-        fields = ('disease_name', 'disease_type', 'disease_image', 'treatment_recommendation')
+        fields = ('disease_name', 'disease_type', 'disease_image', 'treatment_recommendation', 'master_crop')
         widgets = {
             'disease_name': forms.TextInput(attrs={'class': 'form-control'}),
             'disease_type': forms.Select(attrs={'class': 'form-control'}),
             'disease_image': forms.FileInput(attrs={'class': 'form-control'}),
             'treatment_recommendation': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'master_crop': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show master crops that are active and allowed for detection
+        self.fields['master_crop'].queryset = MasterCrop.objects.filter(is_active=True, allow_detection=True)
