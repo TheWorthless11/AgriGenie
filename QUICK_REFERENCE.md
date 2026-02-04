@@ -113,7 +113,7 @@ python manage.py createsuperuser
    - Crop name (e.g., "Tomato")
    - Crop type (e.g., "Vegetable")
    - Quantity & unit (e.g., 100 kg)
-   - Price per unit (e.g., ₹45)
+   - Price per unit (e.g., ৳45)
    - Location
    - Harvest & availability dates
    - Upload crop image
