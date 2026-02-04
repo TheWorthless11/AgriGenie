@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Marketplace - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-success">
+            <i class="fas fa-store"></i> Marketplace
+        </h2>
+        <div>
+            <a href="{% url 'wishlist' %}" class="btn btn-outline-danger me-2">
+                <i class="fas fa-heart"></i> Wishlist
+            </a>
+            <a href="{% url 'buyer_orders' %}" class="btn btn-outline-success">
+                <i class="fas fa-shopping-bag"></i> My Orders
+            </a>
+        </div>
+    </div>
+    
+    <!-- Search and Filters -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" placeholder="Search crops..." 
+                           value="{{ request.GET.q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Category</label>
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        <option value="vegetable" {% if request.GET.category == 'vegetable' %}selected{% endif %}>Vegetables</option>
+                        <option value="fruit" {% if request.GET.category == 'fruit' %}selected{% endif %}>Fruits</option>
+                        <option value="grain" {% if request.GET.category == 'grain' %}selected{% endif %}>Grains</option>
+                        <option value="pulse" {% if request.GET.category == 'pulse' %}selected{% endif %}>Pulses</option>
+                        <option value="spice" {% if request.GET.category == 'spice' %}selected{% endif %}>Spices</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sort By</label>
+                    <select name="sort" class="form-select">
+                        <option value="newest" {% if request.GET.sort == 'newest' %}selected{% endif %}>Newest First</option>
+                        <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                        <option value="price_high" {% if request.GET.sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Crops Grid -->
+    {% if crops %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+            {% for crop in crops %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 crop-card">
+                        <!-- Crop Image -->
+                        <div class="position-relative">
+                            {% if crop.crop_image %}
+                                <img src="{{ crop.crop_image.url }}" class="card-img-top" 
+                                     alt="{{ crop.master_crop.crop_name }}" style="height: 180px; object-fit: cover;">
+                            {% elif crop.master_crop.generic_image %}
+                                <img src="{{ crop.master_crop.generic_image.url }}" class="card-img-top" 
+                                     alt="{{ crop.master_crop.crop_name }}" style="height: 180px; object-fit: cover;">
+                            {% else %}
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                                     style="height: 180px;">
+                                    <i class="fas fa-seedling fa-4x text-success"></i>
+                                </div>
+                            {% endif %}
+                            
+                            <!-- Quality Badge -->
+                            <span class="position-absolute top-0 end-0 m-2 badge 
+                                {% if crop.quality_grade == 'A' %}bg-success
+                                {% elif crop.quality_grade == 'B' %}bg-warning
+                                {% else %}bg-secondary{% endif %}">
+                                Grade {{ crop.quality_grade }}
+                            </span>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h6 class="card-title text-success mb-1" style="font-size: 0.95rem;">
+                                {{ crop.master_crop.crop_name }}
+                            </h6>
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-user"></i> {{ crop.farmer.username }}
+                                <span class="ms-2"><i class="fas fa-map-marker-alt"></i> {{ crop.location|truncatechars:15 }}</span>
+                            </p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-success mb-0" style="font-size: 0.95rem; font-weight: 600;">
+                                    ৳{{ crop.price_per_unit }}<small class="text-muted">/{{ crop.unit }}</small>
+                                </span>
+                                <span class="badge bg-light text-dark">
+                                    {{ crop.quantity }} {{ crop.unit }}
+                                </span>
+                            </div>
+                            
+                            <p class="small text-muted mb-0">
+                                <i class="fas fa-calendar"></i> Available: {{ crop.availability_date|date:"M d, Y" }}
+                            </p>
+                        </div>
+                        
+                        <div class="card-footer bg-white border-0 pt-0">
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'crop_detail' crop_id=crop.id %}" class="btn btn-success btn-sm flex-grow-1">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{% url 'start_chat' user_id=crop.farmer.id %}?crop={{ crop.id }}" 
+                                   class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-comment"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if crops.has_other_pages %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if crops.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ crops.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in crops.paginator.page_range %}
+                        {% if crops.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > crops.number|add:'-3' and num < crops.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if crops.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ crops.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                Next
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+        
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No crops found</h4>
+                <p class="text-muted">Try adjusting your search filters or check back later for new listings.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .crop-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .crop-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+{% endblock %}

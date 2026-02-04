@@ -21,7 +21,7 @@
             <p class="text-muted mb-3">{{ crop.crop_type }}</p>
 
             <div class="alert alert-light border mb-4">
-                <h2 class="text-success mb-0">₹{{ crop.price_per_unit }} <small class="text-muted">/{{ crop.unit }}</small></h2>
+                <h2 class="text-success mb-0">Tk {{ crop.price_per_unit }} <small class="text-muted">/{{ crop.unit }}</small></h2>
             </div>
 
             <div class="mb-4">
@@ -119,8 +119,8 @@
                             </div>
 
                             <div class="alert alert-light">
-                                <p class="mb-1">Price per unit: <strong>₹{{ crop.price_per_unit }}</strong></p>
-                                <p class="mb-0">Total: <strong id="totalPrice">₹0</strong></p>
+                                <p class="mb-1">Price per unit: <strong>Tk {{ crop.price_per_unit }}</strong></p>
+                                <p class="mb-0">Total: <strong id="totalPrice">Tk 0</strong></p>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -141,7 +141,7 @@
     if (quantityInput) {
         quantityInput.addEventListener('input', function() {
             const totalPrice = (this.value * pricePerUnit).toFixed(2);
-            document.getElementById('totalPrice').innerText = '₹' + totalPrice;
+            document.getElementById('totalPrice').innerText = 'Tk ' + totalPrice;
         });
     }
 </script>

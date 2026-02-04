@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Orders - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-success">
+            <i class="fas fa-shopping-bag"></i> My Orders
+        </h2>
+        <a href="{% url 'buyer_marketplace' %}" class="btn btn-success">
+            <i class="fas fa-store"></i> Browse Marketplace
+        </a>
+    </div>
+    
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Filter by Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Orders</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Orders List -->
+    {% if orders %}
+        <div class="row">
+            {% for order in orders %}
+                <div class="col-12 mb-3">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <!-- Crop Image -->
+                                <div class="col-md-2">
+                                    {% if order.crop.crop_image %}
+                                        <img src="{{ order.crop.crop_image.url }}" class="img-fluid rounded" 
+                                             alt="{{ order.crop.master_crop.crop_name }}" style="max-height: 100px; object-fit: cover;">
+                                    {% elif order.crop.master_crop.generic_image %}
+                                        <img src="{{ order.crop.master_crop.generic_image.url }}" class="img-fluid rounded" 
+                                             alt="{{ order.crop.master_crop.crop_name }}" style="max-height: 100px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                             style="height: 100px; width: 100px;">
+                                            <i class="fas fa-seedling fa-2x text-success"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Order Details -->
+                                <div class="col-md-4">
+                                    <h5 class="mb-1">{{ order.crop.master_crop.crop_name }}</h5>
+                                    <p class="text-muted mb-1">
+                                        <i class="fas fa-user"></i> Seller: {{ order.farmer.username }}
+                                    </p>
+                                    <p class="text-muted mb-0 small">
+                                        <i class="fas fa-hashtag"></i> Order #{{ order.id }}
+                                    </p>
+                                </div>
+                                
+                                <!-- Quantity & Price -->
+                                <div class="col-md-2">
+                                    <p class="mb-1"><strong>Qty:</strong> {{ order.quantity }} {{ order.crop.unit }}</p>
+                                    <p class="mb-0 h5 text-success">৳{{ order.total_price|floatformat:2 }}</p>
+                                </div>
+                                
+                                <!-- Dates -->
+                                <div class="col-md-2">
+                                    <p class="mb-1 small">
+                                        <i class="fas fa-calendar"></i> {{ order.order_date|date:"M d, Y" }}
+                                    </p>
+                                    {% if order.delivery_date %}
+                                        <p class="mb-0 small text-muted">
+                                            <i class="fas fa-truck"></i> Delivery: {{ order.delivery_date|date:"M d, Y" }}
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Status & Actions -->
+                                <div class="col-md-2 text-end">
+                                    <span class="badge mb-2 
+                                        {% if order.status == 'pending' %}bg-warning text-dark
+                                        {% elif order.status == 'accepted' %}bg-info
+                                        {% elif order.status == 'shipped' %}bg-primary
+                                        {% elif order.status == 'delivered' %}bg-success
+                                        {% elif order.status == 'rejected' %}bg-danger
+                                        {% elif order.status == 'cancelled' %}bg-secondary
+                                        {% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                    
+                                    <div class="d-flex flex-column gap-1">
+                                        <a href="{% url 'order_detail' order_id=order.id %}" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        
+                                        {% if order.status == 'delivered' and not order.is_confirmed_by_buyer %}
+                                            <form action="{% url 'confirm_receipt' order_id=order.id %}" method="POST" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-success w-100">
+                                                    <i class="fas fa-check"></i> Confirm
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        {% if order.is_confirmed_by_buyer %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check-circle"></i> Confirmed
+                                            </span>
+                                        {% endif %}
+                                        
+                                        {% if order.status == 'pending' %}
+                                            <form action="{% url 'cancel_order' order_id=order.id %}" method="POST" 
+                                                  onsubmit="return confirm('Are you sure you want to cancel this order?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                                    <i class="fas fa-times"></i> Cancel
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        <a href="{% url 'start_chat' user_id=order.farmer.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-comment"></i> Chat
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if order.special_requirements %}
+                                <hr class="my-2">
+                                <p class="mb-0 small text-muted">
+                                    <i class="fas fa-clipboard"></i> <strong>Notes:</strong> {{ order.special_requirements }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col">
+                        <h4 class="text-primary">{{ orders|length }}</h4>
+                        <small class="text-muted">Total Orders</small>
+                    </div>
+                    <div class="col">
+                        <h4 class="text-warning">
+                            {{ orders|filter:"status":"pending"|length|default:0 }}
+                        </h4>
+                        <small class="text-muted">Pending</small>
+                    </div>
+                    <div class="col">
+                        <h4 class="text-success">
+                            {{ orders|filter:"status":"delivered"|length|default:0 }}
+                        </h4>
+                        <small class="text-muted">Delivered</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No orders found</h4>
+                <p class="text-muted">
+                    {% if request.GET.status %}
+                        No orders with status "{{ request.GET.status }}". Try a different filter.
+                    {% else %}
+                        You haven't placed any orders yet. Browse the marketplace to find fresh produce!
+                    {% endif %}
+                </p>
+                <a href="{% url 'buyer_marketplace' %}" class="btn btn-success">
+                    <i class="fas fa-store"></i> Browse Marketplace
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}

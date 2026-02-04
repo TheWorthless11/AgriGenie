@@ -7,9 +7,7 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h1 class="fw-bold">
-                <i class="fas fa-shopping-cart text-success"></i> Buyer Dashboard
-            </h1>
+            <h1 class="fw-bold text-success">Buyer Dashboard</h1>
             <p class="text-muted">Welcome, {{ user.get_full_name|default:user.username }}!</p>
         </div>
         <div class="col-md-4 text-md-end">
@@ -22,53 +20,41 @@
     <!-- Stats Row -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Active Orders</p>
-                            <h3 class="fw-bold text-success">{{ active_orders_count }}</h3>
-                        </div>
-                        <i class="fas fa-shopping-bag fa-2x text-success opacity-50"></i>
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center" style="min-height: 100px;">
+                    <div class="w-100">
+                        <p class="text-muted small mb-1">Active Orders</p>
+                        <p class="fw-bold text-success mb-0" style="font-size: 1.5rem;">{{ active_orders_count }}</p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Wishlist Items</p>
-                            <h3 class="fw-bold text-info">{{ wishlist_count }}</h3>
-                        </div>
-                        <i class="fas fa-heart fa-2x text-info opacity-50"></i>
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center" style="min-height: 100px;">
+                    <div class="w-100">
+                        <p class="text-muted small mb-1">Wishlist Items</p>
+                        <p class="fw-bold text-info mb-0" style="font-size: 1.5rem;">{{ wishlist_count }}</p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Saved Crops</p>
-                            <h3 class="fw-bold text-warning">{{ saved_crops_count }}</h3>
-                        </div>
-                        <i class="fas fa-bookmark fa-2x text-warning opacity-50"></i>
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center" style="min-height: 100px;">
+                    <div class="w-100">
+                        <p class="text-muted small mb-1">Saved Crops</p>
+                        <p class="fw-bold text-warning mb-0" style="font-size: 1.5rem;">{{ saved_crops_count }}</p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Total Spent</p>
-                            <h3 class="fw-bold text-danger">₹{{ total_spent|default:"0" }}</h3>
-                        </div>
-                        <i class="fas fa-rupee-sign fa-2x text-danger opacity-50"></i>
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center" style="min-height: 100px;">
+                    <div class="w-100">
+                        <p class="text-muted small mb-1">Total Spent</p>
+                        <p class="fw-bold text-danger mb-0" style="font-size: 1.5rem;">Tk {{ total_spent|default:"0" }}</p>
                     </div>
                 </div>
             </div>
@@ -84,19 +70,22 @@
                 </div>
                 <div class="list-group list-group-flush">
                     <a href="{% url 'marketplace' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-store text-success"></i> Browse Marketplace
+                        Browse Marketplace
                     </a>
                     <a href="{% url 'buyer_orders' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-shopping-bag text-info"></i> My Orders
+                        My Orders
+                    </a>
+                    <a href="{% url 'chat_list' %}" class="list-group-item list-group-item-action">
+                        Messages
                     </a>
                     <a href="{% url 'wishlist' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-heart text-danger"></i> Wishlist
+                        Wishlist
                     </a>
                     <a href="{% url 'saved_crops' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-bookmark text-warning"></i> Saved Crops
+                        Saved Crops
                     </a>
-                    <a href="{% url 'buyer_history' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-history text-secondary"></i> Purchase History
+                    <a href="{% url 'purchase_history' %}" class="list-group-item list-group-item-action">
+                        Purchase History
                     </a>
                 </div>
             </div>
@@ -156,7 +145,7 @@
                                     <td><strong>#{{ order.id }}</strong></td>
                                     <td>{{ order.crop_listing.crop.name }}</td>
                                     <td>{{ order.quantity }} {{ order.crop_listing.crop.unit }}</td>
-                                    <td>₹{{ order.total_price }}</td>
+                                    <td>Tk {{ order.total_price }}</td>
                                     <td>
                                         {% if order.status == 'pending' %}
                                             <span class="badge bg-warning">Pending</span>
@@ -205,7 +194,7 @@
                                 {% for item in wishlist_items %}
                                 <tr>
                                     <td><strong>{{ item.crop.name }}</strong></td>
-                                    <td>₹{{ item.crop.price_per_unit }}</td>
+                                    <td>Tk {{ item.crop.price_per_unit }}</td>
                                     <td>{{ item.crop.farmer.farm_name }}</td>
                                     <td>
                                         {% if item.crop.is_available %}
