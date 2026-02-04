@@ -1,0 +1,364 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chat with {{ other_user.username }} - AgriGenie{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: calc(100vh - 120px);
+        min-height: 500px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .message {
+        margin-bottom: 15px;
+        max-width: 75%;
+    }
+    
+    .message.sent {
+        margin-left: auto;
+    }
+    
+    .message.received {
+        margin-right: auto;
+    }
+    
+    .message-bubble {
+        padding: 12px 16px;
+        border-radius: 18px;
+        word-wrap: break-word;
+    }
+    
+    .message.sent .message-bubble {
+        background-color: #198754;
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    
+    .message.received .message-bubble {
+        background-color: white;
+        border: 1px solid #dee2e6;
+        border-bottom-left-radius: 4px;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-top: 4px;
+    }
+    
+    .message.sent .message-time {
+        text-align: right;
+    }
+    
+    .chat-input-area {
+        padding: 15px;
+        background-color: white;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .typing-indicator {
+        color: #6c757d;
+        font-style: italic;
+        font-size: 0.875rem;
+        padding: 5px 20px;
+        display: none;
+    }
+    
+    .typing-indicator.show {
+        display: block;
+    }
+    
+    .online-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-left: 5px;
+    }
+    
+    .online-status.online {
+        background-color: #198754;
+    }
+    
+    .online-status.offline {
+        background-color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <div class="card shadow chat-container">
+        <!-- Chat Header -->
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <a href="{% url 'chat_list' %}" class="btn btn-outline-light btn-sm me-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                {% if other_user.profile_picture %}
+                    <img src="{{ other_user.profile_picture.url }}" 
+                         alt="{{ other_user.username }}" 
+                         class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center me-2" 
+                         style="width: 40px; height: 40px;">
+                        <span class="text-success fw-bold">{{ other_user.username|first|upper }}</span>
+                    </div>
+                {% endif %}
+                <div>
+                    <h5 class="mb-0">
+                        {{ other_user.username }}
+                        <span class="online-status offline" id="online-status"></span>
+                    </h5>
+                    <small>{{ other_user.role|title }}</small>
+                </div>
+            </div>
+            {% if crop %}
+                <div class="text-end">
+                    <small><i class="fas fa-seedling"></i> {{ crop.master_crop.crop_name }}</small>
+                    <br>
+                    <small>৳{{ crop.price_per_unit }}/{{ crop.unit }}</small>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chat-messages">
+            {% for msg in chat_messages %}
+                <div class="message {% if msg.sender == request.user %}sent{% else %}received{% endif %}" data-message-id="{{ msg.id }}">
+                    <div class="message-bubble">
+                        {{ msg.content }}
+                    </div>
+                    <div class="message-time">
+                        {{ msg.created_at|date:"M d, H:i" }}
+                        {% if msg.sender == request.user %}
+                            <i class="fas {% if msg.is_read %}fa-check-double text-primary{% else %}fa-check{% endif %}"></i>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="text-center text-muted py-5" id="no-messages">
+                    <i class="fas fa-comments fa-3x mb-3"></i>
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typing-indicator">
+            <i class="fas fa-ellipsis-h"></i> <span id="typing-user"></span> is typing...
+        </div>
+        
+        <!-- Chat Input -->
+        <div class="chat-input-area">
+            <form id="chat-form" class="d-flex">
+                <input type="text" id="message-input" class="form-control me-2" 
+                       placeholder="Type your message..." autocomplete="off" maxlength="1000">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const roomId = {{ room.id }};
+    const currentUserId = {{ request.user.id }};
+    const currentUsername = "{{ request.user.username }}";
+    const otherUsername = "{{ other_user.username }}";
+    
+    let chatSocket = null;
+    let typingTimeout = null;
+    let isTyping = false;
+    
+    // Connect to WebSocket
+    function connectWebSocket() {
+        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const wsUrl = `${wsScheme}://${window.location.host}/ws/chat/${roomId}/`;
+        
+        chatSocket = new WebSocket(wsUrl);
+        
+        chatSocket.onopen = function(e) {
+            console.log('WebSocket connected');
+            // Mark messages as read when entering chat
+            chatSocket.send(JSON.stringify({
+                'type': 'mark_read'
+            }));
+        };
+        
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            switch(data.type) {
+                case 'chat_message':
+                    displayMessage(data);
+                    // Mark as read if from other user
+                    if (data.sender_id !== currentUserId) {
+                        chatSocket.send(JSON.stringify({
+                            'type': 'mark_read'
+                        }));
+                    }
+                    break;
+                    
+                case 'user_join':
+                    if (data.user_id !== currentUserId) {
+                        document.getElementById('online-status').className = 'online-status online';
+                    }
+                    break;
+                    
+                case 'user_leave':
+                    if (data.user_id !== currentUserId) {
+                        document.getElementById('online-status').className = 'online-status offline';
+                    }
+                    break;
+                    
+                case 'typing':
+                    showTypingIndicator(data.is_typing, data.username);
+                    break;
+                    
+                case 'messages_read':
+                    if (data.reader_id !== currentUserId) {
+                        // Update sent message checkmarks to double-check
+                        document.querySelectorAll('.message.sent .fa-check').forEach(icon => {
+                            icon.className = 'fas fa-check-double text-primary';
+                            icon.title = 'Read';
+                        });
+                    }
+                    break;
+            }
+        };
+        
+        chatSocket.onclose = function(e) {
+            console.log('WebSocket disconnected. Reconnecting...');
+            setTimeout(connectWebSocket, 3000);
+        };
+        
+        chatSocket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+        };
+    }
+    
+    // Display new message
+    function displayMessage(data) {
+        const messagesDiv = document.getElementById('chat-messages');
+        const noMessagesDiv = document.getElementById('no-messages');
+        
+        if (noMessagesDiv) {
+            noMessagesDiv.remove();
+        }
+        
+        const isSent = data.sender_id === currentUserId;
+        const messageHtml = `
+            <div class="message ${isSent ? 'sent' : 'received'}" data-message-id="${data.message_id}">
+                <div class="message-bubble">${escapeHtml(data.message)}</div>
+                <div class="message-time">
+                    ${formatTime(data.timestamp)}
+                    ${isSent ? '<i class="fas fa-check" title="Sent"></i>' : ''}
+                </div>
+            </div>
+        `;
+        
+        messagesDiv.insertAdjacentHTML('beforeend', messageHtml);
+        scrollToBottom();
+    }
+    
+    // Show typing indicator
+    function showTypingIndicator(isTyping, username) {
+        const indicator = document.getElementById('typing-indicator');
+        const userSpan = document.getElementById('typing-user');
+        
+        if (isTyping) {
+            userSpan.textContent = username;
+            indicator.classList.add('show');
+        } else {
+            indicator.classList.remove('show');
+        }
+    }
+    
+    // Send typing status
+    function sendTypingStatus(typing) {
+        if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({
+                'type': 'typing',
+                'is_typing': typing
+            }));
+        }
+    }
+    
+    // Format timestamp
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + 
+               ', ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // Scroll to bottom of chat
+    function scrollToBottom() {
+        const messagesDiv = document.getElementById('chat-messages');
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        connectWebSocket();
+        scrollToBottom();
+        
+        // Form submission
+        document.getElementById('chat-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (message && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({
+                    'type': 'chat_message',
+                    'message': message
+                }));
+                input.value = '';
+                
+                // Clear typing status
+                sendTypingStatus(false);
+                isTyping = false;
+            }
+        });
+        
+        // Typing indicator
+        document.getElementById('message-input').addEventListener('input', function() {
+            if (!isTyping) {
+                isTyping = true;
+                sendTypingStatus(true);
+            }
+            
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(function() {
+                isTyping = false;
+                sendTypingStatus(false);
+            }, 2000);
+        });
+    });
+</script>
+{% endblock %}

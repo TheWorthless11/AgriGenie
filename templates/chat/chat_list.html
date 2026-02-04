@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Chats - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-success">
+                    <i class="fas fa-comments"></i> My Conversations
+                    {% if total_unread > 0 %}
+                        <span class="badge bg-danger">{{ total_unread }}</span>
+                    {% endif %}
+                </h2>
+            </div>
+            
+            {% if chat_rooms %}
+                <div class="list-group shadow">
+                    {% for item in chat_rooms %}
+                        <a href="{% url 'chat_room' room_id=item.room.id %}" 
+                           class="list-group-item list-group-item-action {% if item.unread_count > 0 %}list-group-item-light{% endif %}">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <!-- User Avatar -->
+                                    <div class="me-3">
+                                        {% if item.other_user.profile_picture %}
+                                            <img src="{{ item.other_user.profile_picture.url }}" 
+                                                 alt="{{ item.other_user.username }}" 
+                                                 class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-success d-flex align-items-center justify-content-center" 
+                                                 style="width: 50px; height: 50px;">
+                                                <span class="text-white fw-bold">
+                                                    {{ item.other_user.username|first|upper }}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Chat Info -->
+                                    <div>
+                                        <h5 class="mb-1 {% if item.unread_count > 0 %}fw-bold{% endif %}">
+                                            {{ item.other_user.username }}
+                                            <small class="text-muted">
+                                                ({{ item.other_user.role|title }})
+                                            </small>
+                                        </h5>
+                                        {% if item.room.crop %}
+                                            <small class="text-success">
+                                                <i class="fas fa-seedling"></i> {{ item.room.crop.master_crop.crop_name }}
+                                            </small>
+                                        {% endif %}
+                                        {% if item.last_message %}
+                                            <p class="mb-0 text-muted small {% if item.unread_count > 0 %}fw-bold text-dark{% endif %}">
+                                                {% if item.last_message.sender == request.user %}
+                                                    You: 
+                                                {% endif %}
+                                                {{ item.last_message.content|truncatechars:50 }}
+                                            </p>
+                                        {% else %}
+                                            <p class="mb-0 text-muted small fst-italic">No messages yet</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    {% if item.last_message %}
+                                        <small class="text-muted">
+                                            {{ item.last_message.created_at|timesince }} ago
+                                        </small>
+                                    {% endif %}
+                                    {% if item.unread_count > 0 %}
+                                        <span class="badge bg-success rounded-pill ms-2">
+                                            {{ item.unread_count }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card shadow">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-comments fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No conversations yet</h4>
+                        <p class="text-muted">
+                            {% if request.user.role == 'buyer' %}
+                                Browse crops and start chatting with farmers!
+                            {% else %}
+                                Wait for buyers to contact you about your crops.
+                            {% endif %}
+                        </p>
+                        {% if request.user.role == 'buyer' %}
+                            <a href="{% url 'marketplace' %}" class="btn btn-success">
+                                <i class="fas fa-shopping-basket"></i> Browse Marketplace
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
