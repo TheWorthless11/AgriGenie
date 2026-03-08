@@ -17,12 +17,25 @@ from admin_panel import views as admin_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     
+    # Google OAuth (django-allauth)
+    path('accounts/', include('allauth.urls')),
+    
     # Home and Authentication
     path('', user_views.home, name='home'),
     path('register/', user_views.register, name='register'),
     path('login/', user_views.login_view, name='login'),
     path('logout/', user_views.logout_view, name='logout'),
     path('dashboard/', user_views.dashboard, name='dashboard'),
+    path('google-role-select/', user_views.google_role_select, name='google_role_select'),
+    
+    # Forgot Credential System
+    path('forgot/', user_views.forgot_credential, name='forgot_credential'),
+    path('send-otp/', user_views.send_otp, name='send_otp'),
+    path('verify-otp/', user_views.verify_otp, name='verify_otp'),
+    path('reset-credential/', user_views.reset_farmer_credential, name='reset_farmer_credential'),
+    path('forgot-password/', user_views.forgot_password_email, name='forgot_password_email'),
+    path('reset-password/<str:token>/', user_views.reset_password_token, name='reset_password_token'),
+    path('reset-password/', user_views.reset_password_submit, name='reset_password_submit'),
     
     # User Profile
     path('profile/', user_views.profile_view, name='profile'),
@@ -40,7 +53,9 @@ urlpatterns = [
     path('farmer/disease-detection/', farmer_views.disease_detection, name='disease_detection'),
     path('farmer/disease-result/<int:disease_id>/', farmer_views.disease_result, name='disease_result'),
     path('farmer/disease-history/<int:crop_id>/', farmer_views.disease_history, name='disease_history'),
-    path('farmer/price-prediction/', farmer_views.price_prediction, name='price_prediction'),
+    path('farmer/crop-price-prediction/', farmer_views.crop_price_prediction, name='crop_price_prediction'),
+    path('farmer/api/price-predict/', farmer_views.price_predict_api, name='price_predict_api'),
+    path('farmer/api/price-history/', farmer_views.price_history_api, name='price_history_api'),
     path('farmer/weather-alerts/', farmer_views.weather_alerts, name='weather_alerts'),
     path('farmer/messages/', farmer_views.messages_view, name='messages'),
     path('farmer/send-message/<int:recipient_id>/', farmer_views.send_message, name='send_message'),

@@ -23,17 +23,13 @@ app.conf.beat_schedule = {
         'task': 'AgriGenie.tasks.monitor_weather_for_farmers',
         'schedule': crontab(minute=0),  # Every hour
     },
-    'update-price-predictions-daily': {
-        'task': 'AgriGenie.tasks.update_price_predictions',
-        'schedule': crontab(hour=0, minute=0),  # Every day at midnight
-    },
-    'send-price-alerts-daily': {
-        'task': 'AgriGenie.tasks.send_price_alerts',
-        'schedule': crontab(hour=6, minute=0),  # Every day at 6 AM
-    },
     'cleanup-old-notifications-weekly': {
         'task': 'AgriGenie.tasks.cleanup_old_notifications',
         'schedule': crontab(day_of_week=0, hour=2, minute=0),  # Every Sunday at 2 AM
+    },
+    'auto-retrain-price-model-monthly': {
+        'task': 'AgriGenie.tasks.auto_retrain_price_model',
+        'schedule': crontab(day_of_month=1, hour=3, minute=0),  # 1st of each month at 3 AM
     },
 }
 
@@ -124,85 +120,6 @@ def check_weather_alerts():
             continue
     
     return 'Weather alerts checked'
-
-
-@shared_task
-def generate_price_predictions():
-    """
-    Generate price predictions for all available crops
-    Runs daily
-    """
-    from farmer.models import Crop, CropPrice
-    from ai_models.price_prediction import predict_crop_prices
-    
-    crops = Crop.objects.filter(is_available=True)
-    
-    for crop in crops:
-        try:
-            current_price = crop.price_per_unit
-            
-            # Generate predictions
-            result = predict_crop_prices(current_price, days_ahead=30)
-            
-            # Store first prediction
-            if result['predictions']:
-                first_pred = result['predictions'][0]
-                CropPrice.objects.create(
-                    crop=crop,
-                    predicted_price=first_pred['price'],
-                    prediction_date=timezone.now().date(),
-                    confidence_level=75.0,
-                    forecast_days=30
-                )
-        except Exception as e:
-            print(f"Error generating price predictions for crop {crop.id}: {str(e)}")
-            continue
-    
-    return f'Price predictions generated for {crops.count()} crops'
-
-
-@shared_task
-def send_price_alerts():
-    """
-    Send price change alerts to farmers
-    Runs every 12 hours
-    """
-    from farmer.models import Crop, CropPrice
-    from users.models import Notification
-    from django.db.models import F, Q
-    
-    # Check crops with significant price changes
-    yesterday = timezone.now() - timedelta(days=1)
-    
-    price_changes = CropPrice.objects.filter(
-        prediction_date__gte=yesterday.date()
-    ).select_related('crop__farmer')
-    
-    for price_record in price_changes:
-        try:
-            crop = price_record.crop
-            
-            # Calculate percentage change
-            if crop.price_per_unit > 0:
-                change_percent = (
-                    (price_record.predicted_price - crop.price_per_unit) / 
-                    crop.price_per_unit * 100
-                )
-                
-                if abs(change_percent) > 5:  # Alert if change > 5%
-                    direction = "increased" if change_percent > 0 else "decreased"
-                    
-                    Notification.objects.create(
-                        user=crop.farmer,
-                        notification_type='price',
-                        title=f'Price Alert: {crop.crop_name}',
-                        message=f'Price has {direction} by {abs(change_percent):.1f}% to ৳{price_record.predicted_price:.2f}'
-                    )
-        except Exception as e:
-            print(f"Error sending price alert: {str(e)}")
-            continue
-    
-    return f'Price alerts sent for {price_changes.count()} crops'
 
 
 @shared_task

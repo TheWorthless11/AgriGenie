@@ -1,11 +1,11 @@
 """
 Celery tasks for AgriGenie
-Handles background jobs like weather monitoring and price predictions
+Handles background jobs like weather monitoring
 """
 
 from celery import shared_task
 from django.contrib.auth import get_user_model
-from farmer.models import WeatherAlert, Crop, CropPrice
+from farmer.models import WeatherAlert, Crop
 from users.models import Notification
 from ai_models import WeatherService, get_coordinates_from_location
 from datetime import datetime, timedelta
@@ -113,73 +113,6 @@ def monitor_weather_for_farmers(self):
         raise self.retry(exc=exc, countdown=60)
 
 
-@shared_task(bind=True)
-def update_price_predictions(self):
-    """
-    Background task to update price predictions for all crops
-    Runs daily
-    """
-    try:
-        crops = Crop.objects.filter(is_available=True)
-        
-        for crop in crops:
-            try:
-                # Only keep last 30 days of predictions
-                old_predictions = CropPrice.objects.filter(
-                    crop=crop,
-                    prediction_date__lt=datetime.now().date() - timedelta(days=30)
-                )
-                old_predictions.delete()
-                
-            except Exception as e:
-                logger.error(f"Error updating predictions for crop {crop.id}: {e}")
-                continue
-        
-        logger.info(f"Updated price predictions for {crops.count()} crops")
-        return f"Price predictions updated for {crops.count()} crops"
-    
-    except Exception as exc:
-        logger.error(f"Error in price prediction update task: {exc}")
-        return f"Error: {str(exc)}"
-
-
-@shared_task
-def send_price_alerts():
-    """
-    Background task to send price change notifications
-    Alerts farmers when crop prices change significantly
-    """
-    try:
-        # Get crops with price predictions
-        crop_prices = CropPrice.objects.filter(
-            prediction_date=datetime.now().date()
-        ).select_related('crop', 'crop__farmer')
-        
-        for price_record in crop_prices:
-            crop = price_record.crop
-            
-            # Check if price changed significantly (>10%)
-            previous_price = crop.price_per_unit
-            predicted_price = price_record.predicted_price
-            
-            change_percent = abs((predicted_price - previous_price) / previous_price * 100)
-            
-            if change_percent > 10:
-                Notification.objects.create(
-                    user=crop.farmer,
-                    notification_type='price',
-                    title=f'Price Change Alert: {crop.crop_name}',
-                    message=f'Predicted price will change by {change_percent:.1f}%. Current: ৳{previous_price}, Predicted: ৳{predicted_price:.2f}'
-                )
-                logger.info(f"Price alert sent for {crop.crop_name}")
-        
-        return f"Price alerts sent"
-    
-    except Exception as exc:
-        logger.error(f"Error in price alert task: {exc}")
-        return f"Error: {str(exc)}"
-
-
 @shared_task
 def cleanup_old_notifications():
     """
@@ -201,3 +134,40 @@ def cleanup_old_notifications():
     except Exception as exc:
         logger.error(f"Error in cleanup task: {exc}")
         return f"Error: {str(exc)}"
+
+
+@shared_task(bind=True, max_retries=1, time_limit=3600)
+def auto_retrain_price_model(self, force=False, ga_pop=8, ga_gen=5):
+    """
+    Celery task: detect new data, sync DB, retrain model.
+    Runs via Celery Beat (1st of each month) or on demand.
+    """
+    import os
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+    try:
+        from ai_models.price_prediction.pipeline import run_pipeline
+
+        result = run_pipeline(
+            ga_pop=ga_pop,
+            ga_gen=ga_gen,
+            force=force,
+            verbose=False,
+        )
+
+        if result["status"] == "skipped":
+            logger.info("Auto-retrain: no new data — skipped.")
+            return "No new data — skipped."
+
+        m = result["metrics"]
+        msg = (
+            f"Auto-retrain complete — model v{result['model_version']}. "
+            f"Inserted {result['rows_inserted']} rows. "
+            f"RMSE={m['rmse']:.5f} MAE={m['mae']:.5f} MAPE={m['mape_pct']:.2f}%"
+        )
+        logger.info(msg)
+        return msg
+
+    except Exception as exc:
+        logger.exception("Auto-retrain failed")
+        raise self.retry(exc=exc, countdown=300)

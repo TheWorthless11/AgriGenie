@@ -13,6 +13,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -39,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # Required by allauth
     'channels',  # Django Channels for WebSocket support
     'users',
     'farmer',
@@ -50,9 +55,21 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'django_celery_results',
     'corsheaders',
+    # Google OAuth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
 
+SITE_ID = 1
+
 AUTH_USER_MODEL = 'users.CustomUser'
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
 
 MIDDLEWARE = [
     #'django.middleware.security.SecurityMiddleware',
@@ -63,6 +80,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Required by allauth
 ]
 
 ROOT_URLCONF = 'AgriGenie.urls'
@@ -161,8 +179,37 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 
-# Email Configuration (for notifications)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Google OAuth / django-allauth configuration
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+            'key': ''
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
+# allauth settings
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Skip email verification for Google users
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_ADAPTER = 'users.adapters.CustomSocialAccountAdapter'
+ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Email Configuration (Gmail SMTP)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')  # Your Gmail address
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')  # Gmail App Password
+DEFAULT_FROM_EMAIL = os.environ.get('EMAIL_HOST_USER', 'noreply@agrigenie.com')
+
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
@@ -178,14 +225,6 @@ CELERY_BEAT_SCHEDULE = {
     'check-weather-alerts': {
         'task': 'AgriGenie.celery.check_weather_alerts',
         'schedule': 3600 * 6,  # Every 6 hours
-    },
-    'generate-price-predictions': {
-        'task': 'AgriGenie.celery.generate_price_predictions',
-        'schedule': 3600 * 24,  # Every 24 hours
-    },
-    'send-price-alerts': {
-        'task': 'AgriGenie.celery.send_price_alerts',
-        'schedule': 3600 * 12,  # Every 12 hours
     },
     'send-new-listing-alerts': {
         'task': 'AgriGenie.celery.send_new_listing_alerts',
