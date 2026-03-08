@@ -1,81 +1,545 @@
-{% extends 'base.html' %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AgriGenie</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#28a745',
+                        'primary-dark': '#1e7e34',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Focus ring */
+        .input-focus:focus {
+            border-color: #28a745 !important;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+        
+        /* Hidden class */
+        .field-hidden { display: none !important; }
+        
+        /* PIN input */
+        .pin-input {
+            letter-spacing: 0.75rem;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-white min-h-screen">
+    <!-- Sticky Navbar -->
+    <nav class="sticky top-0 z-50 bg-primary shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-14">
+                <a href="{% url 'home' %}" class="flex items-center space-x-2 text-white font-bold text-xl">
+                    <i data-lucide="leaf" class="w-6 h-6"></i>
+                    <span>AgriGenie</span>
+                </a>
+                <a href="{% url 'register' %}" class="text-white/90 hover:text-white text-sm font-medium flex items-center gap-1">
+                    <span>Create an account</span>
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
 
-{% block title %}Login - AgriGenie{% endblock %}
+    <!-- Main Content -->
+    <main class="py-8 px-4 flex items-center justify-center min-h-[calc(100vh-56px)]">
+        <div class="w-full max-w-md">
+            <!-- Login Card -->
+            <div class="bg-white rounded-3xl shadow-2xl shadow-slate-200/50 overflow-hidden">
+                
+                <!-- Card Header -->
+                <div class="bg-primary px-6 py-8 text-center">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="log-in" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white">Welcome Back</h1>
+                    <p class="text-white/80 text-sm mt-1">Login to your AgriGenie account</p>
+                </div>
 
-{% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-5">
-            <div class="card shadow-lg">
-                <div class="card-body p-5">
-                    <h2 class="card-title text-center mb-4 text-success">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </h2>
-                    
-                    <form method="post" novalidate>
+                <!-- Form Body -->
+                <div class="p-6">
+                    {% if messages %}
+                    <div class="mb-4">
+                        {% for message in messages %}
+                        <div class="{% if message.tags == 'error' %}bg-red-50 border border-red-200 text-red-700{% else %}bg-green-50 border border-green-200 text-green-700{% endif %} px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                            <i data-lucide="{% if message.tags == 'error' %}alert-circle{% else %}check-circle{% endif %}" class="w-4 h-4"></i>
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" id="loginForm" novalidate>
                         {% csrf_token %}
                         
-                        <!-- Username/Email Field -->
-                        <div class="mb-3">
-                            <label for="id_username" class="form-label">Username or Email</label>
-                            <input type="text" class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
-                                   id="id_username" name="username" value="{{ form.username.value|default:'' }}" required autofocus>
-                            {% if form.username.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.username.errors.0 }}
+                        <!-- Role Tab Switcher -->
+                        <div class="bg-slate-100 p-1 rounded-xl flex mb-6">
+                            <label class="flex-1 relative cursor-pointer">
+                                <input type="radio" name="role" value="farmer" class="sr-only peer" {% if selected_role != 'buyer' %}checked{% endif %}>
+                                <div class="py-2.5 px-4 text-center rounded-lg text-sm font-semibold transition-all
+                                            peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm
+                                            text-slate-500 hover:text-slate-700">
+                                    <i data-lucide="sprout" class="w-4 h-4 inline-block mr-1.5 -mt-0.5"></i>
+                                    Farmer
                                 </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Password Field -->
-                        <div class="mb-3">
-                            <label for="id_password" class="form-label">Password</label>
-                            <input type="password" class="form-control {% if form.password.errors %}is-invalid{% endif %}" 
-                                   id="id_password" name="password" required>
-                            {% if form.password.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.password.errors.0 }}
+                            </label>
+                            <label class="flex-1 relative cursor-pointer">
+                                <input type="radio" name="role" value="buyer" class="sr-only peer" {% if selected_role == 'buyer' %}checked{% endif %}>
+                                <div class="py-2.5 px-4 text-center rounded-lg text-sm font-semibold transition-all
+                                            peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm
+                                            text-slate-500 hover:text-slate-700">
+                                    <i data-lucide="shopping-bag" class="w-4 h-4 inline-block mr-1.5 -mt-0.5"></i>
+                                    Buyer
                                 </div>
-                            {% endif %}
+                            </label>
                         </div>
-                        
+
+                        <!-- Farmer Login Section -->
+                        <div class="farmer-section fade-in" id="farmerSection">
+                            <!-- Login Method Tabs for Farmer -->
+                            <div class="bg-slate-100 p-0.5 rounded-lg flex mb-4">
+                                <label class="flex-1 relative cursor-pointer">
+                                    <input type="radio" name="farmer_login_method" value="phone" class="sr-only peer" checked>
+                                    <div class="py-1.5 px-3 text-center rounded-md text-xs font-semibold transition-all
+                                                peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm
+                                                text-slate-500 hover:text-slate-700">
+                                        <i data-lucide="phone" class="w-3 h-3 inline-block mr-1 -mt-0.5"></i>Phone
+                                    </div>
+                                </label>
+                                <label class="flex-1 relative cursor-pointer">
+                                    <input type="radio" name="farmer_login_method" value="email" class="sr-only peer">
+                                    <div class="py-1.5 px-3 text-center rounded-md text-xs font-semibold transition-all
+                                                peer-checked:bg-white peer-checked:text-primary peer-checked:shadow-sm
+                                                text-slate-500 hover:text-slate-700">
+                                        <i data-lucide="mail" class="w-3 h-3 inline-block mr-1 -mt-0.5"></i>Email
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Phone Number -->
+                            <div class="mb-4 farmer-phone-login fade-in" id="farmerPhoneLogin">
+                                <label class="text-xs font-semibold text-slate-500 block mb-1.5">
+                                    Phone Number <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="phone" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                    <input type="tel" name="phone_number" id="farmer_phone" 
+                                           class="w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                  rounded-xl text-sm text-slate-700 placeholder-slate-400
+                                                  input-focus transition-all outline-none"
+                                           placeholder="+8801XXXXXXXXX" autofocus>
+                                </div>
+                                <p class="text-xs text-red-500 mt-1 hidden" id="farmerPhoneError">Enter valid phone number</p>
+                            </div>
+
+                            <!-- Farmer Email -->
+                            <div class="mb-4 farmer-email-login field-hidden fade-in" id="farmerEmailLogin">
+                                <label class="text-xs font-semibold text-slate-500 block mb-1.5">
+                                    Email Address <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                    <input type="email" name="farmer_email" id="farmer_email" 
+                                           class="w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                  rounded-xl text-sm text-slate-700 placeholder-slate-400
+                                                  input-focus transition-all outline-none"
+                                           placeholder="your.email@example.com">
+                                </div>
+                                <p class="text-xs text-red-500 mt-1 hidden" id="farmerEmailError">Enter valid email address</p>
+                            </div>
+                            
+                            <!-- Auth Type Mini Tabs -->
+                            <div class="bg-slate-100 p-0.5 rounded-lg flex mb-4 max-w-xs">
+                                <label class="flex-1 relative cursor-pointer">
+                                    <input type="radio" name="farmer_auth_type" value="pin" class="sr-only peer" checked>
+                                    <div class="py-1.5 px-3 text-center rounded-md text-xs font-semibold transition-all
+                                                peer-checked:bg-primary peer-checked:text-white
+                                                text-slate-500 hover:text-slate-700">
+                                        <i data-lucide="grid-3x3" class="w-3 h-3 inline-block mr-1 -mt-0.5"></i>PIN
+                                    </div>
+                                </label>
+                                <label class="flex-1 relative cursor-pointer">
+                                    <input type="radio" name="farmer_auth_type" value="password" class="sr-only peer">
+                                    <div class="py-1.5 px-3 text-center rounded-md text-xs font-semibold transition-all
+                                                peer-checked:bg-primary peer-checked:text-white
+                                                text-slate-500 hover:text-slate-700">
+                                        <i data-lucide="key" class="w-3 h-3 inline-block mr-1 -mt-0.5"></i>Password
+                                    </div>
+                                </label>
+                            </div>
+                            
+                            <!-- PIN Field -->
+                            <div class="mb-4 farmer-pin-field fade-in" id="farmerPinField">
+                                <label class="text-xs font-semibold text-slate-500 block mb-1.5">
+                                    PIN <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                    <input type="password" name="pin" id="farmer_pin" maxlength="6" inputmode="numeric"
+                                           class="w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                  rounded-xl text-sm text-slate-700 pin-input
+                                                  input-focus transition-all outline-none"
+                                           placeholder="••••••">
+                                </div>
+                                <p class="text-xs text-slate-400 mt-1">Enter your 4-6 digit PIN</p>
+                                <p class="text-xs text-red-500 mt-1 hidden" id="farmerPinError">PIN is required</p>
+                            </div>
+                            
+                            <!-- Farmer Password Field -->
+                            <div class="mb-4 farmer-password-field field-hidden fade-in" id="farmerPasswordField">
+                                <label class="text-xs font-semibold text-slate-500 block mb-1.5">
+                                    Password <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                    <input type="password" name="farmer_password" id="farmer_password"
+                                           class="w-full pl-11 pr-10 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                  rounded-xl text-sm text-slate-700
+                                                  input-focus transition-all outline-none"
+                                           placeholder="Enter your password">
+                                    <button type="button" onclick="togglePassword('farmer_password', this)" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-red-500 mt-1 hidden" id="farmerPasswordError">Password is required</p>
+                            </div>
+                            
+                            <!-- Forgot Link for Farmer -->
+                            <div class="text-right mb-4">
+                                <a href="{% url 'forgot_credential' %}" class="text-xs text-primary hover:underline" id="farmerForgotLink">
+                                    Forgot PIN?
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Buyer Login Section -->
+                        <div class="buyer-section field-hidden fade-in" id="buyerSection">
+                            <!-- Email -->
+                            <div class="mb-4">
+                                <label class="text-xs font-semibold text-slate-500 block mb-1.5">
+                                    Email Address <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                    <input type="email" name="email" id="buyer_email"
+                                           class="w-full pl-11 pr-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                  rounded-xl text-sm text-slate-700 placeholder-slate-400
+                                                  input-focus transition-all outline-none"
+                                           placeholder="your.email@example.com">
+                                </div>
+                                <p class="text-xs text-red-500 mt-1 hidden" id="buyerEmailError">Enter valid email</p>
+                            </div>
+                            
+                            <!-- Buyer Password -->
+                            <div class="mb-4">
+                                <label class="text-xs font-semibold text-slate-500 block mb-1.5">
+                                    Password <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"></i>
+                                    <input type="password" name="password" id="buyer_password"
+                                           class="w-full pl-11 pr-10 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                  rounded-xl text-sm text-slate-700
+                                                  input-focus transition-all outline-none"
+                                           placeholder="Enter your password">
+                                    <button type="button" onclick="togglePassword('buyer_password', this)" 
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-red-500 mt-1 hidden" id="buyerPasswordError">Password is required</p>
+                            </div>
+                            
+                            <!-- Forgot Link for Buyer -->
+                            <div class="text-right mb-4">
+                                <a href="{% url 'forgot_credential' %}" class="text-xs text-primary hover:underline">
+                                    Forgot Password?
+                                </a>
+                            </div>
+                        </div>
+
                         <!-- Remember Me -->
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="id_remember" name="remember">
-                            <label class="form-check-label" for="id_remember">
+                        <div class="flex items-center gap-2 mb-6">
+                            <input type="checkbox" name="remember" id="remember"
+                                   class="w-4 h-4 rounded border-slate-300 text-primary 
+                                          focus:ring-primary focus:ring-offset-0">
+                            <label for="remember" class="text-sm text-slate-600 cursor-pointer">
                                 Remember me
                             </label>
                         </div>
-                        
-                        <!-- Non-field errors -->
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger alert-dismissible fade show">
-                                {{ form.non_field_errors.0 }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endif %}
-                        
-                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
-                            <i class="fas fa-sign-in-alt"></i> Login
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="submitBtn"
+                                class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 px-6 
+                                       rounded-2xl shadow-lg shadow-green-100 transition-all duration-200
+                                       flex items-center justify-center gap-2 group">
+                            <span id="submitText">Login</span>
+                            <i data-lucide="chevron-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
+                            <svg id="submitSpinner" class="hidden animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                         </button>
+
+                        <!-- Google OAuth Divider -->
+                        <div class="relative my-4">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-slate-200"></div>
+                            </div>
+                            <div class="relative flex justify-center text-xs">
+                                <span class="bg-white px-3 text-slate-500 font-medium">or continue with</span>
+                            </div>
+                        </div>
+
+                        <!-- Google OAuth Button -->
+                        <a href="/accounts/google/login/?process=login"
+                           class="w-full flex items-center justify-center gap-3 border-2 border-slate-200 
+                                  hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold 
+                                  py-3 px-4 rounded-2xl transition-all duration-200 mb-2">
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
+                            Continue with Google
+                        </a>
+
+                        <!-- Register Link -->
+                        <p class="text-center text-sm text-slate-500 mt-4">
+                            Don't have an account? 
+                            <a href="{% url 'register' %}" class="text-primary font-semibold hover:underline">Register</a>
+                        </p>
                     </form>
-                    
-                    <div class="text-center mt-3">
-                        <span class="text-muted" style="font-size: 0.95rem;">Don't have an account? 
-                            <a href="{% url 'register' %}" class="text-success" style="font-size: 0.95rem;">Register</a>
-                        </span>
-                    </div>
-                    
-                    <!-- Demo Credentials -->
-                    <div class="alert alert-info mt-4 small">
-                        <strong>Demo Credentials:</strong><br>
-                        Admin: admin / admin@agrigenie.com<br>
-                        You can also register a new account
-                    </div>
                 </div>
             </div>
+            
+            <!-- Help Section -->
+            <div class="mt-6 text-center">
+                <p class="text-xs text-slate-400">
+                    Need help? 
+                    <a href="#" class="text-primary hover:underline">Contact Support</a>
+                </p>
+            </div>
         </div>
-    </div>
-</div>
-{% endblock %}
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const form = document.getElementById('loginForm');
+            const roleInputs = document.querySelectorAll('input[name="role"]');
+            const farmerAuthInputs = document.querySelectorAll('input[name="farmer_auth_type"]');
+            
+            // Sections
+            const farmerSection = document.getElementById('farmerSection');
+            const buyerSection = document.getElementById('buyerSection');
+            const farmerPinField = document.getElementById('farmerPinField');
+            const farmerPasswordField = document.getElementById('farmerPasswordField');
+            const farmerForgotLink = document.getElementById('farmerForgotLink');
+            const farmerLoginMethodInputs = document.querySelectorAll('input[name="farmer_login_method"]');
+            const farmerPhoneLogin = document.getElementById('farmerPhoneLogin');
+            const farmerEmailLogin = document.getElementById('farmerEmailLogin');
+            
+            // Initialize
+            updateRoleFields();
+            
+            // Role change handler
+            function updateRoleFields() {
+                const isFarmer = document.querySelector('input[name="role"]:checked').value === 'farmer';
+                
+                farmerSection.classList.toggle('field-hidden', !isFarmer);
+                buyerSection.classList.toggle('field-hidden', isFarmer);
+                
+                // Clear errors
+                document.querySelectorAll('.text-red-500').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
+                
+                // Re-initialize icons
+                lucide.createIcons();
+            }
+            
+            // Auth type change handler (Farmer only)
+            function updateAuthFields() {
+                const isPin = document.querySelector('input[name="farmer_auth_type"]:checked').value === 'pin';
+                
+                farmerPinField.classList.toggle('field-hidden', !isPin);
+                farmerPasswordField.classList.toggle('field-hidden', isPin);
+                
+                // Update forgot link text
+                farmerForgotLink.textContent = isPin ? 'Forgot PIN?' : 'Forgot Password?';
+                
+                lucide.createIcons();
+            }
+            
+            // Farmer login method change handler
+            function updateFarmerLoginMethod() {
+                const isPhone = document.querySelector('input[name="farmer_login_method"]:checked').value === 'phone';
+                
+                farmerPhoneLogin.classList.toggle('field-hidden', !isPhone);
+                farmerEmailLogin.classList.toggle('field-hidden', isPhone);
+                
+                lucide.createIcons();
+            }
+
+            // Event listeners
+            roleInputs.forEach(input => input.addEventListener('change', updateRoleFields));
+            farmerAuthInputs.forEach(input => input.addEventListener('change', updateAuthFields));
+            farmerLoginMethodInputs.forEach(input => input.addEventListener('change', updateFarmerLoginMethod));
+            
+            // PIN input - only digits
+            const pinInput = document.getElementById('farmer_pin');
+            if (pinInput) {
+                pinInput.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                });
+            }
+            
+            // Form validation
+            function validateForm() {
+                let isValid = true;
+                const isFarmer = document.querySelector('input[name="role"]:checked').value === 'farmer';
+                
+                // Clear previous errors
+                document.querySelectorAll('.text-red-500').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
+                
+                if (isFarmer) {
+                    // Check login method
+                    const isPhoneLogin = document.querySelector('input[name="farmer_login_method"]:checked').value === 'phone';
+                    
+                    if (isPhoneLogin) {
+                        // Validate phone
+                        const phone = document.getElementById('farmer_phone');
+                        const phoneRegex = /^(\+?880|0)?1[3-9]\d{8}$/;
+                        if (!phoneRegex.test(phone.value.replace(/[\s\-]/g, ''))) {
+                            document.getElementById('farmerPhoneError').classList.remove('hidden');
+                            phone.classList.add('border-red-500');
+                            isValid = false;
+                        }
+                    } else {
+                        // Validate farmer email
+                        const email = document.getElementById('farmer_email');
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(email.value)) {
+                            document.getElementById('farmerEmailError').classList.remove('hidden');
+                            email.classList.add('border-red-500');
+                            isValid = false;
+                        }
+                    }
+                    
+                    // Validate PIN or Password
+                    const isPin = document.querySelector('input[name="farmer_auth_type"]:checked').value === 'pin';
+                    if (isPin) {
+                        const pin = document.getElementById('farmer_pin');
+                        if (!/^\d{4,6}$/.test(pin.value)) {
+                            document.getElementById('farmerPinError').classList.remove('hidden');
+                            pin.classList.add('border-red-500');
+                            isValid = false;
+                        }
+                    } else {
+                        const password = document.getElementById('farmer_password');
+                        if (!password.value.trim()) {
+                            document.getElementById('farmerPasswordError').classList.remove('hidden');
+                            password.classList.add('border-red-500');
+                            isValid = false;
+                        }
+                    }
+                } else {
+                    // Validate email
+                    const email = document.getElementById('buyer_email');
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email.value)) {
+                        document.getElementById('buyerEmailError').classList.remove('hidden');
+                        email.classList.add('border-red-500');
+                        isValid = false;
+                    }
+                    
+                    // Validate password
+                    const password = document.getElementById('buyer_password');
+                    if (!password.value.trim()) {
+                        document.getElementById('buyerPasswordError').classList.remove('hidden');
+                        password.classList.add('border-red-500');
+                        isValid = false;
+                    }
+                }
+                
+                return isValid;
+            }
+            
+            // Form submit handler
+            form.addEventListener('submit', function(e) {
+                if (!validateForm()) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                // Show loading
+                const submitBtn = document.getElementById('submitBtn');
+                const submitText = document.getElementById('submitText');
+                const submitSpinner = document.getElementById('submitSpinner');
+                const chevron = submitBtn.querySelector('[data-lucide="chevron-right"]');
+                
+                submitBtn.disabled = true;
+                submitText.textContent = 'Logging in...';
+                submitSpinner.classList.remove('hidden');
+                if (chevron) chevron.classList.add('hidden');
+            });
+            
+            // Real-time validation feedback
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', function() {
+                    this.classList.remove('border-red-500');
+                });
+            });
+        });
+        
+        // Toggle password visibility
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

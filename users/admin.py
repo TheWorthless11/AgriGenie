@@ -6,11 +6,11 @@ from .models import CustomUser, FarmerProfile, BuyerProfile, Notification
 @admin.register(CustomUser)
 class CustomUserAdmin(BaseUserAdmin):
     fieldsets = BaseUserAdmin.fieldsets + (
-        ('Additional Info', {'fields': ('role', 'phone_number', 'location', 'profile_picture', 'bio', 'is_verified')}),
+        ('Additional Info', {'fields': ('role', 'phone_number', 'district', 'upazila', 'profile_picture', 'bio', 'is_verified')}),
     )
     list_display = ['username', 'email', 'role', 'is_verified', 'is_active']
     list_filter = BaseUserAdmin.list_filter + ('role', 'is_verified')
-    search_fields = ['username', 'email', 'phone_number', 'location']
+    search_fields = ['username', 'email', 'phone_number', 'district', 'upazila']
 
 
 @admin.register(FarmerProfile)
