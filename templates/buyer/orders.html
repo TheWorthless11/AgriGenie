@@ -10,7 +10,7 @@
         <h2 class="text-success">
             <i class="fas fa-shopping-bag"></i> My Orders
         </h2>
-        <a href="{% url 'buyer_marketplace' %}" class="btn btn-success">
+        <a href="{% url 'marketplace' %}" class="btn btn-success">
             <i class="fas fa-store"></i> Browse Marketplace
         </a>
     </div>
@@ -164,13 +164,13 @@
                     </div>
                     <div class="col">
                         <h4 class="text-warning">
-                            {{ orders|filter:"status":"pending"|length|default:0 }}
+                            {{ pending_count }}
                         </h4>
                         <small class="text-muted">Pending</small>
                     </div>
                     <div class="col">
                         <h4 class="text-success">
-                            {{ orders|filter:"status":"delivered"|length|default:0 }}
+                            {{ delivered_count }}
                         </h4>
                         <small class="text-muted">Delivered</small>
                     </div>
@@ -190,7 +190,7 @@
                         You haven't placed any orders yet. Browse the marketplace to find fresh produce!
                     {% endif %}
                 </p>
-                <a href="{% url 'buyer_marketplace' %}" class="btn btn-success">
+                <a href="{% url 'marketplace' %}" class="btn btn-success">
                     <i class="fas fa-store"></i> Browse Marketplace
                 </a>
             </div>

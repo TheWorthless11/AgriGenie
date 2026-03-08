@@ -157,7 +157,11 @@ def buyer_orders(request):
         messages.error(request, 'Access denied!')
         return redirect('dashboard')
     
-    orders = Order.objects.filter(buyer=request.user).order_by('-order_date')
+    all_orders = Order.objects.filter(buyer=request.user)
+    pending_count = all_orders.filter(status='pending').count()
+    delivered_count = all_orders.filter(status='delivered').count()
+    
+    orders = all_orders.order_by('-order_date')
     status_filter = request.GET.get('status')
     
     if status_filter:
@@ -165,6 +169,8 @@ def buyer_orders(request):
     
     context = {
         'orders': orders,
+        'pending_count': pending_count,
+        'delivered_count': delivered_count,
         'title': 'My Orders',
         'status_choices': Order.STATUS_CHOICES
     }
