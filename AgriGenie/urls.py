@@ -43,6 +43,8 @@ urlpatterns = [
     path('profile/<str:username>/', user_views.profile_view, name='profile_detail'),
     path('notifications/', user_views.notifications_view, name='notifications'),
     path('notification/<int:notification_id>/read/', user_views.mark_notification_read, name='mark_notification_read'),
+    path('submit-report/', user_views.submit_report, name='submit_report'),
+    path('my-reports/', user_views.my_reports, name='my_reports'),
     
     # Farmer URLs
     path('farmer/crops/', farmer_views.farmer_crops, name='farmer_crops'),
@@ -72,6 +74,7 @@ urlpatterns = [
     path('buyer/contact-farmer/<int:farmer_id>/', buyer_views.contact_farmer, name='contact_farmer'),
     path('buyer/review/<int:crop_id>/', buyer_views.leave_review, name='leave_review'),
     path('buyer/confirm-receipt/<int:order_id>/', buyer_views.confirm_receipt, name='confirm_receipt'),
+    path('buyer/cancel-order/<int:order_id>/', buyer_views.cancel_order, name='cancel_order'),
     path('buyer/purchase-history/', buyer_views.purchase_history, name='purchase_history'),
     
     # Marketplace URLs
@@ -101,6 +104,9 @@ urlpatterns = [
     path('admin-panel/activity-logs/', admin_views.activity_logs, name='activity_logs'),
     
     # Master Crop Management (Admin)
+    path('admin-panel/users/', admin_views.user_management, name='user_management'),
+    path('admin-panel/users/<int:user_id>/delete/', admin_views.delete_user, name='delete_user'),
+    path('admin-panel/users/<int:user_id>/toggle-approval/', admin_views.toggle_user_approval, name='toggle_user_approval'),
     path('admin-panel/master-crops/', admin_views.master_crops_list, name='master_crops_list'),
     path('admin-panel/master-crops/add/', admin_views.add_master_crop, name='add_master_crop'),
     path('admin-panel/master-crops/<int:crop_id>/edit/', admin_views.edit_master_crop, name='edit_master_crop'),

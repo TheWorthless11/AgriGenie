@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity Logs - AgriGenie Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-history text-secondary"></i> {{ title }}
+            </h1>
+            <p class="text-muted">Track all user actions across the platform</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Filter by Action</label>
+                    <select class="form-select" name="action">
+                        <option value="">All Actions</option>
+                        {% for value, label in action_choices %}
+                            <option value="{{ value }}" {% if request.GET.action == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Search by User</label>
+                    <input type="text" class="form-control" name="user" value="{{ request.GET.user|default:'' }}" placeholder="Username...">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-success me-2">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'activity_logs' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Logs ({{ page_obj.paginator.count }})</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                                <th>IP Address</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>
+                                    <strong>{{ log.user.username }}</strong>
+                                    <br><small class="text-muted">{{ log.user.get_role_display|default:"" }}</small>
+                                </td>
+                                <td>
+                                    {% if log.action == 'login' %}
+                                        <span class="badge bg-success">Login</span>
+                                    {% elif log.action == 'logout' %}
+                                        <span class="badge bg-secondary">Logout</span>
+                                    {% elif log.action == 'create_crop' %}
+                                        <span class="badge bg-info">Create Crop</span>
+                                    {% elif log.action == 'update_crop' %}
+                                        <span class="badge bg-primary">Update Crop</span>
+                                    {% elif log.action == 'delete_crop' %}
+                                        <span class="badge bg-danger">Delete Crop</span>
+                                    {% elif log.action == 'place_order' %}
+                                        <span class="badge bg-warning text-dark">Place Order</span>
+                                    {% elif log.action == 'cancel_order' %}
+                                        <span class="badge bg-danger">Cancel Order</span>
+                                    {% elif log.action == 'send_message' %}
+                                        <span class="badge bg-info">Message</span>
+                                    {% else %}
+                                        <span class="badge bg-dark">{{ log.get_action_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ log.description|default:"—"|truncatewords:20 }}</td>
+                                <td><small class="text-muted">{{ log.ip_address|default:"—" }}</small></td>
+                                <td>
+                                    <small>{{ log.timestamp|date:"M d, Y" }}</small>
+                                    <br><small class="text-muted">{{ log.timestamp|time:"H:i:s" }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav class="p-3">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}">
+                                    &laquo; Previous
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}">
+                                    Next &raquo;
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No activity logs found</h5>
+                    <p class="text-muted">Activity will be logged as users interact with the platform.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

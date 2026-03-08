@@ -17,6 +17,13 @@
         </div>
     </div>
 
+    {% if not is_approved %}
+    <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+        <i class="fas fa-hourglass-half"></i> <strong>Account Pending Approval!</strong> 
+        Your account is awaiting admin approval. You can browse the platform, but you cannot add/edit crops, manage orders, or send messages until approved.
+    </div>
+    {% endif %}
+
     <!-- Stats Row -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -38,7 +45,7 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <p class="text-muted small mb-1">Pending Orders</p>
-                            <h3 class="fw-bold text-info">{{ orders_count }}</h3>
+                            <h3 class="fw-bold text-info">{{ pending_orders_count }}</h3>
                         </div>
                         <i class="fas fa-shopping-bag fa-2x text-info opacity-50"></i>
                     </div>
@@ -100,7 +107,7 @@
                                 {% for order in recent_orders %}
                                 <tr>
                                     <td><strong>#{{ order.id }}</strong></td>
-                                    <td>{{ order.crop.name }}</td>
+                                    <td>{{ order.crop.master_crop.crop_name }}</td>
                                     <td>{{ order.quantity }} {{ order.crop.unit }}</td>
                                     <td>
                                         {% if order.status == 'pending' %}
@@ -132,7 +139,10 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-leaf"></i> Your Crops</h5>
-                    <a href="{% url 'farmer_crops' %}" class="btn btn-sm btn-light">View All</a>
+                    <div>
+                        <a href="{% url 'submit_report' %}" class="btn btn-sm btn-warning me-1"><i class="fas fa-flag"></i> Report</a>
+                        <a href="{% url 'farmer_crops' %}" class="btn btn-sm btn-light">View All</a>
+                    </div>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
@@ -150,7 +160,7 @@
                             {% if recent_crops %}
                                 {% for crop in recent_crops %}
                                 <tr>
-                                    <td><strong>{{ crop.name }}</strong></td>
+                                    <td><strong>{{ crop.master_crop.crop_name }}</strong></td>
                                     <td>{{ crop.quantity }} {{ crop.unit }}</td>
                                     <td>Tk {{ crop.price_per_unit }}</td>
                                     <td>{{ crop.harvest_date|date:"M d, Y" }}</td>

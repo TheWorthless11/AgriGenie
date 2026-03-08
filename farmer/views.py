@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from farmer.models import Crop, Order, CropDisease, WeatherAlert, Message, FarmerRating
 from farmer.forms import CropForm, OrderForm, MessageForm, WeatherAlertForm, CropDiseaseForm
-from users.models import Notification, CustomUser
+from users.models import Notification, CustomUser, FarmerProfile
 from admin_panel.models import MasterCrop
 from marketplace.models import CropListing
 from buyer.models import PurchaseRequest
@@ -15,6 +15,12 @@ from ai_models import analyze_disease_image, WeatherService, get_coordinates_fro
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import json
+
+
+def is_farmer_approved(user):
+    """Check if a farmer is approved by admin"""
+    profile = FarmerProfile.objects.filter(user=user).first()
+    return profile and profile.is_approved
 
 
 @login_required(login_url='login')
@@ -26,17 +32,25 @@ def farmer_dashboard(request):
     
     crops = Crop.objects.filter(farmer=request.user)
     orders = Order.objects.filter(farmer=request.user)
+    pending_orders = orders.filter(status='pending')
     recent_messages = Message.objects.filter(recipient=request.user).order_by('-created_at')[:5]
     unread_messages = recent_messages.filter(is_read=False).count()
+    farmer_profile = FarmerProfile.objects.filter(user=request.user).first()
     
     context = {
         'crops': crops,
         'orders': orders,
+        'recent_orders': orders.order_by('-order_date')[:5],
+        'recent_crops': crops.order_by('-created_at')[:5],
+        'pending_orders': pending_orders,
         'recent_messages': recent_messages,
         'unread_messages': unread_messages,
         'crops_count': crops.count(),
         'orders_count': orders.count(),
+        'pending_orders_count': pending_orders.count(),
         'total_revenue': sum([order.total_price for order in orders.filter(status='delivered')]),
+        'is_approved': is_farmer_approved(request.user),
+        'farmer_profile': farmer_profile,
     }
     return render(request, 'farmer/dashboard.html', context)
 
@@ -47,6 +61,10 @@ def add_crop(request):
     if request.user.role != 'farmer':
         messages.error(request, 'Only farmers can add crops!')
         return redirect('dashboard')
+    
+    if not is_farmer_approved(request.user):
+        messages.warning(request, 'Your account is pending admin approval. You cannot add crops until approved.')
+        return redirect('farmer_crops')
     
     if request.method == 'POST':
         form = CropForm(request.POST, request.FILES)
@@ -82,6 +100,10 @@ def add_crop(request):
 @login_required(login_url='login')
 def edit_crop(request, crop_id):
     """Edit crop"""
+    if not is_farmer_approved(request.user):
+        messages.warning(request, 'Your account is pending admin approval. You cannot edit crops until approved.')
+        return redirect('farmer_crops')
+    
     crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
     
     if request.method == 'POST':
@@ -100,6 +122,10 @@ def edit_crop(request, crop_id):
 @login_required(login_url='login')
 def delete_crop(request, crop_id):
     """Delete crop"""
+    if not is_farmer_approved(request.user):
+        messages.warning(request, 'Your account is pending admin approval. You cannot delete crops until approved.')
+        return redirect('farmer_crops')
+    
     crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
     crop.delete()
     messages.success(request, 'Crop deleted successfully!')
@@ -151,9 +177,22 @@ def order_detail(request, order_id):
     
     if request.method == 'POST' and request.user == order.farmer:
         new_status = request.POST.get('status')
+        old_status = order.status
         if new_status in dict(Order.STATUS_CHOICES):
             order.status = new_status
             order.save()
+            
+            crop = order.crop
+            
+            # Deduct quantity when order is accepted
+            if new_status == 'accepted' and old_status == 'pending':
+                crop.deduct_quantity(order.quantity)
+                if crop.quantity <= 0:
+                    messages.info(request, f'{crop.crop_name} is now out of stock. It will be removed from marketplace in 24 hours if not restocked.')
+            
+            # Restore quantity if order is rejected or cancelled by farmer
+            if new_status in ('rejected', 'cancelled') and old_status == 'accepted':
+                crop.restore_quantity(order.quantity)
             
             # Send notification to buyer
             Notification.objects.create(
@@ -448,6 +487,10 @@ def messages_view(request):
 @login_required(login_url='login')
 def send_message(request, recipient_id):
     """Send message to a user"""
+    if not is_farmer_approved(request.user):
+        messages.warning(request, 'Your account is pending admin approval. You cannot send messages until approved.')
+        return redirect('messages')
+    
     recipient = get_object_or_404(CustomUser, id=recipient_id)
     
     if request.method == 'POST':

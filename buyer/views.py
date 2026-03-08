@@ -7,8 +7,14 @@ from datetime import timedelta
 from buyer.models import PurchaseRequest, WishlistItem, SavedCrop, BuyerRating
 from farmer.models import Crop, Order, Message
 from marketplace.models import CropListing, Review
-from users.models import Notification, CustomUser
+from users.models import Notification, CustomUser, BuyerProfile
 from farmer.forms import OrderForm, MessageForm
+
+
+def is_buyer_approved(user):
+    """Check if a buyer is approved by admin"""
+    profile = BuyerProfile.objects.filter(user=user).first()
+    return profile and profile.is_approved
 
 
 @login_required(login_url='login')
@@ -29,6 +35,7 @@ def buyer_dashboard(request):
         'orders_count': orders.count(),
         'wishlist_count': wishlist_items.count(),
         'pending_orders': orders.filter(status='pending').count(),
+        'is_approved': is_buyer_approved(request.user),
     }
     return render(request, 'buyer/dashboard.html', context)
 
@@ -80,6 +87,7 @@ def marketplace(request):
         'crops': page_obj,
         'new_crops_count': new_crops.count(),
         'search_query': search_query,
+        'saved_crop_ids': list(SavedCrop.objects.filter(buyer=request.user).values_list('crop_id', flat=True)),
         'title': 'Marketplace'
     }
     return render(request, 'buyer/marketplace.html', context)
@@ -167,10 +175,15 @@ def buyer_orders(request):
     if status_filter:
         orders = orders.filter(status=status_filter)
     
+    # Get buyer's total spent
+    from users.models import BuyerProfile
+    buyer_profile = BuyerProfile.objects.filter(user=request.user).first()
+    
     context = {
         'orders': orders,
         'pending_count': pending_count,
         'delivered_count': delivered_count,
+        'total_spent': buyer_profile.total_spent if buyer_profile else 0,
         'title': 'My Orders',
         'status_choices': Order.STATUS_CHOICES
     }
@@ -187,6 +200,12 @@ def confirm_receipt(request, order_id):
         order.confirmation_date = timezone.now()
         order.save()
         
+        # Add to buyer's total spent
+        from users.models import BuyerProfile
+        buyer_profile, _ = BuyerProfile.objects.get_or_create(user=request.user)
+        buyer_profile.total_spent += order.total_price
+        buyer_profile.save()
+        
         # Create notification for farmer
         Notification.objects.create(
             user=order.farmer,
@@ -195,7 +214,7 @@ def confirm_receipt(request, order_id):
             message=f'Buyer confirmed receipt of {order.crop.crop_name}'
         )
         
-        messages.success(request, 'Order confirmed successfully!')
+        messages.success(request, f'Order confirmed! ৳{order.total_price:.2f} added to your total spending.')
     
     return redirect('buyer_orders')
 
@@ -235,6 +254,10 @@ def saved_crops(request):
 @login_required(login_url='login')
 def contact_farmer(request, farmer_id):
     """Contact farmer"""
+    if not is_buyer_approved(request.user):
+        messages.warning(request, 'Your account is pending admin approval. You cannot contact farmers until approved.')
+        return redirect('marketplace')
+    
     farmer = get_object_or_404(CustomUser, id=farmer_id, role='farmer')
     
     if request.method == 'POST':
@@ -269,6 +292,10 @@ def contact_farmer(request, farmer_id):
 @login_required(login_url='login')
 def leave_review(request, crop_id):
     """Leave review for a crop"""
+    if not is_buyer_approved(request.user):
+        messages.warning(request, 'Your account is pending admin approval. You cannot leave reviews until approved.')
+        return redirect('crop_detail', crop_id=crop_id)
+    
     crop = get_object_or_404(Crop, id=crop_id)
     
     # Check if buyer has ordered this crop
@@ -335,6 +362,10 @@ def place_order(request, crop_id):
         messages.error(request, 'Only buyers can place orders!')
         return redirect('dashboard')
     
+    if not is_buyer_approved(request.user):
+        messages.warning(request, 'Your account is pending admin approval. You cannot place orders until approved.')
+        return redirect('crop_detail', crop_id=crop_id)
+    
     crop = get_object_or_404(Crop, id=crop_id, is_available=True)
     
     if request.method == 'POST':
@@ -387,3 +418,37 @@ def place_order(request, crop_id):
             return redirect('crop_detail', crop_id=crop_id)
     
     return redirect('crop_detail', crop_id=crop_id)
+
+
+@login_required(login_url='login')
+def cancel_order(request, order_id):
+    """Cancel a pending order"""
+    if request.method != 'POST':
+        return redirect('buyer_orders')
+
+    from farmer.models import Order
+    order = get_object_or_404(Order, id=order_id, buyer=request.user)
+
+    if order.status != 'pending':
+        messages.error(request, 'Only pending orders can be cancelled.')
+        return redirect('buyer_orders')
+
+    order.status = 'cancelled'
+    order.save()
+
+    # Restore quantity if order was accepted before cancellation
+    if order.status == 'cancelled':
+        # Only restore if it was previously accepted (quantity was deducted)
+        pass  # Pending orders don't deduct quantity, no restore needed
+
+    # Notify farmer
+    from users.models import Notification
+    Notification.objects.create(
+        user=order.farmer,
+        notification_type='order',
+        title=f'Order Cancelled: {order.crop.crop_name}',
+        message=f'{request.user.username} cancelled their order for {order.quantity} {order.crop.unit} of {order.crop.crop_name}'
+    )
+
+    messages.success(request, 'Order cancelled successfully.')
+    return redirect('buyer_orders')

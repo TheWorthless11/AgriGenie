@@ -51,7 +51,24 @@ def register(request):
                     }
                 )
             
-            messages.success(request, f'Account created successfully for {user.first_name}! Please login.')
+            # Create approval request for admin review
+            from admin_panel.models import UserApproval
+            UserApproval.objects.get_or_create(
+                user=user,
+                defaults={'status': 'pending'}
+            )
+            
+            # Notify all admins about the new pending approval
+            admin_users = CustomUser.objects.filter(role='admin')
+            for admin_user in admin_users:
+                Notification.objects.create(
+                    user=admin_user,
+                    notification_type='system',
+                    title='New User Approval Request',
+                    message=f'New {user.get_role_display()} "{user.username}" ({user.get_full_name()}) has registered and is awaiting approval.'
+                )
+            
+            messages.success(request, f'Account created successfully for {user.first_name}! Your account is pending admin approval. You can browse the platform but certain actions are restricted until approved.')
             return redirect('login')
         else:
             print(f"DEBUG REGISTER: Form errors: {form.errors}")
@@ -269,12 +286,14 @@ def dashboard(request):
         crops = Crop.objects.filter(farmer=user).count()
         orders = Order.objects.filter(farmer=user).count()
         messages_count = Message.objects.filter(recipient=user, is_read=False).count()
+        is_approved = farmer_profile.is_approved if farmer_profile else False
         
         context.update({
             'farmer_profile': farmer_profile,
             'crops_count': crops,
             'orders_count': orders,
             'unread_messages': messages_count,
+            'is_approved': is_approved,
         })
         return render(request, 'farmer/dashboard.html', context)
     
@@ -283,12 +302,17 @@ def dashboard(request):
         orders = Order.objects.filter(buyer=user).count()
         wishlist_count = user.wishlist_items.count()
         messages_count = Message.objects.filter(recipient=user, is_read=False).count()
+        is_approved = buyer_profile.is_approved if buyer_profile else False
         
         context.update({
             'buyer_profile': buyer_profile,
             'orders_count': orders,
             'wishlist_count': wishlist_count,
             'unread_messages': messages_count,
+            'is_approved': is_approved,
+            'total_spent': buyer_profile.total_spent if buyer_profile else 0,
+            'active_orders_count': Order.objects.filter(buyer=user, status__in=['pending', 'accepted', 'shipped']).count(),
+            'saved_crops_count': 0,
         })
         return render(request, 'buyer/dashboard.html', context)
     
@@ -978,3 +1002,58 @@ def google_role_select(request):
         return response
 
     return render(request, 'users/google_role_select.html')
+
+
+@login_required(login_url='login')
+def submit_report(request):
+    """Submit a report/feedback about the website"""
+    from admin_panel.models import UserReport
+    
+    if request.method == 'POST':
+        report_type = request.POST.get('report_type')
+        subject = request.POST.get('subject')
+        description = request.POST.get('description')
+        priority = request.POST.get('priority', 'medium')
+        
+        if subject and description and report_type:
+            UserReport.objects.create(
+                user=request.user,
+                report_type=report_type,
+                subject=subject,
+                description=description,
+                priority=priority,
+            )
+            # Notify admins
+            admins = CustomUser.objects.filter(role='admin')
+            for admin_user in admins:
+                Notification.objects.create(
+                    user=admin_user,
+                    notification_type='system',
+                    title=f'New Report: {subject}',
+                    message=f'{request.user.username} submitted a {report_type} report: {subject}'
+                )
+            messages.success(request, 'Your report has been submitted successfully! An admin will review it shortly.')
+            return redirect('my_reports')
+        else:
+            messages.error(request, 'Please fill in all required fields.')
+    
+    context = {
+        'report_types': UserReport.REPORT_TYPES,
+        'priority_choices': UserReport.PRIORITY_CHOICES,
+        'title': 'Submit a Report',
+    }
+    return render(request, 'users/submit_report.html', context)
+
+
+@login_required(login_url='login')
+def my_reports(request):
+    """View user's submitted reports"""
+    from admin_panel.models import UserReport
+    
+    reports = UserReport.objects.filter(user=request.user)
+    
+    context = {
+        'reports': reports,
+        'title': 'My Reports',
+    }
+    return render(request, 'users/my_reports.html', context)

@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Review Approval - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-check text-success"></i> Review User Approval</h2>
+        <a href="{% url 'user_approvals' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Approvals
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user"></i> User Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted fw-bold" style="width: 40%;">Username:</td>
+                            <td>{{ approval.user.username }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Full Name:</td>
+                            <td>{{ approval.user.get_full_name|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Email:</td>
+                            <td>{{ approval.user.email|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Phone:</td>
+                            <td>{{ approval.user.phone_number|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Role:</td>
+                            <td>
+                                {% if approval.user.role == 'farmer' %}
+                                    <span class="badge bg-primary">Farmer</span>
+                                {% elif approval.user.role == 'buyer' %}
+                                    <span class="badge bg-info">Buyer</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ approval.user.get_role_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Location:</td>
+                            <td>{{ approval.user.get_full_location|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Registered:</td>
+                            <td>{{ approval.user.date_joined|date:"M d, Y h:i A" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            {% if approval.user.role == 'farmer' and approval.user.farmer_profile %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tractor"></i> Farm Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted fw-bold" style="width: 40%;">Farm Name:</td>
+                            <td>{{ approval.user.farmer_profile.farm_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Farm Size:</td>
+                            <td>{{ approval.user.farmer_profile.farm_size }} acres</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Farm Location:</td>
+                            <td>{{ approval.user.farmer_profile.farm_location }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Soil Type:</td>
+                            <td>{{ approval.user.farmer_profile.soil_type }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Experience:</td>
+                            <td>{{ approval.user.farmer_profile.experience_years }} years</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Reg. Number:</td>
+                            <td>{{ approval.user.farmer_profile.registration_number }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if approval.user.role == 'buyer' and approval.user.buyer_profile %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-building"></i> Business Details</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted fw-bold" style="width: 40%;">Company:</td>
+                            <td>{{ approval.user.buyer_profile.company_name|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Business Type:</td>
+                            <td>{{ approval.user.buyer_profile.business_type|default:"-" }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted fw-bold">Reg. Number:</td>
+                            <td>{{ approval.user.buyer_profile.registration_number|default:"-" }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-gavel"></i> Approval Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        {% if approval.status == 'pending' %}
+                            <span class="badge bg-warning text-dark fs-5 px-4 py-2"><i class="fas fa-clock"></i> Pending</span>
+                        {% elif approval.status == 'approved' %}
+                            <span class="badge bg-success fs-5 px-4 py-2"><i class="fas fa-check"></i> Approved</span>
+                        {% elif approval.status == 'rejected' %}
+                            <span class="badge bg-danger fs-5 px-4 py-2"><i class="fas fa-times"></i> Rejected</span>
+                        {% endif %}
+                    </div>
+
+                    {% if approval.reviewed_by %}
+                    <p class="text-muted text-center">
+                        Reviewed by <strong>{{ approval.reviewed_by.username }}</strong> 
+                        on {{ approval.reviewed_at|date:"M d, Y h:i A" }}
+                    </p>
+                    {% endif %}
+
+                    {% if approval.reason_for_rejection %}
+                    <div class="alert alert-danger mt-3">
+                        <strong>Rejection Reason:</strong> {{ approval.reason_for_rejection }}
+                    </div>
+                    {% endif %}
+
+                    {% if approval.status == 'pending' %}
+                    <hr>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="approve" class="btn btn-success btn-lg">
+                                <i class="fas fa-check-circle"></i> Approve User
+                            </button>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label">Rejection Reason (optional):</label>
+                            <textarea name="reason" class="form-control" rows="3" placeholder="Provide a reason for rejection..."></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" name="action" value="reject" class="btn btn-outline-danger">
+                                <i class="fas fa-times-circle"></i> Reject User
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if approval.documents %}
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-file"></i> Documents</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ approval.documents.url }}" class="btn btn-outline-primary" target="_blank">
+                        <i class="fas fa-download"></i> View Document
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

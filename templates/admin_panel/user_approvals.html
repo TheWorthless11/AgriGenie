@@ -4,17 +4,22 @@
 {% block title %}User Approvals - AgriGenie Admin{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-5">
+<div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-8">
-            <h2><i class="fas fa-user-check"></i> User Approvals</h2>
+            <h1 class="fw-bold">
+                <i class="fas fa-user-check text-warning"></i> User Approvals
+                {% if pending_count > 0 %}
+                    <span class="badge bg-warning text-dark">{{ pending_count }} Pending</span>
+                {% endif %}
+            </h1>
+            <p class="text-muted">Review and approve/reject user registrations</p>
         </div>
         <div class="col-md-4">
             <form method="GET" class="d-flex gap-2">
                 <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">All Status</option>
                     {% for val, label in status_choices %}
-                        <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
                 <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -40,10 +45,10 @@
         {% if approvals %}
             {% for approval in approvals %}
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card shadow">
-                        <div class="card-header">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white">
                             <h5 class="mb-0">{{ approval.user.get_full_name|default:approval.user.username }}</h5>
-                            <small class="text-muted">{{ approval.user.get_role_display }}</small>
+                            <small class="text-muted">{{ approval.user.get_role_display }} &middot; Registered {{ approval.created_at|timesince }} ago</small>
                         </div>
                         <div class="card-body">
                             <p class="mb-2">
@@ -55,7 +60,7 @@
                             <p class="mb-2">
                                 <strong>Status:</strong>
                                 {% if approval.status == 'pending' %}
-                                    <span class="badge bg-warning">Pending</span>
+                                    <span class="badge bg-warning text-dark">Pending</span>
                                 {% elif approval.status == 'approved' %}
                                     <span class="badge bg-success">Approved</span>
                                 {% else %}
@@ -75,7 +80,7 @@
                                 </p>
                             {% endif %}
                         </div>
-                        <div class="card-footer">
+                        <div class="card-footer bg-white">
                             {% if approval.status == 'pending' %}
                                 <a href="{% url 'approve_user' approval.id %}" class="btn btn-sm btn-success">
                                     <i class="fas fa-check"></i> Approve
@@ -93,9 +98,13 @@
             {% endfor %}
         {% else %}
             <div class="col-12">
-                <div class="alert alert-info text-center py-5">
-                    <h5><i class="fas fa-inbox"></i> No Pending Approvals</h5>
-                    <p>All user applications have been processed</p>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5 class="text-muted">No Pending Approvals</h5>
+                        <p class="text-muted">All user applications have been processed.</p>
+                        <a href="?status=all" class="btn btn-outline-success btn-sm">View All Approvals</a>
+                    </div>
                 </div>
             </div>
         {% endif %}

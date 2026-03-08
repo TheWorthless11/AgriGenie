@@ -32,6 +32,7 @@ class Crop(models.Model):
     
     # System fields
     is_available = models.BooleanField(default=True)
+    out_of_stock_since = models.DateTimeField(null=True, blank=True, help_text="When crop went out of stock (auto-deletes after 24h)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -53,6 +54,23 @@ class Crop(models.Model):
     def crop_type(self):
         """For backward compatibility with existing code"""
         return self.master_crop.crop_type if self.master_crop else 'Unknown'
+    
+    def deduct_quantity(self, amount):
+        """Deduct quantity when order is accepted. Mark out-of-stock if zero."""
+        self.quantity = max(0, self.quantity - amount)
+        if self.quantity <= 0:
+            self.quantity = 0
+            self.is_available = False
+            self.out_of_stock_since = timezone.now()
+        self.save()
+    
+    def restore_quantity(self, amount):
+        """Restore quantity when order is cancelled/rejected."""
+        self.quantity += amount
+        if self.quantity > 0:
+            self.is_available = True
+            self.out_of_stock_since = None
+        self.save()
 
 
 class Order(models.Model):

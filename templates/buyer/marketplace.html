@@ -11,6 +11,9 @@
             <i class="fas fa-store"></i> Marketplace
         </h2>
         <div>
+            <a href="{% url 'saved_crops' %}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-bookmark"></i> Saved
+            </a>
             <a href="{% url 'wishlist' %}" class="btn btn-outline-danger me-2">
                 <i class="fas fa-heart"></i> Wishlist
             </a>
@@ -114,6 +117,11 @@
                             <div class="d-flex gap-2">
                                 <a href="{% url 'crop_detail' crop_id=crop.id %}" class="btn btn-success btn-sm flex-grow-1">
                                     <i class="fas fa-eye"></i> View
+                                </a>
+                                <a href="{% url 'save_crop' crop_id=crop.id %}?next={% url 'marketplace' %}" 
+                                   class="btn btn-sm {% if crop.id in saved_crop_ids %}btn-danger{% else %}btn-outline-danger{% endif %}" 
+                                   title="{% if crop.id in saved_crop_ids %}Remove from Saved{% else %}Save for Later{% endif %}">
+                                    <i class="fas fa-bookmark"></i>
                                 </a>
                                 <a href="{% url 'start_chat' user_id=crop.farmer.id %}?crop={{ crop.id }}" 
                                    class="btn btn-outline-success btn-sm">

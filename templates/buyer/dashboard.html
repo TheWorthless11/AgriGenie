@@ -17,6 +17,13 @@
         </div>
     </div>
 
+    {% if not is_approved %}
+    <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+        <i class="fas fa-hourglass-half"></i> <strong>Account Pending Approval!</strong> 
+        Your account is awaiting admin approval. You can browse the marketplace, but you cannot place orders, contact farmers, or leave reviews until approved.
+    </div>
+    {% endif %}
+
     <!-- Stats Row -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -86,6 +93,12 @@
                     </a>
                     <a href="{% url 'purchase_history' %}" class="list-group-item list-group-item-action">
                         Purchase History
+                    </a>
+                    <a href="{% url 'submit_report' %}" class="list-group-item list-group-item-action text-warning">
+                        <i class="fas fa-flag"></i> Submit a Report
+                    </a>
+                    <a href="{% url 'my_reports' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-alt"></i> My Reports
                     </a>
                 </div>
             </div>

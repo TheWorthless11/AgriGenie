@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Reports - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold">
+                <i class="fas fa-file-alt text-success"></i> {{ title }}
+            </h1>
+            <p class="text-muted">Track the status of your submitted reports</p>
+        </div>
+        <a href="{% url 'submit_report' %}" class="btn btn-success">
+            <i class="fas fa-plus"></i> New Report
+        </a>
+    </div>
+
+    {% if reports %}
+        <div class="row">
+            {% for report in reports %}
+            <div class="col-md-6 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span>
+                            {% if report.report_type == 'bug' %}
+                                <span class="badge bg-danger">Bug</span>
+                            {% elif report.report_type == 'feedback' %}
+                                <span class="badge bg-info">Feedback</span>
+                            {% elif report.report_type == 'complaint' %}
+                                <span class="badge bg-warning text-dark">Complaint</span>
+                            {% elif report.report_type == 'suggestion' %}
+                                <span class="badge bg-primary">Suggestion</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Other</span>
+                            {% endif %}
+                            
+                            {% if report.priority == 'critical' %}
+                                <span class="badge bg-danger">Critical</span>
+                            {% elif report.priority == 'high' %}
+                                <span class="badge bg-warning text-dark">High</span>
+                            {% elif report.priority == 'medium' %}
+                                <span class="badge bg-info">Medium</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Low</span>
+                            {% endif %}
+                        </span>
+                        <span>
+                            {% if report.status == 'pending' %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending</span>
+                            {% elif report.status == 'reviewing' %}
+                                <span class="badge bg-info"><i class="fas fa-search"></i> Under Review</span>
+                            {% elif report.status == 'resolved' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Resolved</span>
+                            {% elif report.status == 'dismissed' %}
+                                <span class="badge bg-secondary"><i class="fas fa-times"></i> Dismissed</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ report.subject }}</h5>
+                        <p class="card-text text-muted">{{ report.description|truncatewords:30 }}</p>
+                        
+                        {% if report.admin_response %}
+                            <div class="alert alert-success mt-3 mb-0">
+                                <strong><i class="fas fa-reply"></i> Admin Response:</strong>
+                                <p class="mb-0 mt-1">{{ report.admin_response }}</p>
+                                {% if report.responded_by %}
+                                    <small class="text-muted">- {{ report.responded_by.username }}</small>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-white text-muted small">
+                        <i class="fas fa-clock"></i> Submitted {{ report.created_at|timesince }} ago
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No reports submitted yet</h5>
+                <p class="text-muted">Have feedback or found a bug? Let us know!</p>
+                <a href="{% url 'submit_report' %}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Submit Your First Report
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

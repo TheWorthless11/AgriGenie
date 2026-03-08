@@ -100,6 +100,7 @@ class BuyerProfile(models.Model):
     registration_number = models.CharField(max_length=100, blank=True, null=True)
     is_approved = models.BooleanField(default=False)
     rating = models.FloatField(default=0, validators=[MinValueValidator(0), MaxValueValidator(5)])
+    total_spent = models.FloatField(default=0, validators=[MinValueValidator(0)], help_text="Total amount spent on confirmed orders")
     
     def __str__(self):
         return self.company_name or self.user.username

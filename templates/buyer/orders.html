@@ -135,7 +135,7 @@
                                             </form>
                                         {% endif %}
                                         
-                                        <a href="{% url 'start_chat' user_id=order.farmer.id %}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{% url 'start_chat_with_crop' user_id=order.farmer.id crop_id=order.crop.id %}" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-comment"></i> Chat
                                         </a>
                                     </div>
@@ -173,6 +173,12 @@
                             {{ delivered_count }}
                         </h4>
                         <small class="text-muted">Delivered</small>
+                    </div>
+                    <div class="col">
+                        <h4 class="text-danger">
+                            ৳{{ total_spent|floatformat:2|default:"0.00" }}
+                        </h4>
+                        <small class="text-muted">Total Spent</small>
                     </div>
                 </div>
             </div>

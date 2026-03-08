@@ -7,12 +7,18 @@ from celery import shared_task
 from django.contrib.auth import get_user_model
 from farmer.models import WeatherAlert, Crop
 from users.models import Notification
-from ai_models import WeatherService, get_coordinates_from_location
 from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+
+# Import weather utilities with graceful fallback
+try:
+    from ai_models import WeatherService, get_coordinates_from_location
+except ImportError:
+    WeatherService = None
+    get_coordinates_from_location = None
 
 
 @shared_task(bind=True, max_retries=3)
@@ -171,3 +177,41 @@ def auto_retrain_price_model(self, force=False, ga_pop=8, ga_gen=5):
     except Exception as exc:
         logger.exception("Auto-retrain failed")
         raise self.retry(exc=exc, countdown=300)
+
+
+@shared_task
+def cleanup_out_of_stock_crops():
+    """
+    Auto-delete crops that have been out of stock for more than 24 hours.
+    Notifies the farmer before deleting.
+    """
+    from django.utils import timezone
+    cutoff = timezone.now() - timedelta(hours=24)
+    
+    expired_crops = Crop.objects.filter(
+        is_available=False,
+        out_of_stock_since__isnull=False,
+        out_of_stock_since__lte=cutoff
+    )
+    
+    count = 0
+    for crop in expired_crops:
+        try:
+            farmer = crop.farmer
+            crop_name = crop.crop_name
+            
+            # Notify farmer
+            Notification.objects.create(
+                user=farmer,
+                notification_type='system',
+                title=f'Crop Removed: {crop_name}',
+                message=f'Your listing for {crop_name} has been automatically removed from the marketplace because it was out of stock for over 24 hours. You can add a new listing anytime.'
+            )
+            
+            logger.info(f"Auto-deleting out-of-stock crop: {crop_name} (ID: {crop.id}) by {farmer.username}")
+            crop.delete()
+            count += 1
+        except Exception as e:
+            logger.error(f"Error deleting crop {crop.id}: {e}")
+    
+    return f"Cleaned up {count} out-of-stock crops"

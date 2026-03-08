@@ -165,13 +165,18 @@ def remove_from_wishlist(request, crop_id):
 
 @login_required(login_url='login')
 def save_crop(request, crop_id):
-    """Save crop for later"""
+    """Save/unsave crop for later (toggle)"""
     crop = get_object_or_404(Crop, id=crop_id)
     
-    SavedCrop.objects.get_or_create(buyer=request.user, crop=crop)
-    messages.success(request, f'{crop.crop_name} saved!')
+    saved, created = SavedCrop.objects.get_or_create(buyer=request.user, crop=crop)
+    if not created:
+        saved.delete()
+        messages.success(request, f'{crop.crop_name} removed from saved!')
+    else:
+        messages.success(request, f'{crop.crop_name} saved for later!')
     
-    return redirect('crop_listing', crop_id=crop.id)
+    next_url = request.GET.get('next') or request.META.get('HTTP_REFERER') or 'marketplace'
+    return redirect(next_url)
 
 
 @login_required(login_url='login')

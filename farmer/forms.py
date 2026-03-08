@@ -60,8 +60,10 @@ class CropForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Only show active master crops
+        # Only show active master crops - required field
         self.fields['master_crop'].queryset = MasterCrop.objects.filter(is_active=True)
+        self.fields['master_crop'].required = True
+        self.fields['master_crop'].empty_label = '-- Select a crop from the list --'
 
 
 class OrderForm(forms.ModelForm):

@@ -160,6 +160,48 @@ class AIPricePredictor(models.Model):
         return f"Price Prediction - {self.accuracy_percentage}%"
 
 
+class UserReport(models.Model):
+    """Reports/feedback submitted by users about the website"""
+    REPORT_TYPES = (
+        ('bug', 'Bug Report'),
+        ('feedback', 'Feedback'),
+        ('complaint', 'Complaint'),
+        ('suggestion', 'Suggestion'),
+        ('other', 'Other'),
+    )
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('reviewing', 'Under Review'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    )
+    PRIORITY_CHOICES = (
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    )
+
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='submitted_reports')
+    report_type = models.CharField(max_length=20, choices=REPORT_TYPES)
+    subject = models.CharField(max_length=255)
+    description = models.TextField()
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_response = models.TextField(blank=True, null=True)
+    responded_by = models.ForeignKey(
+        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='responded_reports'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.subject} ({self.get_status_display()})"
+
+
 class ActivityLog(models.Model):
     ACTION_TYPES = (
         ('login', 'Login'),

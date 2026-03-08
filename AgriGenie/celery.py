@@ -31,6 +31,10 @@ app.conf.beat_schedule = {
         'task': 'AgriGenie.tasks.auto_retrain_price_model',
         'schedule': crontab(day_of_month=1, hour=3, minute=0),  # 1st of each month at 3 AM
     },
+    'cleanup-out-of-stock-crops-hourly': {
+        'task': 'AgriGenie.tasks.cleanup_out_of_stock_crops',
+        'schedule': crontab(minute=30),  # Every hour at :30
+    },
 }
 
 # Auto-discover tasks from all registered Django apps

@@ -15,8 +15,7 @@
                     <div class="row mb-4">
                         <div class="col-md-6">
                             <h6 class="text-muted">Crop Details</h6>
-                            <p class="mb-1"><strong>Crop:</strong> {{ order.crop.crop_name }}</p>
-                            <p class="mb-1"><strong>Type:</strong> {{ order.crop.crop_type }}</p>
+                            <p class="mb-1"><strong>Crop:</strong> {{ order.crop.master_crop.crop_name }}</p>
                             <p class="mb-1"><strong>Location:</strong> {{ order.crop.location }}</p>
                         </div>
                         <div class="col-md-6">
@@ -114,11 +113,11 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'send_message' order.buyer.id %}" class="btn btn-outline-primary">
-                            <i class="fas fa-envelope"></i> Send Message
+                        <a href="{% url 'start_chat_with_crop' user_id=order.buyer.id crop_id=order.crop.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-comments"></i> Chat with Buyer
                         </a>
-                        <a href="{% url 'farmer_crops' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-list"></i> Back to Crops
+                        <a href="{% url 'farmer_orders' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list"></i> Back to Orders
                         </a>
                     </div>
                 </div>

@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Management - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-users-cog text-success"></i> User Management</h2>
+            <p class="text-muted mb-0">View and manage all registered users</p>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x text-success mb-2"></i>
+                    <h4 class="fw-bold mb-0">{{ total_users }}</h4>
+                    <small class="text-muted">Total Users</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-tractor fa-2x text-primary mb-2"></i>
+                    <h4 class="fw-bold mb-0">{{ total_farmers }}</h4>
+                    <small class="text-muted">Farmers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-shopping-cart fa-2x text-info mb-2"></i>
+                    <h4 class="fw-bold mb-0">{{ total_buyers }}</h4>
+                    <small class="text-muted">Buyers</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <i class="fas fa-user-shield fa-2x text-danger mb-2"></i>
+                    <h4 class="fw-bold mb-0">{{ total_admins }}</h4>
+                    <small class="text-muted">Admins</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="q" class="form-control" placeholder="Search by name, email, phone..." value="{{ search_query }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Role</label>
+                    <select name="role" class="form-select">
+                        <option value="">All Roles</option>
+                        <option value="farmer" {% if role_filter == 'farmer' %}selected{% endif %}>Farmer</option>
+                        <option value="buyer" {% if role_filter == 'buyer' %}selected{% endif %}>Buyer</option>
+                        <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-success me-2">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                    <a href="{% url 'user_management' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="fas fa-list"></i> All Users ({{ users|length }})</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if users %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Username</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Status</th>
+                            <th>Approval</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td><strong>{{ u.username }}</strong></td>
+                            <td>{{ u.get_full_name|default:"-" }}</td>
+                            <td>{{ u.email|default:"-" }}</td>
+                            <td>{{ u.phone_number|default:"-" }}</td>
+                            <td>
+                                {% if u.role == 'farmer' %}
+                                    <span class="badge bg-primary">Farmer</span>
+                                {% elif u.role == 'buyer' %}
+                                    <span class="badge bg-info">Buyer</span>
+                                {% elif u.role == 'admin' %}
+                                    <span class="badge bg-danger">Admin</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ u.role }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ u.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                {% if u.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.role == 'farmer' %}
+                                    {% if u.farmer_profile.is_approved %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending</span>
+                                    {% endif %}
+                                {% elif u.role == 'buyer' %}
+                                    {% if u.buyer_profile.is_approved %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending</span>
+                                    {% endif %}
+                                {% elif u.role == 'admin' %}
+                                    <span class="badge bg-success"><i class="fas fa-shield-alt"></i> Admin</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u != request.user %}
+                                    {% if u.role == 'farmer' or u.role == 'buyer' %}
+                                    <form method="POST" action="{% url 'toggle_user_approval' u.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        {% if u.role == 'farmer' and u.farmer_profile.is_approved or u.role == 'buyer' and u.buyer_profile.is_approved %}
+                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-sm btn-success" title="Approve User">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        {% endif %}
+                                    </form>
+                                    {% endif %}
+                                    <a href="{% url 'delete_user' u.id %}" class="btn btn-sm btn-outline-danger" title="Delete User">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted small">You</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No users found</h5>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
