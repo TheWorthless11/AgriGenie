@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+
+{% block title %}Crop Price Prediction - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    .prediction-page {
+        --prediction-bg: linear-gradient(180deg, #f4f8f2 0%, #eef4ea 100%);
+        --surface: rgba(255, 255, 255, 0.92);
+        --surface-strong: #ffffff;
+        --ink: #213225;
+        --muted: #6e7d71;
+        --shadow-soft: 0 18px 40px rgba(34, 58, 39, 0.08);
+        --shadow-card: 0 10px 24px rgba(34, 58, 39, 0.07);
+        --accent: #2f6b3b;
+        --accent-warm: #d8922a;
+        font-family: 'Manrope', sans-serif;
+        background: var(--prediction-bg);
+        padding: 2.5rem 0 4rem;
+    }
+    .prediction-shell { max-width: 1100px; }
+    .prediction-hero, .prediction-card, .prediction-insight {
+        background: var(--surface); border: 1px solid rgba(255,255,255,0.6);
+        border-radius: 28px; box-shadow: var(--shadow-soft); backdrop-filter: blur(10px);
+    }
+    .prediction-hero { padding: 2rem; position: relative; overflow: hidden; }
+    .prediction-hero::after {
+        content: ''; position: absolute; inset: auto -60px -80px auto;
+        width: 220px; height: 220px;
+        background: radial-gradient(circle, rgba(47,107,59,0.16) 0%, rgba(47,107,59,0) 70%);
+        pointer-events: none;
+    }
+    .prediction-kicker {
+        display: inline-flex; align-items: center; gap: .5rem;
+        padding: .45rem .85rem; background: rgba(47,107,59,0.08);
+        border-radius: 999px; color: var(--accent); font-size: .85rem;
+        font-weight: 700; letter-spacing: .02em; margin-bottom: 1rem;
+    }
+    .prediction-title { color: var(--ink); font-size: clamp(2rem,4vw,3rem); line-height: 1.05; font-weight: 800; margin-bottom: .65rem; }
+    .prediction-subtitle { color: var(--muted); font-size: 1rem; max-width: 42rem; margin-bottom: 0; }
+    .prediction-card { padding: 1.6rem; }
+    .prediction-section-title { color: var(--ink); font-size: 1.15rem; font-weight: 700; margin-bottom: .35rem; }
+    .prediction-section-copy { color: var(--muted); font-size: .95rem; margin-bottom: 1.4rem; }
+    .prediction-form-grid { row-gap: 1rem; }
+    .prediction-field label { display: block; color: var(--ink); font-size: .92rem; font-weight: 700; margin-bottom: .55rem; }
+    .prediction-field .form-select {
+        min-height: 56px; border: 1px solid transparent; border-radius: 18px;
+        background-color: var(--surface-strong);
+        box-shadow: inset 0 0 0 1px rgba(33,50,37,0.06), 0 8px 16px rgba(34,58,39,0.04);
+        color: var(--ink); font-size: .97rem; padding-left: 1rem;
+    }
+    .prediction-field .form-select:focus { border-color: rgba(47,107,59,0.18); box-shadow: 0 0 0 .22rem rgba(47,107,59,0.12), 0 10px 22px rgba(34,58,39,0.08); }
+    .prediction-button {
+        min-height: 58px; border: 0; border-radius: 18px; padding: .95rem 1.4rem;
+        background: linear-gradient(135deg,#2f6b3b 0%,#3c7f47 100%);
+        box-shadow: 0 14px 28px rgba(47,107,59,0.22);
+        color: #fff; font-size: 1rem; font-weight: 800; letter-spacing: .01em;
+        transition: transform .15s, box-shadow .15s;
+    }
+    .prediction-button:hover, .prediction-button:focus { color: #fff; transform: translateY(-1px); box-shadow: 0 18px 32px rgba(47,107,59,0.26); }
+    .prediction-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+    .prediction-results-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 1rem; }
+    .prediction-metric { background: rgba(255,255,255,0.8); border-radius: 20px; padding: 1rem; box-shadow: var(--shadow-card); }
+    .prediction-metric-label { display: block; color: var(--muted); font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: .8rem; }
+    .prediction-metric-value { display: flex; align-items: center; min-height: 2rem; font-weight: 700; color: var(--ink); font-size: 1.05rem; }
+    .prediction-empty { display: inline-block; width: 78%; height: 12px; border-radius: 999px; background: linear-gradient(90deg,rgba(209,220,211,0.9) 0%,rgba(235,240,236,1) 100%); }
+    .prediction-chart-wrap { background: linear-gradient(180deg,rgba(255,255,255,0.86) 0%,rgba(246,250,245,0.92) 100%); border-radius: 24px; padding: 1rem 1rem .5rem; }
+    .prediction-chart-canvas { width: 100%; max-height: 320px; }
+    .prediction-legend { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem 0 .25rem; }
+    .prediction-legend-item { display: inline-flex; align-items: center; gap: .55rem; color: var(--muted); font-size: .92rem; font-weight: 600; }
+    .prediction-legend-swatch { width: 34px; height: 10px; border-radius: 999px; }
+    .prediction-legend-swatch.history { background: linear-gradient(90deg,#2f6b3b 0%,#5a9465 100%); }
+    .prediction-legend-swatch.predicted { background: repeating-linear-gradient(90deg,#d8922a 0 7px,rgba(216,146,42,0.18) 7px 12px); }
+    .prediction-insight { padding: 1.1rem 1.35rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+    .prediction-insight-title { color: var(--ink); font-size: 1rem; font-weight: 800; margin-bottom: .35rem; }
+    .prediction-insight-copy { color: var(--muted); margin: 0; max-width: 42rem; }
+    .prediction-status-pill { padding: .55rem .9rem; border-radius: 999px; background: rgba(216,146,42,0.12); color: #9b6513; font-size: .86rem; font-weight: 800; white-space: nowrap; }
+    .prediction-stack > * + * { margin-top: 1.5rem; }
+    .prediction-error { color: #c0392b; background: rgba(192,57,43,0.08); border-radius: 14px; padding: .8rem 1.1rem; font-size: .92rem; font-weight: 600; margin-top: .5rem; }
+    .prediction-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; margin-right: .5rem; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 991.98px) { .prediction-results-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+    @media (max-width: 767.98px) {
+        .prediction-page { padding-top: 1.5rem; }
+        .prediction-hero, .prediction-card, .prediction-insight { border-radius: 22px; }
+        .prediction-hero, .prediction-card { padding: 1.2rem; }
+        .prediction-results-grid { grid-template-columns: 1fr; }
+        .prediction-insight { align-items: flex-start; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="prediction-page">
+    <div class="container prediction-shell prediction-stack">
+
+        <!-- Header -->
+        <div class="prediction-hero">
+            <span class="prediction-kicker">Farmer Tool</span>
+            <h1 class="prediction-title">Crop Price Prediction</h1>
+            <p class="prediction-subtitle">Get your expected crop prices instantly</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="prediction-card">
+            <h2 class="prediction-section-title">Prediction Inputs</h2>
+            <p class="prediction-section-copy">Choose your crop details below to prepare a price estimate.</p>
+            <div class="row prediction-form-grid align-items-end">
+                <div class="col-12 col-md-6 col-xl-3 prediction-field">
+                    <label for="predCrop">Crop</label>
+                    <select id="predCrop" class="form-select">
+                        <option value="" selected disabled>Select crop</option>
+                        {% for c in commodities %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3 prediction-field">
+                    <label for="predVariety">Variety</label>
+                    <select id="predVariety" class="form-select" disabled>
+                        <option value="" selected disabled>Select variety</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3 prediction-field">
+                    <label for="predMarket">Division</label>
+                    <select id="predMarket" class="form-select">
+                        <option value="" selected disabled>Select division</option>
+                        {% for m in markets %}<option value="{{ m }}">{{ m }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3 prediction-field">
+                    <label for="predMonth">Month</label>
+                    <select id="predMonth" class="form-select">
+                        <option value="" selected disabled>Select prediction month</option>
+                        <option value="1">January</option><option value="2">February</option>
+                        <option value="3">March</option><option value="4">April</option>
+                        <option value="5">May</option><option value="6">June</option>
+                        <option value="7">July</option><option value="8">August</option>
+                        <option value="9">September</option><option value="10">October</option>
+                        <option value="11">November</option><option value="12">December</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="button" id="predictBtn" class="btn prediction-button w-100 w-md-auto">Predict Price</button>
+                    <div id="predError" class="prediction-error" style="display:none"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prediction Result -->
+        <div class="prediction-card">
+            <h2 class="prediction-section-title">Prediction Result</h2>
+            <p class="prediction-section-copy">Estimated values will appear here after a prediction is requested.</p>
+            <div class="prediction-results-grid">
+                <div class="prediction-metric">
+                    <span class="prediction-metric-label">Crop</span>
+                    <div class="prediction-metric-value" id="resCrop"><span class="prediction-empty"></span></div>
+                </div>
+                <div class="prediction-metric">
+                    <span class="prediction-metric-label">Market</span>
+                    <div class="prediction-metric-value" id="resMarket"><span class="prediction-empty"></span></div>
+                </div>
+                <div class="prediction-metric">
+                    <span class="prediction-metric-label">Month</span>
+                    <div class="prediction-metric-value" id="resMonth"><span class="prediction-empty"></span></div>
+                </div>
+                <div class="prediction-metric">
+                    <span class="prediction-metric-label">Estimated Price</span>
+                    <div class="prediction-metric-value" id="resPrice"><span class="prediction-empty"></span></div>
+                </div>
+                <div class="prediction-metric">
+                    <span class="prediction-metric-label">Price Range</span>
+                    <div class="prediction-metric-value" id="resRange"><span class="prediction-empty"></span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Price Trend Chart -->
+        <div class="prediction-card">
+            <h2 class="prediction-section-title">📈 Price Trend</h2>
+            <p class="prediction-section-copy">Historical prices and the next predicted point visualized.</p>
+            <div class="prediction-chart-wrap">
+                <canvas id="priceChart" class="prediction-chart-canvas" height="280"></canvas>
+                <div class="prediction-legend">
+                    <div class="prediction-legend-item"><span class="prediction-legend-swatch history"></span><span>Historical</span></div>
+                    <div class="prediction-legend-item"><span class="prediction-legend-swatch predicted"></span><span>Predicted</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Market Insight -->
+        <div class="prediction-insight">
+            <div>
+                <h2 class="prediction-insight-title">💡 Market Insight</h2>
+                <p class="prediction-insight-copy" id="insightText">Submit a prediction to receive market advice.</p>
+            </div>
+            <span class="prediction-status-pill" id="insightPill" style="display:none"></span>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const MONTH_NAMES = ['', 'January','February','March','April','May','June','July','August','September','October','November','December'];
+    const VARIETIES = {{ varieties_json|safe }};
+
+    // DOM refs
+    const cropSel   = document.getElementById('predCrop');
+    const varSel    = document.getElementById('predVariety');
+    const mktSel    = document.getElementById('predMarket');
+    const monthSel  = document.getElementById('predMonth');
+    const btn       = document.getElementById('predictBtn');
+    const errBox    = document.getElementById('predError');
+
+    // Cascade: Crop → Variety
+    cropSel.addEventListener('change', function () {
+        const opts = VARIETIES[this.value] || [];
+        varSel.innerHTML = '<option value="" selected disabled>Select variety</option>';
+        opts.forEach(function (v) {
+            const o = document.createElement('option');
+            o.value = v; o.textContent = v.replace(/_/g, ' ');
+            varSel.appendChild(o);
+        });
+        varSel.disabled = opts.length === 0;
+    });
+
+    // Chart instance (Chart.js loaded from base.html)
+    let chartInstance = null;
+
+    function showError(msg) {
+        errBox.textContent = msg;
+        errBox.style.display = 'block';
+    }
+    function hideError() { errBox.style.display = 'none'; }
+
+    function getCookie(name) {
+        let val = null;
+        document.cookie.split(';').forEach(function (c) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) val = decodeURIComponent(c.substring(name.length + 1));
+        });
+        return val;
+    }
+
+    // ---------- Predict button ----------
+    btn.addEventListener('click', function () {
+        hideError();
+        const commodity = cropSel.value;
+        const variety = varSel.value;
+        const market = mktSel.value;
+        const month = monthSel.value;
+
+        if (!commodity || !variety || !market || !month) {
+            showError('Please select all four fields before predicting.');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="prediction-spinner"></span> Predicting…';
+
+        // 1) Fire prediction request
+        fetch("{% url 'price_predict_api' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ commodity: commodity, variety: variety, market: market, month: parseInt(month) }),
+        })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (res) {
+            btn.disabled = false;
+            btn.textContent = 'Predict Price';
+
+            if (!res.ok) { showError(res.data.error || 'Prediction failed'); return; }
+
+            var d = res.data;
+            document.getElementById('resCrop').textContent = d.commodity + ' (' + d.variety.replace(/_/g, ' ') + ')';
+            document.getElementById('resMarket').textContent = d.market;
+            document.getElementById('resMonth').textContent = MONTH_NAMES[d.month] || d.month;
+            document.getElementById('resPrice').textContent = '৳ ' + d.predicted_price.toFixed(2) + ' / KG';
+            document.getElementById('resRange').textContent = '৳ ' + d.price_low.toFixed(2) + ' – ৳ ' + d.price_high.toFixed(2);
+
+            // Advisory
+            document.getElementById('insightText').textContent = d.advisory;
+            var pill = document.getElementById('insightPill');
+            pill.style.display = 'inline-block';
+            if (d.advisory.toLowerCase().includes('increase')) { pill.textContent = '↑ Upward'; pill.style.background = 'rgba(47,107,59,0.12)'; pill.style.color = '#2f6b3b'; }
+            else if (d.advisory.toLowerCase().includes('decrease')) { pill.textContent = '↓ Downward'; pill.style.background = 'rgba(192,57,43,0.12)'; pill.style.color = '#c0392b'; }
+            else { pill.textContent = '→ Stable'; pill.style.background = 'rgba(216,146,42,0.12)'; pill.style.color = '#9b6513'; }
+
+            // 2) Fetch historical prices for chart
+            loadChart(commodity, variety, market, d.predicted_price, parseInt(month));
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.textContent = 'Predict Price';
+            showError('Network error — please try again.');
+        });
+    });
+
+    // ---------- Chart ----------
+    function loadChart(commodity, variety, market, predictedPrice, predMonth) {
+        var qs = '?commodity=' + encodeURIComponent(commodity) + '&variety=' + encodeURIComponent(variety) + '&market=' + encodeURIComponent(market);
+        fetch("{% url 'price_history_api' %}" + qs)
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            var hist = res.history || [];
+            var labels = hist.map(function (h) { return MONTH_NAMES[h.month].substring(0,3) + ' ' + h.year; });
+            var prices = hist.map(function (h) { return h.price; });
+
+            // Append predicted point
+            var lastYear = hist.length ? hist[hist.length - 1].year : 2026;
+            var predYear = predMonth <= (hist.length ? hist[hist.length - 1].month : 0) ? lastYear + 1 : lastYear;
+            labels.push(MONTH_NAMES[predMonth].substring(0,3) + ' ' + predYear + ' (P)');
+            prices.push(null); // gap so we draw predicted separately
+
+            var predPrices = new Array(prices.length).fill(null);
+            predPrices[predPrices.length - 2] = hist.length ? hist[hist.length - 1].price : predictedPrice;
+            predPrices[predPrices.length - 1] = predictedPrice;
+
+            prices[prices.length - 1] = null; // keep null for history line
+
+            if (chartInstance) chartInstance.destroy();
+
+            var ctx = document.getElementById('priceChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Historical',
+                            data: prices.map(function (v, i) { return i < prices.length - 1 ? hist[i].price : null; }),
+                            borderColor: '#2f6b3b',
+                            backgroundColor: 'rgba(47,107,59,0.08)',
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            borderWidth: 3,
+                        },
+                        {
+                            label: 'Predicted',
+                            data: predPrices,
+                            borderColor: '#d8922a',
+                            borderDash: [8, 5],
+                            backgroundColor: 'rgba(216,146,42,0.10)',
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#d8922a',
+                            pointBorderWidth: 3,
+                            borderWidth: 3,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { title: { display: true, text: 'Price (৳/KG)', font: { weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.04)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}
