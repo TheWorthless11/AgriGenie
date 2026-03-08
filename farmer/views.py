@@ -5,13 +5,13 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Avg, Count
 from django.utils import timezone
 from django.http import JsonResponse
-from farmer.models import Crop, Order, CropDisease, CropPrice, WeatherAlert, Message, FarmerRating
+from farmer.models import Crop, Order, CropDisease, WeatherAlert, Message, FarmerRating
 from farmer.forms import CropForm, OrderForm, MessageForm, WeatherAlertForm, CropDiseaseForm
 from users.models import Notification, CustomUser
 from admin_panel.models import MasterCrop
 from marketplace.models import CropListing
 from buyer.models import PurchaseRequest
-from ai_models import analyze_disease_image, predict_crop_prices, WeatherService, get_coordinates_from_location
+from ai_models import analyze_disease_image, WeatherService, get_coordinates_from_location
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import json
@@ -290,77 +290,6 @@ def disease_history(request, crop_id):
 
 
 @login_required(login_url='login')
-def price_prediction(request):
-    """Crop Price Prediction with visualizations"""
-    if request.user.role != 'farmer':
-        messages.error(request, 'Only farmers can view price predictions!')
-        return redirect('dashboard')
-    
-    crops = Crop.objects.filter(farmer=request.user)
-    selected_crop_id = request.GET.get('crop')
-    price_data = None
-    prediction_result = None
-    
-    if selected_crop_id:
-        crop = get_object_or_404(Crop, id=selected_crop_id, farmer=request.user)
-        
-        try:
-            # Generate new predictions
-            current_price = crop.price_per_unit
-            volatility = request.GET.get('volatility', '0.05')
-            
-            try:
-                volatility = float(volatility)
-            except:
-                volatility = 0.05
-            
-            prediction_result = predict_crop_prices(current_price, days_ahead=30, volatility=volatility)
-            
-            # Store predictions in database for historical tracking
-            for pred in prediction_result['predictions']:
-                # Only store first prediction of each day to avoid duplicates
-                existing = CropPrice.objects.filter(
-                    crop=crop,
-                    prediction_date=pred['date']
-                ).first()
-                
-                if not existing:
-                    CropPrice.objects.create(
-                        crop=crop,
-                        predicted_price=pred['price'],
-                        prediction_date=pred['date'],
-                        forecast_days=30,
-                        confidence_level=75.0
-                    )
-            
-            # Get historical data
-            price_data = CropPrice.objects.filter(crop=crop).order_by('-prediction_date')[:30]
-        
-        except Exception as e:
-            messages.error(request, f'Error generating predictions: {str(e)}')
-    
-    # Prepare data for chart.js visualization
-    chart_data = None
-    if prediction_result:
-        predictions = prediction_result['predictions']
-        chart_data = {
-            'labels': [p['date'] for p in predictions],
-            'prices': [p['price'] for p in predictions],
-            'current_price': crop.price_per_unit if selected_crop_id else 0,
-        }
-    
-    context = {
-        'crops': crops,
-        'price_data': price_data,
-        'selected_crop_id': selected_crop_id,
-        'prediction_result': prediction_result,
-        'chart_data': json.dumps(chart_data) if chart_data else None,
-        'title': 'Price Prediction & Analysis'
-    }
-    return render(request, 'farmer/price_prediction.html', context)
-
-
-@login_required(login_url='login')
 def weather_alerts(request):
     """View real-time weather and disaster alerts"""
     if request.user.role != 'farmer':
@@ -389,6 +318,86 @@ def weather_alerts(request):
         'title': 'Weather & Disaster Alerts'
     }
     return render(request, 'farmer/weather_alerts.html', context)
+
+
+@login_required(login_url='login')
+def crop_price_prediction(request):
+    """Render crop price prediction page with dropdown options."""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Access denied!')
+        return redirect('dashboard')
+
+    from ai_models.price_prediction.predictor import get_dropdown_options
+    options = get_dropdown_options()
+
+    context = {
+        'title': 'Crop Price Prediction',
+        'commodities': options['commodities'],
+        'varieties_json': json.dumps(options['varieties']),
+        'markets': options['markets'],
+    }
+    return render(request, 'farmer/crop_price_prediction.html', context)
+
+
+@login_required(login_url='login')
+def price_predict_api(request):
+    """AJAX endpoint: predict crop price for given inputs."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+    if request.user.role != 'farmer':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    commodity = data.get('commodity', '').strip()
+    variety = data.get('variety', '').strip()
+    market = data.get('market', '').strip()
+    month = data.get('month')
+
+    if not all([commodity, variety, market, month]):
+        return JsonResponse({'error': 'All fields are required'}, status=400)
+
+    try:
+        month = int(month)
+        if month < 1 or month > 12:
+            raise ValueError
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Month must be 1-12'}, status=400)
+
+    import os
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+    from ai_models.price_prediction.predictor import predict_price
+    try:
+        result = predict_price(commodity, variety, market, month)
+    except FileNotFoundError as e:
+        return JsonResponse({'error': str(e)}, status=503)
+    except ValueError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'Prediction failed: {str(e)}'}, status=500)
+
+    return JsonResponse(result)
+
+
+@login_required(login_url='login')
+def price_history_api(request):
+    """AJAX endpoint: return historical price data for chart."""
+    if request.user.role != 'farmer':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    commodity = request.GET.get('commodity', '').strip()
+    variety = request.GET.get('variety', '').strip()
+    market = request.GET.get('market', '').strip()
+
+    if not all([commodity, variety, market]):
+        return JsonResponse({'error': 'commodity, variety, market required'}, status=400)
+
+    from ai_models.price_prediction.predictor import get_price_history
+    history = get_price_history(commodity, variety, market)
+    return JsonResponse({'history': history})
 
 
 @login_required(login_url='login')

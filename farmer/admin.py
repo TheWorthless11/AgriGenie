@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Crop, Order, CropDisease, CropPrice, WeatherAlert, Message, FarmerRating
+from .models import Crop, Order, CropDisease, WeatherAlert, Message, FarmerRating
 
 
 @admin.register(Crop)
@@ -26,15 +26,6 @@ class CropDiseaseAdmin(admin.ModelAdmin):
     list_filter = ['disease_type', 'detected_date']
     search_fields = ['disease_name', 'crop__crop_name']
     readonly_fields = ['detected_date']
-
-
-@admin.register(CropPrice)
-class CropPriceAdmin(admin.ModelAdmin):
-    list_display = ['crop', 'predicted_price', 'actual_price', 'prediction_date', 'forecast_days']
-    list_filter = ['prediction_date', 'forecast_days']
-    search_fields = ['crop__crop_name']
-    readonly_fields = ['prediction_date']
-    date_hierarchy = 'prediction_date'
 
 
 @admin.register(WeatherAlert)

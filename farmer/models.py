@@ -112,24 +112,6 @@ class CropDisease(models.Model):
         return f"{self.disease_name} on {crop_name}"
 
 
-class CropPrice(models.Model):
-    crop = models.ForeignKey(Crop, on_delete=models.CASCADE, related_name='price_history')
-    predicted_price = models.FloatField()
-    actual_price = models.FloatField(null=True, blank=True)
-    prediction_date = models.DateField(auto_now_add=True)
-    forecast_days = models.IntegerField(default=30)  # Price forecast for next N days
-    confidence_level = models.FloatField(
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
-        default=0
-    )
-    
-    class Meta:
-        ordering = ['-prediction_date']
-    
-    def __str__(self):
-        return f"{self.crop.crop_name} - {self.prediction_date}"
-
-
 class WeatherAlert(models.Model):
     ALERT_TYPES = (
         ('flood', 'Flood'),
@@ -194,3 +176,49 @@ class FarmerRating(models.Model):
     
     def __str__(self):
         return f"{self.rating} stars - {self.farmer.username}"
+
+
+class CropPriceData(models.Model):
+    """
+    Stores actual observed crop-price records.
+    Only real historical/monthly data — never predicted values.
+    Unique on (Year, Month, Market, Commodity, Variety).
+    """
+    year = models.PositiveSmallIntegerField()
+    month = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(12)])
+    market = models.CharField(max_length=60)
+    commodity = models.CharField(max_length=60)
+    variety = models.CharField(max_length=80)
+
+    price_per_kg = models.FloatField()
+    avg_temp_c = models.FloatField()
+    max_temp_c = models.FloatField()
+    min_temp_c = models.FloatField()
+    rainfall_mm = models.FloatField()
+    cumulative_rainfall_mm = models.FloatField()
+    flood = models.IntegerField(default=0)
+    drought = models.IntegerField(default=0)
+    yield_per_hectare = models.FloatField()
+    production_tonnes = models.FloatField()
+    area_hectares = models.FloatField()
+    import_tonnes = models.FloatField()
+    export_tonnes = models.FloatField()
+    fertilizer_cost = models.FloatField()
+    seed_cost = models.FloatField()
+    labor_cost = models.FloatField()
+    fuel_cost = models.FloatField()
+    inflation = models.FloatField()
+    cpi = models.FloatField()
+    lag1_price = models.FloatField()
+    lag2_price = models.FloatField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('year', 'month', 'market', 'commodity', 'variety')
+        ordering = ['year', 'month', 'market', 'commodity', 'variety']
+        verbose_name = 'Crop Price Data'
+        verbose_name_plural = 'Crop Price Data'
+
+    def __str__(self):
+        return f"{self.commodity}/{self.variety} - {self.market} ({self.month}/{self.year})"
