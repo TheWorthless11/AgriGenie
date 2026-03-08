@@ -7,7 +7,7 @@ from datetime import timedelta
 
 from admin_panel.models import UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog
 from users.models import CustomUser, FarmerProfile, BuyerProfile, Notification
-from farmer.models import Crop, Order, CropDisease, CropPrice
+from farmer.models import Crop, Order, CropDisease
 from marketplace.models import CropListing
 
 
@@ -417,8 +417,8 @@ def ai_monitoring(request):
     # Get recent disease detections
     recent_diseases = CropDisease.objects.all().order_by('-detected_date')[:10]
     
-    # Get recent price predictions
-    recent_prices = CropPrice.objects.all().order_by('-prediction_date')[:10]
+    # Recent price predictions (placeholder — CropPrice model removed)
+    recent_prices = []
     
     context = {
         'disease_monitor': disease_monitor,
