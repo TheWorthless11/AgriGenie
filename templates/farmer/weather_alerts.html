@@ -85,7 +85,7 @@
                     <div class="row text-center">
                         <div class="col-md-12 mb-3">
                             <div class="weather-icon">
-                                <i class="fas fa-{{ weather_summary.description|lower|cut:' '|replace:'sunny':'sun'|replace:'cloudy':'cloud'|replace:'rainy':'cloud-rain'|replace:'clear':'sun' }}"></i>
+                                <i class="fas fa-{{ weather_icon }}"></i>
                             </div>
                             <h4>{{ weather_summary.description }}</h4>
                             <p class="text-muted">Last updated: {{ weather_summary.timestamp }}</p>

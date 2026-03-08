@@ -312,9 +312,29 @@ def weather_alerts(request):
     except Exception as e:
         print(f"Error fetching weather: {str(e)}")
     
+    # Map weather description to Font Awesome icon
+    weather_icon = 'cloud-sun'
+    if weather_summary and weather_summary.get('description'):
+        desc = weather_summary['description'].lower()
+        if 'sunny' in desc or 'clear' in desc:
+            weather_icon = 'sun'
+        elif 'rain' in desc or 'drizzle' in desc or 'shower' in desc:
+            weather_icon = 'cloud-rain'
+        elif 'thunder' in desc or 'storm' in desc:
+            weather_icon = 'bolt'
+        elif 'snow' in desc or 'sleet' in desc:
+            weather_icon = 'snowflake'
+        elif 'fog' in desc or 'mist' in desc or 'haze' in desc:
+            weather_icon = 'smog'
+        elif 'cloud' in desc or 'overcast' in desc:
+            weather_icon = 'cloud'
+        elif 'wind' in desc:
+            weather_icon = 'wind'
+
     context = {
         'alerts': alerts,
         'weather_summary': weather_summary,
+        'weather_icon': weather_icon,
         'title': 'Weather & Disaster Alerts'
     }
     return render(request, 'farmer/weather_alerts.html', context)

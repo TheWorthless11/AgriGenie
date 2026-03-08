@@ -127,7 +127,7 @@
                         </li>
                         <li class="mb-2">
                             <strong>Created By:</strong><br>
-                            <span class="text-muted">{{ master_crop.created_by.get_full_name|default:master_crop.created_by.username|default:"System" }}</span>
+                            <span class="text-muted">{% if master_crop.created_by %}{{ master_crop.created_by.get_full_name|default:master_crop.created_by.username }}{% else %}System{% endif %}</span>
                         </li>
                         <li>
                             <strong>Status:</strong><br>

@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Register - Step 1 - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <!-- Progress Steps -->
+            <div class="mb-4">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="badge bg-success p-2 mb-2" style="font-size: 12px; width: 100%;">
+                            <i class="fas fa-circle-check"></i> Step 1
+                        </div>
+                        <small class="d-block">Verify Contact</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="badge bg-light text-dark p-2 mb-2" style="font-size: 12px; width: 100%;">
+                            Step 2
+                        </div>
+                        <small class="d-block">Verify OTP</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="badge bg-light text-dark p-2 mb-2" style="font-size: 12px; width: 100%;">
+                            Step 3
+                        </div>
+                        <small class="d-block">Create Account</small>
+                    </div>
+                </div>
+                <div class="progress mt-3">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 33%;" aria-valuenow="33" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <h2 class="card-title text-center mb-4 text-success">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </h2>
+                    <p class="text-center text-muted mb-4">Step 1: Verify Your Contact Information</p>
+                    
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Contact Method Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">How would you like to verify?</label>
+                            
+                            <div class="form-check mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="contact_method" id="contact_email" 
+                                       value="email" required onchange="toggleContactField()">
+                                <label class="form-check-label ms-2" for="contact_email">
+                                    <i class="fas fa-envelope text-primary"></i> <strong>Email Address</strong>
+                                    <small class="d-block text-muted">Receive OTP via email</small>
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3 p-3 border rounded">
+                                <input class="form-check-input" type="radio" name="contact_method" id="contact_phone" 
+                                       value="phone" required onchange="toggleContactField()">
+                                <label class="form-check-label ms-2" for="contact_phone">
+                                    <i class="fas fa-phone text-success"></i> <strong>Phone Number</strong>
+                                    <small class="d-block text-muted">Receive OTP via SMS</small>
+                                </label>
+                            </div>
+                            
+                            {% if form.contact_method.errors %}
+                                <div class="alert alert-danger mt-2">{{ form.contact_method.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="mb-3" id="email_field" style="display: none;">
+                            <label for="id_email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                   id="id_email" name="email" placeholder="example@email.com">
+                            {% if form.email.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.email.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Phone Field -->
+                        <div class="mb-3" id="phone_field" style="display: none;">
+                            <label for="id_country_code" class="form-label">Country Code</label>
+                            {{ form.country_code }}
+                            
+                            <label for="id_phone_number" class="form-label mt-3">Phone Number</label>
+                            <input type="tel" class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}" 
+                                   id="id_phone_number" name="phone_number" placeholder="9876543210">
+                            <small class="text-muted d-block mt-2">Enter phone number without the country code</small>
+                            {% if form.phone_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.phone_number.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Non-field errors -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger alert-dismissible fade show">
+                                {{ form.non_field_errors.0 }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endif %}
+                        
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+                            <i class="fas fa-arrow-right"></i> Send OTP
+                        </button>
+                    </form>
+                    
+                    <div class="text-center mt-4">
+                        <p class="text-muted">Already have an account? 
+                            <a href="{% url 'login' %}" class="text-success fw-bold">Login here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="alert alert-info mt-4">
+                <i class="fas fa-info-circle"></i> <strong>Why verify?</strong> 
+                We send you a 6-digit code to confirm your contact information for account security.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleContactField() {
+    const emailField = document.getElementById('email_field');
+    const phoneField = document.getElementById('phone_field');
+    const contactEmail = document.getElementById('contact_email');
+    
+    if (contactEmail.checked) {
+        emailField.style.display = 'block';
+        phoneField.style.display = 'none';
+        document.getElementById('id_email').required = true;
+        document.getElementById('id_phone_number').required = false;
+        document.getElementById('id_country_code').required = false;
+    } else {
+        emailField.style.display = 'none';
+        phoneField.style.display = 'block';
+        document.getElementById('id_email').required = false;
+        document.getElementById('id_phone_number').required = true;
+        document.getElementById('id_country_code').required = true;
+    }
+}
+
+// Initialize on page load
+window.addEventListener('load', function() {
+    const contactEmail = document.getElementById('contact_email');
+    if (contactEmail.checked || !document.getElementById('contact_phone').checked) {
+        toggleContactField();
+    }
+});
+</script>
+{% endblock %}

@@ -41,17 +41,18 @@ class Crop(models.Model):
         verbose_name_plural = 'Crop Listings'
     
     def __str__(self):
-        return f"{self.master_crop.crop_name} - {self.farmer.username} ({self.quantity}{self.unit})"
+        name = self.master_crop.crop_name if self.master_crop else 'Unknown Crop'
+        return f"{name} - {self.farmer.username} ({self.quantity}{self.unit})"
     
     @property
     def crop_name(self):
         """For backward compatibility with existing code"""
-        return self.master_crop.crop_name
+        return self.master_crop.crop_name if self.master_crop else 'Unknown Crop'
     
     @property
     def crop_type(self):
         """For backward compatibility with existing code"""
-        return self.master_crop.crop_type
+        return self.master_crop.crop_type if self.master_crop else 'Unknown'
 
 
 class Order(models.Model):
