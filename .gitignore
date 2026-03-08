@@ -31,3 +31,5 @@ ai_models/archive/
 Thumbs.db
 .idea/
 
+".env" 
+"staticfiles/" 
