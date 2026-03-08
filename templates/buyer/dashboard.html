@@ -98,7 +98,7 @@
                 <div class="card-body">
                     {% if buyer_profile %}
                         <p><strong>Company:</strong> {{ buyer_profile.company_name|default:"Not set" }}</p>
-                        <p><strong>Location:</strong> {{ user.location|default:"Not set" }}</p>
+                        <p><strong>Location:</strong> {{ user.get_full_location|default:"Not set" }}</p>
                         <p><strong>Phone:</strong> {{ user.phone_number|default:"Not set" }}</p>
                         <p>
                             <strong>Status:</strong> 
