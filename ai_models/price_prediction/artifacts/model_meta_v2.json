@@ -1,0 +1,45 @@
+{
+  "best_params": {
+    "hidden_size": 105,
+    "num_layers": 1,
+    "lr": 0.003967856814028079,
+    "batch_size": 53,
+    "epochs": 64
+  },
+  "metrics": {
+    "rmse": 0.01244236808270216,
+    "mae": 0.009322619065642357,
+    "mape_pct": 12.369112968444824
+  },
+  "input_size": 29,
+  "lookback": 6,
+  "vmd_k": 3,
+  "feature_cols": [
+    "Market",
+    "Commodity",
+    "Variety",
+    "Year",
+    "Avg_Temp_C",
+    "Max_Temp_C",
+    "Min_Temp_C",
+    "Rainfall_mm",
+    "Cumulative_Rainfall_mm",
+    "Flood",
+    "Drought",
+    "Yield_per_Hectare",
+    "Production_tonnes",
+    "Area_Hectares",
+    "Import_tonnes",
+    "Export_tonnes",
+    "Fertilizer_Cost",
+    "Seed_Cost",
+    "Labor_Cost",
+    "Fuel_Cost",
+    "Inflation",
+    "CPI",
+    "Lag1_Price",
+    "Lag2_Price",
+    "Month_sin",
+    "Month_cos"
+  ]
+}

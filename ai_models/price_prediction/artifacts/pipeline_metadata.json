@@ -1,0 +1,31 @@
+{
+  "last_trained_year": 2025,
+  "last_trained_month": 12,
+  "last_csv_rows": 10560,
+  "model_version": 2,
+  "active_model": "lstm_model_v2.pt",
+  "training_history": [
+    {
+      "version": 1,
+      "trained_at": "2025-12-01T00:00:00",
+      "data_range": "2015-01 to 2025-12",
+      "rows": 10560,
+      "metrics": {
+        "rmse": 0.01284,
+        "mae": 0.01017,
+        "mape_pct": 13.2
+      }
+    },
+    {
+      "version": 2,
+      "trained_at": "2026-03-07T17:34:48.293917",
+      "data_range": "2015-01 to 2025-12",
+      "rows": 10560,
+      "metrics": {
+        "rmse": 0.01244236808270216,
+        "mae": 0.009322619065642357,
+        "mape_pct": 12.369112968444824
+      }
+    }
+  ]
+}
