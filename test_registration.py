@@ -1,86 +1,111 @@
 """
-Test the registration form to ensure it's working properly.
+Test the Dynamic Registration Form to ensure it's working properly.
 Run this to test: python test_registration.py
 """
 
 import os
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'AgriGenie.settings')
+# Points to your Level 2 settings
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
 django.setup()
 
-from users.forms import ContactMethodForm
-from users.models import EmailPhoneVerification
+from users.forms import DynamicRegistrationForm
 
-def test_email_registration():
+def test_farmer_registration():
     print("=" * 60)
-    print("🧪 Testing Email Registration Form")
+    print("🧪 Testing Farmer Registration (PIN Auth)")
     print("=" * 60)
     
+    # Simulating a Farmer signing up from Dhaka
     data = {
-        'contact_method': 'email',
-        'email': 'testuser@example.com',
-        'country_code': '+1',
-        'phone_number': ''
+        'full_name': 'Rahim Mia',
+        'phone_number': '+8801712345678',
+        'role': 'farmer',
+        'district': 'Dhaka',
+        'upazila': 'Sadar',
+        'country': 'Bangladesh',
+        'auth_type': 'pin',
+        'pin': '1234',
+        'confirm_pin': '1234'
     }
     
-    form = ContactMethodForm(data)
-    print(f"\n📝 Form data: {data}")
+    form = DynamicRegistrationForm(data)
+    print(f"\n📝 Form data: Farmer from {data['district']}")
     print(f"✅ Form valid: {form.is_valid()}")
     
     if form.is_valid():
-        print(f"✅ Email: {form.cleaned_data.get('email')}")
-        print("✅ Email registration form works!")
+        print("✅ Farmer registration logic works perfectly!")
     else:
         print(f"❌ Form errors: {form.errors}")
     
     print("\n" + "=" * 60)
 
-def test_phone_registration():
-    print("🧪 Testing Phone Registration Form")
+def test_buyer_registration():
+    print("🧪 Testing Buyer Registration (Password Auth)")
     print("=" * 60)
     
+    # Simulating a Buyer signing up from Chittagong
     data = {
-        'contact_method': 'phone',
-        'email': '',
-        'country_code': '+91',
-        'phone_number': '9876543210'
+        'full_name': 'AgroCorp BD',
+        'phone_number': '+8801812345679',
+        'role': 'buyer',
+        'district': 'Chittagong',
+        'upazila': 'North',
+        'country': 'Bangladesh',
+        'email': 'buyer@agrocorp.bd',
+        'password': 'StrongPassword123',
+        'confirm_password': 'StrongPassword123'
     }
     
-    form = ContactMethodForm(data)
-    print(f"\n📝 Form data: {data}")
+    form = DynamicRegistrationForm(data)
+    print(f"\n📝 Form data: Buyer from {data['district']}")
     print(f"✅ Form valid: {form.is_valid()}")
     
     if form.is_valid():
-        phone = form.cleaned_data.get('phone_number')
-        print(f"✅ Full phone number: {phone}")
-        print("✅ Phone registration form works!")
+        print("✅ Buyer registration logic works perfectly!")
     else:
         print(f"❌ Form errors: {form.errors}")
     
     print("\n" + "=" * 60)
 
-def test_otp_creation():
-    print("🧪 Testing OTP Creation")
+def test_otp_and_token_system():
+    print("🧪 Testing Forgot Credential System")
     print("=" * 60)
     
-    verification = EmailPhoneVerification.create_verification(
-        verification_type='email',
-        email='test_otp@example.com'
-    )
-    
-    print(f"\n✅ Verification created:")
-    print(f"   ID: {verification.id}")
-    print(f"   Type: {verification.get_verification_type_display()}")
-    print(f"   Email: {verification.email}")
-    print(f"   OTP: {verification.otp_code}")
-    print(f"   Valid: {verification.is_valid()}")
-    print(f"   Expires: {verification.expires_at}")
-    
-    print("\n✅ OTP system works!")
-    print("=" * 60)
+    try:
+        from users.models import OTPVerification, PasswordResetToken, CustomUser
+        
+        # 1. Test Farmer OTP Generation
+        print("\n📱 Testing Farmer OTP (Phone):")
+        otp = OTPVerification.generate_otp(phone_number='+8801712345678')
+        print(f"   ✅ OTP Generated: {otp.otp_code}")
+        print(f"   ✅ Expires at: {otp.expires_at}")
+        otp.delete()
+        print("   🧹 Cleaned up OTP.")
 
+        # 2. Test Buyer Token Generation
+        print("\n📧 Testing Buyer Token (Email):")
+        # We need a temporary user for this test
+        user, created = CustomUser.objects.get_or_create(username="testbuyer", email="buyer@test.com")
+        token_obj = PasswordResetToken.generate_token(user)
+        print(f"   ✅ Token Generated: {token_obj.token[:20]}...")
+        print(f"   ✅ Valid: {token_obj.is_valid()}")
+        
+        token_obj.delete()
+        if created: user.delete()
+        print("   🧹 Cleaned up Token and Test User.")
+
+        print("\n✅ OTP & Token systems are fully functional!")
+        
+    except ImportError as e:
+        print(f"❌ Could not find models: {e}")
+    except Exception as e:
+        print(f"❌ Error during test: {e}")
+        
+    print("=" * 60)
+    
 if __name__ == '__main__':
-    test_email_registration()
-    test_phone_registration()
-    test_otp_creation()
+    test_farmer_registration()
+    test_buyer_registration()
+    test_otp_and_token_system()
