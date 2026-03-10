@@ -86,8 +86,8 @@
         <!-- Recent Activity -->
         <div class="col-12">
             <!-- Recent Orders -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <div class="card dashboard-table-card mb-4">
+                <div class="card-header dashboard-table-card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-shopping-bag"></i> Recent Orders</h5>
                     <a href="{% url 'farmer_orders' %}" class="btn btn-sm btn-light">View All</a>
                 </div>
@@ -136,8 +136,8 @@
             </div>
 
             <!-- Recent Crops -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <div class="card dashboard-table-card">
+                <div class="card-header dashboard-table-card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-leaf"></i> Your Crops</h5>
                     <div>
                         <a href="{% url 'submit_report' %}" class="btn btn-sm btn-warning me-1"><i class="fas fa-flag"></i> Report</a>

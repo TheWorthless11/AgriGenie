@@ -9,10 +9,8 @@ import json
 import threading
 import numpy as np
 import pandas as pd
-import torch
 import joblib
 
-from .model import PriceLSTM
 from .preprocessing import (
     ARTIFACTS_DIR,
     CSV_PATH,
@@ -31,8 +29,6 @@ from .preprocessing import (
     add_cyclic_month,
 )
 
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
 _lock = threading.Lock()
 _loaded = {
     "model": None,
@@ -42,6 +38,16 @@ _loaded = {
     "tgt_scaler": None,
     "df": None,
 }
+
+
+def _load_torch_dependencies():
+    """Import PyTorch and the model lazily so non-ML routes can still work."""
+    os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
+    import torch
+    from .model import PriceLSTM
+
+    return torch, PriceLSTM
 
 
 def invalidate_cache():
@@ -77,6 +83,7 @@ def _ensure_loaded():
         with open(meta_path) as f:
             meta = json.load(f)
 
+        torch, PriceLSTM = _load_torch_dependencies()
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = PriceLSTM(
             input_size=meta["input_size"],
@@ -192,6 +199,7 @@ def predict_price(commodity, variety, market, month):
     full_features = np.hstack([feat_matrix, modes.T])  # (LOOKBACK, n_features + VMD_K)
 
     # ---- Predict ----
+    torch, _ = _load_torch_dependencies()
     device = next(model.parameters()).device
     x_tensor = torch.tensor(full_features, dtype=torch.float32).unsqueeze(0).to(device)
 

@@ -431,6 +431,8 @@ def price_predict_api(request):
     from ai_models.price_prediction.predictor import predict_price
     try:
         result = predict_price(commodity, variety, market, month)
+    except ImportError as e:
+        return JsonResponse({'error': f'Prediction service unavailable: {str(e)}'}, status=503)
     except FileNotFoundError as e:
         return JsonResponse({'error': str(e)}, status=503)
     except ValueError as e:

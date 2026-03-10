@@ -72,7 +72,7 @@
         <!-- Quick Actions -->
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-success text-white">
+                <div class="card-header agri-card-header">
                     <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
                 </div>
                 <div class="list-group list-group-flush">
@@ -105,7 +105,7 @@
 
             <!-- Profile Info -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-success text-white">
+                <div class="card-header agri-card-header">
                     <h5 class="mb-0"><i class="fas fa-info-circle"></i> Profile</h5>
                 </div>
                 <div class="card-body">
@@ -134,8 +134,8 @@
         <!-- Recent Orders & Activity -->
         <div class="col-lg-8">
             <!-- Active Orders -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <div class="card dashboard-table-card mb-4">
+                <div class="card-header dashboard-table-card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-shopping-bag"></i> Active Orders</h5>
                     <a href="{% url 'buyer_orders' %}" class="btn btn-sm btn-light">View All</a>
                 </div>
@@ -186,8 +186,8 @@
             </div>
 
             <!-- Wishlist Preview -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <div class="card dashboard-table-card">
+                <div class="card-header dashboard-table-card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-heart"></i> Wishlist</h5>
                     <a href="{% url 'wishlist' %}" class="btn btn-sm btn-light">View All</a>
                 </div>
