@@ -121,7 +121,7 @@ def crop_listing(request, crop_id):
     
     # Get similar crops
     similar_crops = Crop.objects.filter(
-        crop_type=crop.crop_type,
+        master_crop__crop_type=crop.master_crop.crop_type if crop.master_crop else '',
         is_available=True
     ).exclude(id=crop.id)[:4]
     
@@ -136,7 +136,7 @@ def crop_listing(request, crop_id):
         'farmer': crop.farmer,
         'title': crop.crop_name
     }
-    return render(request, 'marketplace/crop_listing.html', context)
+    return render(request, 'marketplace/crop_detail.html', context)
 
 
 @login_required(login_url='login')

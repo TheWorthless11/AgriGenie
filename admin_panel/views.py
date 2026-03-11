@@ -524,66 +524,62 @@ def ai_monitoring(request):
         t = d['type_label']
         type_counts[t] = type_counts.get(t, 0) + 1
 
-    # ── Price predictions for master crops (past 1 year) ─────────
-    master_crops = MasterCrop.objects.filter(is_active=True)
-    today = datetime.now().date()
-    one_year_ago = today - timedelta(days=365)
+    # ── Price predictions using REAL data from the prediction dataset ──
+    from ai_models.price_prediction.predictor import get_price_history, get_dropdown_options
 
-    # Base prices per category (₹/kg) — realistic Indian market ranges
-    base_prices = {
-        'vegetables': 35,
-        'fruits': 60,
-        'grains': 25,
-        'pulses': 80,
-        'spices': 150,
-        'cash_crops': 45,
-        'other': 40,
-    }
-    seasonal_weights = {
-        1: 1.10, 2: 1.15, 3: 1.20,
-        4: 1.00, 5: 0.90, 6: 0.80,
-        7: 0.75, 8: 0.70, 9: 0.80,
-        10: 1.00, 11: 1.15, 12: 1.20,
-    }
+    options = get_dropdown_options()
+    commodities = options.get('commodities', [])
+    varieties_map = options.get('varieties', {})
+    markets = options.get('markets', [])
+    default_market = markets[0] if markets else 'Dhaka'
 
-    crop_price_data = []  # list of {crop_name, monthly_prices:[{month_label, price}], avg, min, max}
-    for mc in master_crops:
-        base = base_prices.get(mc.category, 40)
-        random.seed(hash(mc.crop_name))  # deterministic per crop
-        monthly_prices = []
-        prices_only = []
-        for m_offset in range(12):
-            dt = one_year_ago + timedelta(days=m_offset * 30)
-            month_num = dt.month
-            seasonal = seasonal_weights.get(month_num, 1.0)
-            noise = random.uniform(-0.08, 0.08)
-            price = round(base * seasonal * (1 + noise), 2)
-            label = dt.strftime('%b %Y')
-            monthly_prices.append({'month': label, 'price': price})
-            prices_only.append(price)
-
-        crop_price_data.append({
-            'crop_name': mc.crop_name,
-            'category': mc.get_category_display(),
-            'monthly_prices': monthly_prices,
-            'avg_price': round(sum(prices_only) / len(prices_only), 2),
-            'min_price': round(min(prices_only), 2),
-            'max_price': round(max(prices_only), 2),
-        })
-
-    # JSON data for Chart.js
-    chart_labels = [p['month'] for p in crop_price_data[0]['monthly_prices']] if crop_price_data else []
+    crop_price_data = []
+    chart_labels = []
     chart_datasets = []
-    palette = ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#0dcaf0', '#6f42c1']
-    for i, cpd in enumerate(crop_price_data):
-        chart_datasets.append({
-            'label': cpd['crop_name'],
-            'data': [p['price'] for p in cpd['monthly_prices']],
-            'borderColor': palette[i % len(palette)],
-            'backgroundColor': palette[i % len(palette)] + '22',
-            'fill': True,
-            'tension': 0.3,
-        })
+    palette = [
+        '#0d6efd', '#198754', '#dc3545', '#ffc107', '#0dcaf0', '#6f42c1',
+        '#fd7e14', '#20c997', '#d63384', '#6610f2', '#e83e8c', '#17a2b8',
+    ]
+    color_idx = 0
+
+    for commodity in commodities:
+        for variety in varieties_map.get(commodity, []):
+            history = get_price_history(commodity, variety, default_market, limit=12)
+            if not history:
+                continue
+
+            monthly_prices = []
+            prices_only = []
+            for h in history:
+                month_names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                label = f"{month_names[h['month']]} {h['year']}"
+                monthly_prices.append({'month': label, 'price': round(h['price'], 2)})
+                prices_only.append(h['price'])
+
+            display_name = f"{commodity} - {variety.replace('_', ' ')}"
+            crop_price_data.append({
+                'crop_name': display_name,
+                'category': commodity,
+                'monthly_prices': monthly_prices,
+                'avg_price': round(sum(prices_only) / len(prices_only), 2),
+                'min_price': round(min(prices_only), 2),
+                'max_price': round(max(prices_only), 2),
+            })
+
+            # Build chart labels from longest series
+            if len(monthly_prices) > len(chart_labels):
+                chart_labels = [p['month'] for p in monthly_prices]
+
+            chart_datasets.append({
+                'label': display_name,
+                'data': [p['price'] for p in monthly_prices],
+                'borderColor': palette[color_idx % len(palette)],
+                'backgroundColor': palette[color_idx % len(palette)] + '22',
+                'fill': False,
+                'tension': 0.3,
+            })
+            color_idx += 1
 
     # ── Recent disease detections (keep existing) ────────────────
     recent_diseases = CropDisease.objects.all().order_by('-detected_date')[:10]
@@ -595,6 +591,7 @@ def ai_monitoring(request):
         'chart_labels_json': json.dumps(chart_labels),
         'chart_datasets_json': json.dumps(chart_datasets),
         'recent_diseases': recent_diseases,
+        'default_market': default_market,
         'title': 'AI Monitoring',
     }
     return render(request, 'admin_panel/ai_monitoring.html', context)
@@ -921,3 +918,68 @@ def toggle_user_approval(request, user_id):
             messages.info(request, 'Admin accounts do not require approval.')
     
     return redirect('user_management')
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def import_crop_variants(request):
+    """Import all crop variants from the price prediction dataset as master crops."""
+    from ai_models.price_prediction.predictor import get_dropdown_options
+
+    CATEGORY_MAP = {
+        'Potato': 'vegetables',
+        'Tomato': 'vegetables',
+        'Rice': 'grains',
+    }
+
+    if request.method == 'POST':
+        options = get_dropdown_options()
+        commodities = options.get('commodities', [])
+        varieties_map = options.get('varieties', {})
+        created_count = 0
+        skipped_count = 0
+
+        for commodity in commodities:
+            for variety in varieties_map.get(commodity, []):
+                crop_name = f"{commodity} - {variety.replace('_', ' ')}"
+                category = CATEGORY_MAP.get(commodity, 'other')
+                _, created = MasterCrop.objects.get_or_create(
+                    crop_name=crop_name,
+                    defaults={
+                        'crop_type': 'conventional',
+                        'category': category,
+                        'description': f'{variety.replace("_", " ")} variant of {commodity}',
+                        'is_active': True,
+                        'created_by': request.user,
+                    }
+                )
+                if created:
+                    created_count += 1
+                else:
+                    skipped_count += 1
+
+        if created_count:
+            messages.success(request, f'Successfully imported {created_count} crop variant(s) as master crops!')
+        if skipped_count:
+            messages.info(request, f'{skipped_count} variant(s) already existed and were skipped.')
+        if not created_count and not skipped_count:
+            messages.warning(request, 'No variants found in the dataset.')
+
+        return redirect('master_crops_list')
+
+    # GET — show confirmation page
+    options = get_dropdown_options()
+    commodities = options.get('commodities', [])
+    variants_map = options.get('varieties', {})
+    variant_list = []
+    for commodity in commodities:
+        for variety in variants_map.get(commodity, []):
+            name = f"{commodity} - {variety.replace('_', ' ')}"
+            exists = MasterCrop.objects.filter(crop_name=name).exists()
+            variant_list.append({'commodity': commodity, 'variety': variety.replace('_', ' '), 'name': name, 'exists': exists})
+
+    context = {
+        'variant_list': variant_list,
+        'title': 'Import Crop Variants',
+    }
+    return render(request, 'admin_panel/import_crop_variants.html', context)
