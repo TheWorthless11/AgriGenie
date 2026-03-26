@@ -18,9 +18,8 @@ import json
 
 
 def is_farmer_approved(user):
-    """Check if a farmer is approved by admin"""
-    profile = FarmerProfile.objects.filter(user=user).first()
-    return profile and profile.is_approved
+    """Farmers do not require manual super-admin approval."""
+    return user.is_authenticated and user.role == 'farmer'
 
 
 @login_required(login_url='login')

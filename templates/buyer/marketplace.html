@@ -111,6 +111,15 @@
                             <p class="small text-muted mb-0">
                                 <i class="fas fa-calendar"></i> Available: {{ crop.availability_date|date:"M d, Y" }}
                             </p>
+
+                            <p class="small mb-0 mt-2">
+                                <i class="fas fa-star text-warning"></i>
+                                {% if crop.review_count %}
+                                    {{ crop.avg_rating|floatformat:1 }} / 5 ({{ crop.review_count }} review{{ crop.review_count|pluralize }})
+                                {% else %}
+                                    No reviews yet
+                                {% endif %}
+                            </p>
                         </div>
                         
                         <div class="card-footer bg-white border-0 pt-0">
@@ -128,6 +137,9 @@
                                     <i class="fas fa-comment"></i>
                                 </a>
                             </div>
+                            <a href="{% url 'leave_review' crop.id %}" class="btn btn-outline-warning btn-sm w-100 mt-2">
+                                <i class="fas fa-star"></i> Review Product
+                            </a>
                         </div>
                     </div>
                 </div>

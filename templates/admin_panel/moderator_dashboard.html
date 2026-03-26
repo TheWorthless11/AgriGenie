@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Moderator Dashboard - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-user-check text-warning"></i> Moderator Dashboard</h2>
+            <p class="text-muted mb-0">Manage buyer company verification assignments from super admin</p>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <h3 class="fw-bold text-primary mb-0">{{ assigned_count }}</h3>
+                    <small class="text-muted">Assigned Inspections</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <h3 class="fw-bold text-info mb-0">{{ in_progress_count }}</h3>
+                    <small class="text-muted">In Progress</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <h3 class="fw-bold text-success mb-0">{{ submitted_count }}</h3>
+                    <small class="text-muted">Submitted to Super Admin</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> My Buyer Verification Tasks</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if assigned_approvals %}
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Buyer</th>
+                                <th>Company</th>
+                                <th>Status</th>
+                                <th>Assigned</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for approval in assigned_approvals %}
+                                <tr>
+                                    <td>{{ approval.user.get_full_name|default:approval.user.username }}</td>
+                                    <td>{{ approval.user.buyer_profile.company_name|default:'N/A' }}</td>
+                                    <td>
+                                        {% if approval.inspection_status == 'pending_assignment' %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% elif approval.inspection_status == 'assigned' %}
+                                            <span class="badge bg-info">Assigned</span>
+                                        {% elif approval.inspection_status == 'photos_submitted' %}
+                                            <span class="badge bg-success">Submitted</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ approval.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'moderator_inspection' approval.id %}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-camera"></i> Open
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No assignments yet</h5>
+                    <p class="text-muted mb-0">Super admin assigned buyer inspections will appear here.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

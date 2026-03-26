@@ -1,8 +1,7 @@
 from django.contrib import admin
-from .models import MasterCrop, UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog
 from .models import (
     MasterCrop, UserApproval, SystemAlert, SystemReport, 
-    AIDiseaseMonitor, AIPricePredictor, ActivityLog, FarmerListing # Add this
+    AIDiseaseMonitor, AIPricePredictor, ActivityLog, FarmerListing, BuyerInspectionPhoto
 )
 
 @admin.register(MasterCrop)
@@ -21,10 +20,17 @@ class MasterCropAdmin(admin.ModelAdmin):
 
 @admin.register(UserApproval)
 class UserApprovalAdmin(admin.ModelAdmin):
-    list_display = ['user', 'status', 'reviewed_by', 'reviewed_at', 'created_at']
-    list_filter = ['status', 'created_at']
+    list_display = ['user', 'status', 'inspection_status', 'assigned_moderator', 'reviewed_by', 'reviewed_at', 'created_at']
+    list_filter = ['status', 'inspection_status', 'created_at']
     search_fields = ['user__username', 'user__email']
     readonly_fields = ['created_at', 'reviewed_at']
+
+
+@admin.register(BuyerInspectionPhoto)
+class BuyerInspectionPhotoAdmin(admin.ModelAdmin):
+    list_display = ['approval', 'uploaded_by', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['approval__user__username', 'uploaded_by__username']
 
 
 @admin.register(SystemAlert)

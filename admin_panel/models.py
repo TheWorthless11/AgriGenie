@@ -45,12 +45,32 @@ class MasterCrop(models.Model):
 
 
 class UserApproval(models.Model):
+    INSPECTION_STATUS_CHOICES = (
+        ('pending_assignment', 'Pending Moderator Assignment'),
+        ('assigned', 'Moderator Assigned'),
+        ('photos_submitted', 'Photos Submitted'),
+    )
+
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='approval_request')
     status = models.CharField(
         max_length=20,
         choices=[('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')],
         default='pending'
     )
+    assigned_moderator = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_buyer_approvals'
+    )
+    inspection_status = models.CharField(
+        max_length=30,
+        choices=INSPECTION_STATUS_CHOICES,
+        default='pending_assignment'
+    )
+    inspection_notes = models.TextField(blank=True, null=True)
+    inspection_submitted_at = models.DateTimeField(null=True, blank=True)
     documents = models.FileField(upload_to='approvals/', null=True, blank=True)
     reason_for_rejection = models.TextField(blank=True, null=True)
     reviewed_by = models.ForeignKey(
@@ -65,6 +85,20 @@ class UserApproval(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.status}"
+
+
+class BuyerInspectionPhoto(models.Model):
+    approval = models.ForeignKey(UserApproval, on_delete=models.CASCADE, related_name='inspection_photos')
+    uploaded_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name='uploaded_inspection_photos')
+    image = models.ImageField(upload_to='buyer_inspections/')
+    caption = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Inspection photo for {self.approval.user.username}"
 
 
 class SystemAlert(models.Model):

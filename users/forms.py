@@ -87,7 +87,7 @@ class DynamicRegistrationForm(forms.ModelForm):
     )
     
     role = forms.ChoiceField(
-        choices=[('farmer', 'Farmer'), ('buyer', 'Buyer')],
+        choices=[('farmer', 'Farmer'), ('buyer', 'Buyer'), ('moderator', 'Moderator')],
         initial='farmer',
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
     )
@@ -212,9 +212,9 @@ class DynamicRegistrationForm(forms.ModelForm):
         email = self.cleaned_data.get('email')
         role = self.cleaned_data.get('role')
         
-        if role == 'buyer':
+        if role in ('buyer', 'moderator'):
             if not email:
-                raise forms.ValidationError("Email is required for buyers.")
+                raise forms.ValidationError("Email is required for buyers and moderators.")
         
         # Check for duplicate email if provided
         if email and CustomUser.objects.filter(email=email).exists():
@@ -241,7 +241,7 @@ class DynamicRegistrationForm(forms.ModelForm):
         role = self.cleaned_data.get('role')
         auth_type = self.cleaned_data.get('auth_type')
         
-        needs_password = (role == 'buyer') or (role == 'farmer' and auth_type == 'password')
+        needs_password = (role in ('buyer', 'moderator')) or (role == 'farmer' and auth_type == 'password')
         
         if needs_password:
             if not password:
@@ -269,7 +269,7 @@ class DynamicRegistrationForm(forms.ModelForm):
                 self.add_error('confirm_pin', "PINs do not match.")
         
         # Validate password confirmation
-        needs_password = (role == 'buyer') or (role == 'farmer' and auth_type == 'password')
+        needs_password = (role in ('buyer', 'moderator')) or (role == 'farmer' and auth_type == 'password')
         if needs_password:
             password = cleaned_data.get('password')
             confirm_password = cleaned_data.get('confirm_password')

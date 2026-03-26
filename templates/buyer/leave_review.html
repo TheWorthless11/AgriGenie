@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Review {{ crop.crop_name }} - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-star text-warning"></i> Review Product</h2>
+        <a href="{% url 'crop_detail' crop.id %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Product
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h5 class="mb-1">{{ crop.crop_name }}</h5>
+            <p class="text-muted">Sold by {{ crop.farmer.get_full_name|default:crop.farmer.username }}</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Rating</label>
+                    <select name="rating" class="form-select" required>
+                        <option value="">Select rating</option>
+                        <option value="5" {% if existing_review and existing_review.rating == 5 %}selected{% endif %}>5 - Excellent</option>
+                        <option value="4" {% if existing_review and existing_review.rating == 4 %}selected{% endif %}>4 - Very Good</option>
+                        <option value="3" {% if existing_review and existing_review.rating == 3 %}selected{% endif %}>3 - Good</option>
+                        <option value="2" {% if existing_review and existing_review.rating == 2 %}selected{% endif %}>2 - Fair</option>
+                        <option value="1" {% if existing_review and existing_review.rating == 1 %}selected{% endif %}>1 - Poor</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Review Title</label>
+                    <input type="text" name="title" class="form-control" value="{% if existing_review %}{{ existing_review.title }}{% endif %}" maxlength="255" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Review Details</label>
+                    <textarea name="review" class="form-control" rows="5" required>{% if existing_review %}{{ existing_review.review_text }}{% endif %}</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-paper-plane"></i>
+                    {% if existing_review %}Update Review{% else %}Submit Review{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

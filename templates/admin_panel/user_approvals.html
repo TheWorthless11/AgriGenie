@@ -13,7 +13,7 @@
                     <span class="badge bg-warning text-dark">{{ pending_count }} Pending</span>
                 {% endif %}
             </h1>
-            <p class="text-muted">Review and approve/reject user registrations</p>
+            <p class="text-muted">Review buyer registrations, assign moderators, inspect evidence, then approve.</p>
         </div>
         <div class="col-md-4">
             <form method="GET" class="d-flex gap-2">
@@ -23,9 +23,8 @@
                     {% endfor %}
                 </select>
                 <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">All Roles</option>
                     {% for val, label in role_choices %}
-                        <option value="{{ val }}" {% if request.GET.role == val %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ val }}" {% if role_filter == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -67,6 +66,22 @@
                                     <span class="badge bg-danger">Rejected</span>
                                 {% endif %}
                             </p>
+                            {% if approval.user.role == 'buyer' %}
+                                <p class="mb-2">
+                                    <strong>Inspection:</strong>
+                                    {% if approval.inspection_status == 'pending_assignment' %}
+                                        <span class="badge bg-secondary">Pending Assignment</span>
+                                    {% elif approval.inspection_status == 'assigned' %}
+                                        <span class="badge bg-info">Assigned</span>
+                                    {% elif approval.inspection_status == 'photos_submitted' %}
+                                        <span class="badge bg-primary">Photos Submitted</span>
+                                    {% endif %}
+                                </p>
+                                <p class="mb-2">
+                                    <strong>Moderator:</strong>
+                                    {{ approval.assigned_moderator.username|default:'Not assigned' }}
+                                </p>
+                            {% endif %}
                             {% if approval.documents %}
                                 <p class="mb-2">
                                     <a href="{{ approval.documents.url }}" target="_blank" class="btn btn-sm btn-info">
@@ -81,7 +96,11 @@
                             {% endif %}
                         </div>
                         <div class="card-footer bg-white">
-                            {% if approval.status == 'pending' %}
+                            {% if approval.status == 'pending' and approval.user.role == 'buyer' %}
+                                <a href="{% url 'buyer_inspection_detail' approval.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-search"></i> Inspect
+                                </a>
+                            {% elif approval.status == 'pending' %}
                                 <a href="{% url 'approve_user' approval.id %}" class="btn btn-sm btn-success">
                                     <i class="fas fa-check"></i> Approve
                                 </a>
