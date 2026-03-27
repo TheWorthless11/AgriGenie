@@ -5,7 +5,6 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Avg, Count
 from django.http import JsonResponse
-from django.utils import timezone
 from users.models import CustomUser, FarmerProfile, BuyerProfile, Notification
 from users.forms import CustomUserCreationForm, CustomUserChangeForm, FarmerProfileForm, BuyerProfileForm, CustomAuthenticationForm, DynamicRegistrationForm
 from farmer.models import Crop, Order, Message
@@ -27,11 +26,10 @@ def register(request):
         if form.is_valid():
             print("DEBUG REGISTER: Form is valid, saving user...")
             user = form.save()
-            from admin_panel.models import UserApproval
             
             # Create role-specific profile
             if user.role == 'farmer':
-                # Farmers are auto-approved and do not require admin review.
+                # Create basic farmer profile
                 FarmerProfile.objects.get_or_create(
                     user=user,
                     defaults={
@@ -41,69 +39,36 @@ def register(request):
                         'soil_type': 'Not specified',
                         'experience_years': 0,
                         'registration_number': f"FR-{user.id:06d}",
-                        'is_approved': True,
                     }
                 )
-                UserApproval.objects.update_or_create(
-                    user=user,
-                    defaults={
-                        'status': 'approved',
-                        'inspection_status': 'pending_assignment',
-                        'reviewed_at': timezone.now(),
-                    },
-                )
             elif user.role == 'buyer':
-                # Buyers always require admin approval.
+                # Create basic buyer profile
                 BuyerProfile.objects.get_or_create(
                     user=user,
                     defaults={
                         'company_name': user.first_name,
                         'business_type': 'Individual',
-                        'is_approved': False,
                     }
                 )
-                UserApproval.objects.update_or_create(
-                user=user,
-                    defaults={
-                        'status': 'pending',
-                        'inspection_status': 'pending_assignment',
-                    },
-                )
-
-                # Notify admins only for buyer approval requests.
-                admin_users = CustomUser.objects.filter(role='admin')
-                for admin_user in admin_users:
-                    Notification.objects.create(
-                        user=admin_user,
-                        notification_type='system',
-                        title='New Buyer Approval Request',
-                        message=f'New buyer "{user.username}" ({user.get_full_name()}) has registered and is awaiting approval.'
-                    )
-            elif user.role == 'moderator':
-                # Moderators require super-admin approval before access.
-                UserApproval.objects.update_or_create(
-                    user=user,
-                    defaults={
-                        'status': 'pending',
-                        'inspection_status': 'pending_assignment',
-                    },
-                )
-
-                admin_users = CustomUser.objects.filter(role='admin')
-                for admin_user in admin_users:
-                    Notification.objects.create(
-                        user=admin_user,
-                        notification_type='system',
-                        title='New Moderator Approval Request',
-                        message=f'New moderator "{user.username}" ({user.get_full_name()}) has registered and is awaiting approval.'
-                    )
             
-            if user.role == 'farmer':
-                messages.success(request, f'Account created successfully for {user.first_name}! Your farmer account is active now.')
-            elif user.role == 'moderator':
-                messages.success(request, f'Account created successfully for {user.first_name}! Your moderator account is pending super-admin approval.')
-            else:
-                messages.success(request, f'Account created successfully for {user.first_name}! Your buyer account is pending admin approval. You can browse the platform but certain actions are restricted until approved.')
+            # Create approval request for admin review
+            from admin_panel.models import UserApproval
+            UserApproval.objects.get_or_create(
+                user=user,
+                defaults={'status': 'pending'}
+            )
+            
+            # Notify all admins about the new pending approval
+            admin_users = CustomUser.objects.filter(role='admin')
+            for admin_user in admin_users:
+                Notification.objects.create(
+                    user=admin_user,
+                    notification_type='system',
+                    title='New User Approval Request',
+                    message=f'New {user.get_role_display()} "{user.username}" ({user.get_full_name()}) has registered and is awaiting approval.'
+                )
+            
+            messages.success(request, f'Account created successfully for {user.first_name}! Your account is pending admin approval. You can browse the platform but certain actions are restricted until approved.')
             return redirect('login')
         else:
             print(f"DEBUG REGISTER: Form errors: {form.errors}")
@@ -129,7 +94,6 @@ def login_view(request):
     Supports:
     - Farmer login with Phone + PIN or Password
     - Buyer login with Email + Password
-    - Moderator login with Email + Password
     
     Database Integration:
     - CustomUser model stores: role, auth_type, pin_hash, phone_number, email
@@ -288,101 +252,6 @@ def login_view(request):
                     messages.error(request, 'Invalid password. Please try again.')
             except CustomUser.DoesNotExist:
                 messages.error(request, 'No buyer account found with this email address.')
-
-        elif role == 'moderator':
-            # Moderator login - Email + Password
-            email = request.POST.get('moderator_email', '').strip().lower()
-            password = request.POST.get('moderator_password', '')
-
-            try:
-                user = CustomUser.objects.get(email=email, role='moderator')
-                approval_request = getattr(user, 'approval_request', None)
-                if approval_request is None:
-                    from admin_panel.models import UserApproval
-                    approval_request = UserApproval.objects.create(
-                        user=user,
-                        status='pending',
-                        inspection_status='pending_assignment',
-                    )
-
-                    for admin_user in CustomUser.objects.filter(role='admin', is_active=True):
-                        Notification.objects.create(
-                            user=admin_user,
-                            notification_type='system',
-                            title='Moderator Approval Request Created',
-                            message=f'Moderator "{user.username}" is awaiting approval.'
-                        )
-
-                approval_status = approval_request.status
-                if approval_status != 'approved':
-                    messages.warning(request, 'Your moderator account is pending super-admin approval.')
-                    return redirect('moderator_pending_approval')
-
-                authenticated_user = authenticate(username=user.username, password=password)
-                if authenticated_user is not None:
-                    login(request, authenticated_user)
-                    request.session.modified = True
-                    request.session.cycle_key()
-                    messages.success(request, f'Welcome back, {user.first_name or user.username}!')
-
-                    from django.http import HttpResponseRedirect
-                    from django.urls import reverse
-                    from django.conf import settings
-                    response = HttpResponseRedirect(reverse('dashboard'))
-                    response.set_cookie(
-                        settings.SESSION_COOKIE_NAME,
-                        request.session.session_key,
-                        max_age=getattr(settings, 'SESSION_COOKIE_AGE', 1209600),
-                        path=getattr(settings, 'SESSION_COOKIE_PATH', '/'),
-                        domain=getattr(settings, 'SESSION_COOKIE_DOMAIN', None),
-                        secure=getattr(settings, 'SESSION_COOKIE_SECURE', False),
-                        httponly=getattr(settings, 'SESSION_COOKIE_HTTPONLY', True),
-                        samesite=getattr(settings, 'SESSION_COOKIE_SAMESITE', 'Lax'),
-                    )
-                    return response
-                else:
-                    messages.error(request, 'Invalid password. Please try again.')
-            except CustomUser.DoesNotExist:
-                messages.error(request, 'No moderator account found with this email address.')
-
-        elif role == 'admin':
-            # Admin login - Email/Username + Password
-            admin_identifier = request.POST.get('admin_identifier', '').strip()
-            password = request.POST.get('admin_password', '')
-
-            if not admin_identifier:
-                messages.error(request, 'Please enter your admin email or username.')
-            else:
-                try:
-                    admin_user = CustomUser.objects.get(
-                        Q(role='admin') & (Q(email__iexact=admin_identifier) | Q(username__iexact=admin_identifier))
-                    )
-                    authenticated_user = authenticate(username=admin_user.username, password=password)
-                    if authenticated_user is not None:
-                        login(request, authenticated_user)
-                        request.session.modified = True
-                        request.session.cycle_key()
-                        messages.success(request, f'Welcome back, {admin_user.first_name or admin_user.username}!')
-
-                        from django.http import HttpResponseRedirect
-                        from django.urls import reverse
-                        from django.conf import settings
-                        response = HttpResponseRedirect(reverse('dashboard'))
-                        response.set_cookie(
-                            settings.SESSION_COOKIE_NAME,
-                            request.session.session_key,
-                            max_age=getattr(settings, 'SESSION_COOKIE_AGE', 1209600),
-                            path=getattr(settings, 'SESSION_COOKIE_PATH', '/'),
-                            domain=getattr(settings, 'SESSION_COOKIE_DOMAIN', None),
-                            secure=getattr(settings, 'SESSION_COOKIE_SECURE', False),
-                            httponly=getattr(settings, 'SESSION_COOKIE_HTTPONLY', True),
-                            samesite=getattr(settings, 'SESSION_COOKIE_SAMESITE', 'Lax'),
-                        )
-                        return response
-
-                    messages.error(request, 'Invalid admin password. Please try again.')
-                except CustomUser.DoesNotExist:
-                    messages.error(request, 'No admin account found with this email/username.')
     
     context = {
         'title': 'Login',
@@ -396,15 +265,6 @@ def logout_view(request):
     logout(request)
     messages.success(request, 'You have been logged out successfully!')
     return redirect('login')
-
-
-def moderator_pending_approval(request):
-    """Dedicated page for moderators awaiting super-admin approval."""
-    if request.user.is_authenticated and request.user.role == 'moderator':
-        approval_status = getattr(getattr(request.user, 'approval_request', None), 'status', 'pending')
-        if approval_status == 'approved':
-            return redirect('dashboard')
-    return render(request, 'users/moderator_pending_approval.html', {'title': 'Moderator Approval Pending'})
 
 
 @login_required(login_url='login')
@@ -471,26 +331,6 @@ def dashboard(request):
             'total_orders': total_orders,
         })
         return render(request, 'admin_panel/dashboard.html', context)
-
-    elif user.role == 'moderator':
-        approval_status = getattr(getattr(user, 'approval_request', None), 'status', 'pending')
-        if approval_status != 'approved':
-            logout(request)
-            return redirect('moderator_pending_approval')
-
-        from admin_panel.models import UserApproval
-        assigned_approvals = UserApproval.objects.filter(
-            assigned_moderator=user,
-            status='pending'
-        ).select_related('user').order_by('-created_at')
-
-        context.update({
-            'assigned_approvals': assigned_approvals,
-            'assigned_count': assigned_approvals.count(),
-            'submitted_count': assigned_approvals.filter(inspection_status='photos_submitted').count(),
-            'in_progress_count': assigned_approvals.filter(inspection_status='assigned').count(),
-        })
-        return render(request, 'admin_panel/moderator_dashboard.html', context)
     
     return render(request, 'dashboard.html', context)
 
@@ -1141,40 +981,11 @@ def google_role_select(request):
         user.role = role
         user.save()
 
-        from admin_panel.models import UserApproval
-
         if role == 'buyer':
             from users.models import BuyerProfile
-            BuyerProfile.objects.update_or_create(
-                user=user,
-                defaults={'is_approved': False}
-            )
-            UserApproval.objects.update_or_create(
-                user=user,
-                defaults={
-                    'status': 'pending',
-                    'inspection_status': 'pending_assignment',
-                },
-            )
-
-            admin_users = CustomUser.objects.filter(role='admin')
-            for admin_user in admin_users:
-                Notification.objects.create(
-                    user=admin_user,
-                    notification_type='system',
-                    title='New Buyer Approval Request',
-                    message=f'New buyer "{user.username}" ({user.get_full_name()}) has registered and is awaiting approval.'
-                )
+            BuyerProfile.objects.get_or_create(user=user)
             response = redirect('dashboard')
         else:
-            UserApproval.objects.update_or_create(
-                user=user,
-                defaults={
-                    'status': 'approved',
-                    'inspection_status': 'pending_assignment',
-                    'reviewed_at': timezone.now(),
-                },
-            )
             response = redirect('profile_edit')
 
         # ASGI/Daphne session cookie fix

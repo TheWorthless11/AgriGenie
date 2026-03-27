@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg
 from django.utils import timezone
 from datetime import timedelta
 from buyer.models import PurchaseRequest, WishlistItem, SavedCrop, BuyerRating
@@ -47,10 +47,7 @@ def marketplace(request):
         messages.error(request, 'Access denied!')
         return redirect('dashboard')
     
-    crops = Crop.objects.filter(is_available=True).select_related('farmer').annotate(
-        avg_rating=Avg('reviews__rating'),
-        review_count=Count('reviews')
-    )
+    crops = Crop.objects.filter(is_available=True).select_related('farmer')
     new_crops = crops.filter(created_at__gte=timezone.now() - timedelta(days=1))
     
     # Search and filter
@@ -109,7 +106,7 @@ def crop_detail(request, crop_id):
     except CropListing.DoesNotExist:
         pass
     
-    reviews = Review.objects.filter(crop=crop).select_related('reviewer')
+    reviews = Review.objects.filter(crop=crop)
     avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] or 0
     is_in_wishlist = WishlistItem.objects.filter(buyer=request.user, crop=crop).exists()
     

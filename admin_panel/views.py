@@ -5,17 +5,7 @@ from django.db.models import Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 
-from admin_panel.models import (
-    UserApproval,
-    BuyerInspectionPhoto,
-    SystemAlert,
-    SystemReport,
-    AIDiseaseMonitor,
-    AIPricePredictor,
-    ActivityLog,
-    UserReport,
-    MasterCrop,
-)
+from admin_panel.models import UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog, UserReport, MasterCrop
 from users.models import CustomUser, FarmerProfile, BuyerProfile, Notification
 from farmer.models import Crop, Order, CropDisease
 from marketplace.models import CropListing
@@ -24,60 +14,6 @@ from marketplace.models import CropListing
 def is_admin(user):
     """Check if user is admin"""
     return user.is_authenticated and user.role == 'admin'
-
-
-def is_moderator(user):
-    """Check if user is moderator"""
-    if not (user.is_authenticated and user.role == 'moderator'):
-        return False
-    approval = getattr(user, 'approval_request', None)
-    return bool(approval and approval.status == 'approved')
-
-
-def is_admin_or_moderator(user):
-    """Allow either super admin or moderator."""
-    return is_admin(user) or is_moderator(user)
-
-
-def _apply_approval_to_profile(approval, reviewer):
-    """Mark profile approval flags and persist approval metadata."""
-    user = approval.user
-    approval.status = 'approved'
-    approval.reviewed_by = reviewer
-    approval.reviewed_at = timezone.now()
-    approval.save()
-
-    if user.role == 'farmer':
-        farmer_profile, _ = FarmerProfile.objects.get_or_create(
-            user=user,
-            defaults={
-                'farm_name': f"{user.first_name}'s Farm",
-                'farm_size': 0,
-                'farm_location': f"{user.upazila}, {user.district}" if hasattr(user, 'upazila') else 'Unknown',
-                'soil_type': 'Not specified',
-                'experience_years': 0,
-                'registration_number': f"FR-{user.id:06d}",
-            }
-        )
-        farmer_profile.is_approved = True
-        farmer_profile.save()
-    elif user.role == 'buyer':
-        buyer_profile, _ = BuyerProfile.objects.get_or_create(
-            user=user,
-            defaults={
-                'company_name': user.first_name or user.username,
-                'business_type': 'Individual',
-            }
-        )
-        buyer_profile.is_approved = True
-        buyer_profile.save()
-
-    Notification.objects.create(
-        user=user,
-        notification_type='system',
-        title='Account Approved',
-        message=f'Your {user.get_role_display()} account has been approved!'
-    )
 
 
 @login_required(login_url='login')
@@ -136,41 +72,25 @@ def admin_dashboard(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def user_approvals(request):
-    """Manage user approvals - defaults to pending buyers and moderators."""
-    # Backfill approval records for legacy buyer/moderator accounts created before workflow changes.
-    missing_approval_users = CustomUser.objects.filter(
-        role__in=['buyer', 'moderator'],
-        is_active=True,
-        approval_request__isnull=True,
-    )
-    for account in missing_approval_users:
-        UserApproval.objects.get_or_create(
-            user=account,
-            defaults={
-                'status': 'pending',
-                'inspection_status': 'pending_assignment',
-            },
-        )
-
+    """Manage user approvals - defaults to showing only pending"""
     approvals = UserApproval.objects.all().select_related('user').order_by('-created_at')
     status_filter = request.GET.get('status', 'pending')  # Default to pending only
-    role_filter = request.GET.get('role', 'all')
+    role_filter = request.GET.get('role')
     
     if status_filter and status_filter != 'all':
         approvals = approvals.filter(status=status_filter)
     
-    if role_filter and role_filter != 'all':
+    if role_filter:
         approvals = approvals.filter(user__role=role_filter)
     
-    pending_count = UserApproval.objects.filter(status='pending', user__role__in=['buyer', 'moderator']).count()
+    pending_count = UserApproval.objects.filter(status='pending').count()
     
     context = {
         'approvals': approvals,
         'pending_count': pending_count,
         'status_filter': status_filter,
-        'role_filter': role_filter,
         'status_choices': [('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected'), ('all', 'All')],
-        'role_choices': [('buyer', 'Buyer'), ('moderator', 'Moderator'), ('farmer', 'Farmer'), ('all', 'All Roles')],
+        'role_choices': [('farmer', 'Farmer'), ('buyer', 'Buyer')],
         'title': 'User Approvals'
     }
     return render(request, 'admin_panel/user_approvals.html', context)
@@ -179,21 +99,54 @@ def user_approvals(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def approve_user(request, approval_id):
-    """Approve a user. Buyers require moderator inspection photos first."""
+    """Approve a user"""
     approval = get_object_or_404(UserApproval, id=approval_id)
     
     if request.method == 'POST':
         action = request.POST.get('action')
         
         if action == 'approve':
-            if approval.user.role == 'buyer':
-                has_photos = approval.inspection_photos.exists()
-                if approval.inspection_status != 'photos_submitted' or not approval.assigned_moderator or not has_photos:
-                    messages.error(request, 'Buyer cannot be approved yet. Assign a moderator and collect inspection photos first.')
-                    return redirect('buyer_inspection_detail', approval_id=approval.id)
-
-            _apply_approval_to_profile(approval, request.user)
-            messages.success(request, f'{approval.user.username} approved successfully!')
+            approval.status = 'approved'
+            approval.reviewed_by = request.user
+            approval.reviewed_at = timezone.now()
+            approval.save()
+            
+            # Update user profile (create if missing)
+            user = approval.user
+            if user.role == 'farmer':
+                farmer_profile, created = FarmerProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'farm_name': f"{user.first_name}'s Farm",
+                        'farm_size': 0,
+                        'farm_location': f"{user.upazila}, {user.district}" if hasattr(user, 'upazila') else 'Unknown',
+                        'soil_type': 'Not specified',
+                        'experience_years': 0,
+                        'registration_number': f"FR-{user.id:06d}",
+                    }
+                )
+                farmer_profile.is_approved = True
+                farmer_profile.save()
+            elif user.role == 'buyer':
+                buyer_profile, created = BuyerProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'company_name': user.first_name or user.username,
+                        'business_type': 'Individual',
+                    }
+                )
+                buyer_profile.is_approved = True
+                buyer_profile.save()
+            
+            # Send notification
+            Notification.objects.create(
+                user=user,
+                notification_type='system',
+                title='Account Approved',
+                message=f'Your {user.get_role_display()} account has been approved!'
+            )
+            
+            messages.success(request, f'{user.username} approved successfully!')
         
         elif action == 'reject':
             reason = request.POST.get('reason', 'No reason provided')
@@ -217,142 +170,6 @@ def approve_user(request, approval_id):
     
     context = {'approval': approval, 'title': 'Review User Approval'}
     return render(request, 'admin_panel/approval_detail.html', context)
-
-
-@login_required(login_url='login')
-@user_passes_test(is_admin)
-def buyer_inspection_detail(request, approval_id):
-    """Super admin inspection page for buyer approval workflow."""
-    approval = get_object_or_404(UserApproval.objects.select_related('user', 'assigned_moderator'), id=approval_id)
-    if approval.user.role != 'buyer':
-        messages.info(request, 'Inspection workflow is only required for buyer approvals.')
-        return redirect('approve_user', approval_id=approval.id)
-
-    moderators = CustomUser.objects.filter(role='moderator', is_active=True).order_by('username')
-
-    if request.method == 'POST':
-        action = request.POST.get('action')
-
-        if action == 'assign_moderator':
-            moderator_id = request.POST.get('moderator_id')
-            moderator = get_object_or_404(CustomUser, id=moderator_id, role='moderator')
-            approval.assigned_moderator = moderator
-            if approval.status == 'pending':
-                approval.inspection_status = 'assigned'
-            approval.save(update_fields=['assigned_moderator', 'inspection_status'])
-
-            Notification.objects.create(
-                user=moderator,
-                notification_type='system',
-                title='New Buyer Inspection Assignment',
-                message=(
-                    f'You have been assigned to inspect buyer "{approval.user.username}" and upload inspection photos. '
-                    f'Open: /admin-panel/approvals/{approval.id}/moderator/'
-                )
-            )
-            messages.success(request, f'Moderator "{moderator.username}" assigned successfully.')
-            return redirect('buyer_inspection_detail', approval_id=approval.id)
-
-        if action == 'approve_buyer':
-            if approval.inspection_status != 'photos_submitted' or not approval.inspection_photos.exists():
-                messages.error(request, 'Inspection photos are required before approval.')
-                return redirect('buyer_inspection_detail', approval_id=approval.id)
-
-            _apply_approval_to_profile(approval, request.user)
-            messages.success(request, f'Buyer "{approval.user.username}" approved after inspection.')
-            return redirect('user_approvals')
-
-        if action == 'reject_buyer':
-            reason = request.POST.get('reason', 'No reason provided')
-            approval.status = 'rejected'
-            approval.reason_for_rejection = reason
-            approval.reviewed_by = request.user
-            approval.reviewed_at = timezone.now()
-            approval.save()
-
-            Notification.objects.create(
-                user=approval.user,
-                notification_type='system',
-                title='Account Rejected',
-                message=f'Your buyer account was rejected. Reason: {reason}'
-            )
-            messages.success(request, f'Buyer "{approval.user.username}" rejected.')
-            return redirect('user_approvals')
-
-    context = {
-        'approval': approval,
-        'moderators': moderators,
-        'photos': approval.inspection_photos.all(),
-        'title': 'Buyer Inspection Review',
-    }
-    return render(request, 'admin_panel/buyer_inspection_detail.html', context)
-
-
-@login_required(login_url='login')
-@user_passes_test(is_admin_or_moderator)
-def moderator_inspection(request, approval_id):
-    """Moderator page to upload buyer inspection evidence photos."""
-    approval = get_object_or_404(UserApproval.objects.select_related('user', 'assigned_moderator'), id=approval_id)
-    if approval.user.role != 'buyer':
-        messages.error(request, 'This inspection page is for buyer approvals only.')
-        return redirect('user_approvals')
-
-    if request.user.role == 'moderator' and approval.assigned_moderator != request.user:
-        messages.error(request, 'You are not assigned to this buyer inspection.')
-        return redirect('dashboard')
-
-    if request.method == 'POST':
-        action = request.POST.get('action')
-
-        if action == 'upload_photo':
-            photo = request.FILES.get('photo')
-            caption = request.POST.get('caption', '').strip()
-            if not photo:
-                messages.error(request, 'Please select a photo to upload.')
-                return redirect('moderator_inspection', approval_id=approval.id)
-
-            BuyerInspectionPhoto.objects.create(
-                approval=approval,
-                uploaded_by=request.user,
-                image=photo,
-                caption=caption,
-            )
-            if approval.status == 'pending' and approval.inspection_status == 'pending_assignment':
-                approval.inspection_status = 'assigned'
-                approval.save(update_fields=['inspection_status'])
-
-            messages.success(request, 'Inspection photo uploaded successfully.')
-            return redirect('moderator_inspection', approval_id=approval.id)
-
-        if action == 'submit_inspection':
-            if not approval.inspection_photos.exists():
-                messages.error(request, 'Upload at least one inspection photo before submitting.')
-                return redirect('moderator_inspection', approval_id=approval.id)
-
-            notes = request.POST.get('inspection_notes', '').strip()
-            approval.inspection_status = 'photos_submitted'
-            approval.inspection_submitted_at = timezone.now()
-            if notes:
-                approval.inspection_notes = notes
-            approval.save(update_fields=['inspection_status', 'inspection_submitted_at', 'inspection_notes'])
-
-            for admin_user in CustomUser.objects.filter(role='admin', is_active=True):
-                Notification.objects.create(
-                    user=admin_user,
-                    notification_type='system',
-                    title='Buyer Inspection Submitted',
-                    message=f'Moderator submitted inspection photos for buyer "{approval.user.username}". Review and approve from User Approvals.'
-                )
-
-            messages.success(request, 'Inspection submitted to super admin for final approval.')
-            return redirect('moderator_inspection', approval_id=approval.id)
-
-    context = {
-        'approval': approval,
-        'photos': approval.inspection_photos.all(),
-        'title': 'Moderator Inspection',
-    }
-    return render(request, 'admin_panel/moderator_inspection.html', context)
 
 
 @login_required(login_url='login')
@@ -1014,7 +831,6 @@ def user_management(request):
         'total_users': CustomUser.objects.count(),
         'total_farmers': CustomUser.objects.filter(role='farmer').count(),
         'total_buyers': CustomUser.objects.filter(role='buyer').count(),
-        'total_moderators': CustomUser.objects.filter(role='moderator').count(),
         'total_admins': CustomUser.objects.filter(role='admin').count(),
         'role_filter': role_filter,
         'search_query': search_query,
@@ -1049,12 +865,32 @@ def delete_user(request, user_id):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def toggle_user_approval(request, user_id):
-    """Approve or revoke approval for buyers. Farmers are auto-approved."""
+    """Approve or revoke approval for a user"""
     user = get_object_or_404(CustomUser, id=user_id)
     
     if request.method == 'POST':
         if user.role == 'farmer':
-            messages.info(request, 'Farmers are auto-approved and do not require manual approval.')
+            profile = FarmerProfile.objects.filter(user=user).first()
+            if profile:
+                profile.is_approved = not profile.is_approved
+                profile.save()
+                status = "approved" if profile.is_approved else "revoked"
+                
+                # Update UserApproval record
+                approval, _ = UserApproval.objects.get_or_create(user=user)
+                approval.status = 'approved' if profile.is_approved else 'rejected'
+                approval.reviewed_by = request.user
+                approval.reviewed_at = timezone.now()
+                approval.save()
+                
+                # Notify user
+                Notification.objects.create(
+                    user=user,
+                    notification_type='system',
+                    title=f'Account {status.title()}',
+                    message=f'Your farmer account has been {status} by admin.'
+                )
+                messages.success(request, f'Farmer "{user.username}" has been {status}.')
         
         elif user.role == 'buyer':
             profile = BuyerProfile.objects.filter(user=user).first()

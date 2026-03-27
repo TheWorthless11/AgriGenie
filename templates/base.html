@@ -43,8 +43,6 @@
                             <a href="{% url 'add_master_crop' %}" class="btn btn-outline-success dashboard-quick-add">+ Quick Add</a>
                         {% elif user.role == 'buyer' %}
                             <a href="{% url 'marketplace' %}" class="btn btn-outline-success dashboard-quick-add">+ Quick Add</a>
-                        {% elif user.role == 'moderator' %}
-                            <a href="{% url 'dashboard' %}" class="btn btn-outline-success dashboard-quick-add">+ Quick Add</a>
                         {% else %}
                             <button type="button" class="btn btn-outline-success dashboard-quick-add">+ Quick Add</button>
                         {% endif %}
@@ -140,16 +138,6 @@
                         </a>
                         <a class="sidebar-link {% if current_url == 'admin_reports' or current_url == 'system_alerts_admin' or current_url == 'activity_logs' or current_url == 'ai_monitoring' %}active{% endif %}" href="{% url 'admin_reports' %}">
                             <i class="fas fa-chart-pie"></i><span>Reports</span>
-                        </a>
-                    {% elif user.role == 'moderator' %}
-                        <a class="sidebar-link {% if current_url == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                            <i class="fas fa-table-columns"></i><span>Dashboard</span>
-                        </a>
-                        <a class="sidebar-link {% if current_url == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}">
-                            <i class="fas fa-bell"></i><span>Notifications</span>
-                        </a>
-                        <a class="sidebar-link {% if current_url == 'moderator_inspection' %}active{% endif %}" href="{% url 'dashboard' %}">
-                            <i class="fas fa-clipboard-check"></i><span>Inspections</span>
                         </a>
                     {% endif %}
                     </nav>

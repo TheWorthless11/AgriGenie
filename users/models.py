@@ -17,7 +17,6 @@ class CustomUser(AbstractUser):
     ROLE_CHOICES = (
         ('farmer', 'Farmer'),
         ('buyer', 'Buyer'),
-        ('moderator', 'Moderator'),
         ('admin', 'Admin'),
         ('pending', 'Pending'),  # New Google users before role selection
     )
