@@ -73,6 +73,7 @@ urlpatterns = [
     path('buyer/saved-crops/', buyer_views.saved_crops, name='saved_crops'),
     path('buyer/contact-farmer/<int:farmer_id>/', buyer_views.contact_farmer, name='contact_farmer'),
     path('buyer/review/<int:crop_id>/', buyer_views.leave_review, name='leave_review'),
+    path('buyer/approval-documents/', user_views.submit_buyer_approval_documents, name='submit_buyer_approval_documents'),
     path('buyer/confirm-receipt/<int:order_id>/', buyer_views.confirm_receipt, name='confirm_receipt'),
     path('buyer/cancel-order/<int:order_id>/', buyer_views.cancel_order, name='cancel_order'),
     path('buyer/purchase-history/', buyer_views.purchase_history, name='purchase_history'),

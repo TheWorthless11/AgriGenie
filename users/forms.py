@@ -195,6 +195,22 @@ class DynamicRegistrationForm(forms.ModelForm):
             'placeholder': 'Enter your buying preferences (e.g., Rice, Vegetables, Fruits)'
         })
     )
+
+    legal_paper_photo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        })
+    )
+
+    company_photo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        })
+    )
     
     class Meta:
         model = CustomUser
@@ -275,6 +291,12 @@ class DynamicRegistrationForm(forms.ModelForm):
             confirm_password = cleaned_data.get('confirm_password')
             if password and confirm_password and password != confirm_password:
                 self.add_error('confirm_password', "Passwords do not match.")
+
+        if role == 'buyer':
+            if not cleaned_data.get('legal_paper_photo'):
+                self.add_error('legal_paper_photo', 'Legal papers photo is required for buyer approval.')
+            if not cleaned_data.get('company_photo'):
+                self.add_error('company_photo', 'Company photo is required for buyer approval.')
         
         return cleaned_data
     

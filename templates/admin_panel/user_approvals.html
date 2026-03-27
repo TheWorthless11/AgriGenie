@@ -13,7 +13,7 @@
                     <span class="badge bg-warning text-dark">{{ pending_count }} Pending</span>
                 {% endif %}
             </h1>
-            <p class="text-muted">Review and approve/reject user registrations</p>
+            <p class="text-muted">Review and approve/reject buyer registrations</p>
         </div>
         <div class="col-md-4">
             <form method="GET" class="d-flex gap-2">
@@ -23,7 +23,7 @@
                     {% endfor %}
                 </select>
                 <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">All Roles</option>
+                    <option value="">All</option>
                     {% for val, label in role_choices %}
                         <option value="{{ val }}" {% if request.GET.role == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -67,10 +67,17 @@
                                     <span class="badge bg-danger">Rejected</span>
                                 {% endif %}
                             </p>
-                            {% if approval.documents %}
+                            {% if approval.legal_paper_photo %}
                                 <p class="mb-2">
-                                    <a href="{{ approval.documents.url }}" target="_blank" class="btn btn-sm btn-info">
-                                        <i class="fas fa-file"></i> View Documents
+                                    <a href="{{ approval.legal_paper_photo.url }}" target="_blank" class="btn btn-sm btn-info">
+                                        <i class="fas fa-file-image"></i> Legal Papers Photo
+                                    </a>
+                                </p>
+                            {% endif %}
+                            {% if approval.company_photo %}
+                                <p class="mb-2">
+                                    <a href="{{ approval.company_photo.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-building"></i> Company Photo
                                     </a>
                                 </p>
                             {% endif %}
@@ -82,12 +89,14 @@
                         </div>
                         <div class="card-footer bg-white">
                             {% if approval.status == 'pending' %}
-                                <a href="{% url 'approve_user' approval.id %}" class="btn btn-sm btn-success">
-                                    <i class="fas fa-check"></i> Approve
+                                <a href="{% url 'approve_user' approval.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i> View Details
                                 </a>
-                                <a href="{% url 'reject_user' approval.id %}" class="btn btn-sm btn-danger">
-                                    <i class="fas fa-times"></i> Reject
-                                </a>
+                                {% if not approval.legal_paper_photo or not approval.company_photo %}
+                                    <div class="small text-danger mt-2">
+                                        Buyer has not submitted all required verification photos yet.
+                                    </div>
+                                {% endif %}
                             {% else %}
                                 <span class="text-muted small">Reviewed by {{ approval.reviewed_by.username|default:'Admin' }}</span><br>
                                 <small class="text-muted">{{ approval.reviewed_at|date:"M d, Y H:i" }}</small>

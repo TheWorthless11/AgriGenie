@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Avg, Q
+from django.db import connection, IntegrityError, transaction
 from django.utils import timezone
 from datetime import timedelta
 
@@ -73,7 +74,7 @@ def admin_dashboard(request):
 @user_passes_test(is_admin)
 def user_approvals(request):
     """Manage user approvals - defaults to showing only pending"""
-    approvals = UserApproval.objects.all().select_related('user').order_by('-created_at')
+    approvals = UserApproval.objects.filter(user__role='buyer').select_related('user').order_by('-created_at')
     status_filter = request.GET.get('status', 'pending')  # Default to pending only
     role_filter = request.GET.get('role')
     
@@ -83,14 +84,14 @@ def user_approvals(request):
     if role_filter:
         approvals = approvals.filter(user__role=role_filter)
     
-    pending_count = UserApproval.objects.filter(status='pending').count()
+    pending_count = UserApproval.objects.filter(user__role='buyer', status='pending').count()
     
     context = {
         'approvals': approvals,
         'pending_count': pending_count,
         'status_filter': status_filter,
         'status_choices': [('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected'), ('all', 'All')],
-        'role_choices': [('farmer', 'Farmer'), ('buyer', 'Buyer')],
+        'role_choices': [('buyer', 'Buyer')],
         'title': 'User Approvals'
     }
     return render(request, 'admin_panel/user_approvals.html', context)
@@ -100,43 +101,35 @@ def user_approvals(request):
 @user_passes_test(is_admin)
 def approve_user(request, approval_id):
     """Approve a user"""
-    approval = get_object_or_404(UserApproval, id=approval_id)
+    approval = get_object_or_404(UserApproval.objects.select_related('user'), id=approval_id)
+    if approval.user.role != 'buyer':
+        messages.error(request, 'Only buyer approvals are managed here.')
+        return redirect('user_approvals')
     
     if request.method == 'POST':
         action = request.POST.get('action')
         
         if action == 'approve':
+            if not approval.legal_paper_photo or not approval.company_photo:
+                messages.error(request, 'Buyer must submit legal papers photo and company photo before approval.')
+                return redirect('approve_user', approval_id=approval.id)
+
             approval.status = 'approved'
             approval.reviewed_by = request.user
             approval.reviewed_at = timezone.now()
             approval.save()
             
-            # Update user profile (create if missing)
+            # Update buyer profile
             user = approval.user
-            if user.role == 'farmer':
-                farmer_profile, created = FarmerProfile.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        'farm_name': f"{user.first_name}'s Farm",
-                        'farm_size': 0,
-                        'farm_location': f"{user.upazila}, {user.district}" if hasattr(user, 'upazila') else 'Unknown',
-                        'soil_type': 'Not specified',
-                        'experience_years': 0,
-                        'registration_number': f"FR-{user.id:06d}",
-                    }
-                )
-                farmer_profile.is_approved = True
-                farmer_profile.save()
-            elif user.role == 'buyer':
-                buyer_profile, created = BuyerProfile.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        'company_name': user.first_name or user.username,
-                        'business_type': 'Individual',
-                    }
-                )
-                buyer_profile.is_approved = True
-                buyer_profile.save()
+            buyer_profile, _ = BuyerProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'company_name': user.first_name or user.username,
+                    'business_type': 'Individual',
+                }
+            )
+            buyer_profile.is_approved = True
+            buyer_profile.save(update_fields=['is_approved'])
             
             # Send notification
             Notification.objects.create(
@@ -155,6 +148,11 @@ def approve_user(request, approval_id):
             approval.reviewed_by = request.user
             approval.reviewed_at = timezone.now()
             approval.save()
+
+            buyer_profile = BuyerProfile.objects.filter(user=approval.user).first()
+            if buyer_profile and buyer_profile.is_approved:
+                buyer_profile.is_approved = False
+                buyer_profile.save(update_fields=['is_approved'])
             
             # Send notification
             Notification.objects.create(
@@ -165,6 +163,28 @@ def approve_user(request, approval_id):
             )
             
             messages.success(request, f'{approval.user.username} rejected!')
+
+        elif action == 'notify_missing_docs':
+            missing_docs = []
+            if not approval.legal_paper_photo:
+                missing_docs.append('Legal Papers Photo')
+            if not approval.company_photo:
+                missing_docs.append('Company Photo')
+
+            if missing_docs:
+                Notification.objects.create(
+                    user=approval.user,
+                    notification_type='system',
+                    title='Documents Required For Approval',
+                    message=(
+                        'Please submit the missing verification document(s): '
+                        + ', '.join(missing_docs)
+                        + '. Your buyer account approval is pending until these are uploaded.'
+                    )
+                )
+                messages.success(request, f'Notification sent to {approval.user.username} for missing documents.')
+            else:
+                messages.info(request, 'All required documents are already submitted.')
         
         return redirect('user_approvals')
     
@@ -851,9 +871,39 @@ def delete_user(request, user_id):
     
     if request.method == 'POST':
         username = user_to_delete.username
-        user_to_delete.delete()
-        messages.success(request, f'User "{username}" has been deleted successfully.')
-        return redirect('user_management')
+
+        try:
+            with transaction.atomic():
+                user_to_delete.delete()
+            messages.success(request, f'User "{username}" has been deleted successfully.')
+            return redirect('user_management')
+        except IntegrityError:
+            # Some older deployments can have legacy moderation tables still referencing users.
+            # Clean those rows first, then retry user deletion.
+            legacy_table = 'admin_panel_buyerinspectionphoto'
+            existing_tables = set(connection.introspection.table_names())
+
+            if legacy_table in existing_tables:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        'DELETE FROM admin_panel_buyerinspectionphoto WHERE uploaded_by_id = %s',
+                        [user_to_delete.id],
+                    )
+
+                try:
+                    with transaction.atomic():
+                        user_to_delete.delete()
+                    messages.success(request, f'User "{username}" has been deleted successfully.')
+                    return redirect('user_management')
+                except IntegrityError as exc:
+                    messages.error(request, f'Unable to delete user due to related records: {exc}')
+                    return redirect('delete_user', user_id=user_to_delete.id)
+
+            messages.error(
+                request,
+                'Unable to delete user because related records still exist. Please remove dependent records first.',
+            )
+            return redirect('delete_user', user_id=user_to_delete.id)
     
     context = {
         'user_to_delete': user_to_delete,
@@ -870,28 +920,8 @@ def toggle_user_approval(request, user_id):
     
     if request.method == 'POST':
         if user.role == 'farmer':
-            profile = FarmerProfile.objects.filter(user=user).first()
-            if profile:
-                profile.is_approved = not profile.is_approved
-                profile.save()
-                status = "approved" if profile.is_approved else "revoked"
-                
-                # Update UserApproval record
-                approval, _ = UserApproval.objects.get_or_create(user=user)
-                approval.status = 'approved' if profile.is_approved else 'rejected'
-                approval.reviewed_by = request.user
-                approval.reviewed_at = timezone.now()
-                approval.save()
-                
-                # Notify user
-                Notification.objects.create(
-                    user=user,
-                    notification_type='system',
-                    title=f'Account {status.title()}',
-                    message=f'Your farmer account has been {status} by admin.'
-                )
-                messages.success(request, f'Farmer "{user.username}" has been {status}.')
-        
+            messages.info(request, 'Farmers do not require approval.')
+
         elif user.role == 'buyer':
             profile = BuyerProfile.objects.filter(user=user).first()
             if profile:

@@ -107,6 +107,16 @@
                                     {{ crop.quantity }} {{ crop.unit }}
                                 </span>
                             </div>
+
+                            <p class="small mb-2">
+                                {% if crop.reviews_count %}
+                                    <i class="fas fa-star text-warning"></i>
+                                    <strong>{{ crop.avg_rating|floatformat:1 }}</strong>
+                                    <span class="text-muted">({{ crop.reviews_count }} review{{ crop.reviews_count|pluralize }})</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="far fa-star"></i> No reviews yet</span>
+                                {% endif %}
+                            </p>
                             
                             <p class="small text-muted mb-0">
                                 <i class="fas fa-calendar"></i> Available: {{ crop.availability_date|date:"M d, Y" }}
