@@ -1,0 +1,477 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Up Your Farm - AgriGenie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#28a745',
+                        'primary-dark': '#1e7e34',
+                        'surface': '#f2fcf5',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Lottie for success animation -->
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <style>
+        .input-focus:focus { border-color: #28a745 !important; box-shadow: 0 0 0 3px rgba(40,167,69,0.1); }
+        .fade-enter { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .step-panel { display:none; }
+        .step-panel.active { display:block; }
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:#f1f5f9; }
+        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+        .photo-circle { width:100px; height:100px; border-radius:50%; border:3px dashed #d1d5db; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; overflow:hidden; position:relative; }
+        .photo-circle:hover { border-color:#28a745; background:rgba(40,167,69,0.04); }
+        .photo-circle img { width:100%; height:100%; object-fit:cover; }
+    </style>
+</head>
+<body class="bg-surface min-h-screen">
+
+    <!-- Static Header -->
+    <nav class="sticky top-0 z-50 bg-surface shadow-sm border-b border-[rgba(40,167,69,0.1)]">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="{% url 'home' %}" class="flex items-center gap-3 font-bold text-xl text-gray-900 no-underline hover:text-green-800">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-[0.9rem] bg-gradient-to-br from-green-100 to-green-200 text-green-700 text-lg">
+                        <i class="fas fa-leaf"></i>
+                    </span>
+                    <span>AgriGenie</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-8 px-4">
+        <div class="max-w-2xl mx-auto">
+
+            <!-- Welcome Card -->
+            <div class="bg-white rounded-2xl shadow-lg shadow-green-100/30 overflow-hidden fade-enter mb-6" id="welcomeCard">
+                <div class="px-6 pt-8 pb-6 text-center">
+                    <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="sprout" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900 mb-1">Welcome, {{ user.first_name|default:user.username }}!</h1>
+                    <p class="text-sm text-gray-500">Let's get started — tell us about your farm so we can personalize your experience.</p>
+                </div>
+            </div>
+
+            <!-- Progress Tracker -->
+            <div class="bg-white rounded-2xl shadow-sm border border-green-100 p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 step-indicator" data-step="1">
+                        <span class="w-7 h-7 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center" id="step1Badge">1</span>
+                        <span class="text-sm font-semibold text-green-700" id="step1Label">Farm Identity</span>
+                    </div>
+                    <div class="flex-1 h-0.5 mx-3 bg-gray-200 rounded" id="progress12">
+                        <div class="h-full bg-green-500 rounded transition-all duration-500" style="width:0%" id="progress12Bar"></div>
+                    </div>
+                    <div class="flex items-center gap-2 step-indicator" data-step="2">
+                        <span class="w-7 h-7 rounded-full bg-gray-200 text-gray-400 text-xs font-bold flex items-center justify-center" id="step2Badge">2</span>
+                        <span class="text-sm font-medium text-gray-400" id="step2Label">Preferences</span>
+                    </div>
+                    <div class="flex-1 h-0.5 mx-3 bg-gray-200 rounded" id="progress23">
+                        <div class="h-full bg-green-500 rounded transition-all duration-500" style="width:0%" id="progress23Bar"></div>
+                    </div>
+                    <div class="flex items-center gap-2 step-indicator" data-step="3">
+                        <span class="w-7 h-7 rounded-full bg-gray-200 text-gray-400 text-xs font-bold flex items-center justify-center" id="step3Badge">3</span>
+                        <span class="text-sm font-medium text-gray-400" id="step3Label">Finish</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1: Farm Identity -->
+            <div class="step-panel active fade-enter" id="step1Panel">
+                <div class="bg-white rounded-2xl shadow-lg shadow-green-100/30 overflow-hidden">
+                    <div class="flex items-center justify-between px-6 pt-6 pb-2">
+                        <h2 class="text-lg font-bold text-gray-900">Farm Identity</h2>
+                        <a href="#" class="text-xs text-green-600 hover:underline font-medium">Need help?</a>
+                    </div>
+                    <div class="p-6 pt-4">
+                        <form id="step1Form" novalidate>
+                            {% csrf_token %}
+                            <!-- Profile Photo -->
+                            <div class="flex flex-col items-center mb-6">
+                                <div class="photo-circle" id="farmerPhoto">
+                                    <i data-lucide="camera" class="w-8 h-8 text-gray-400" id="photoPlaceholder"></i>
+                                    <input type="file" name="profile_picture" id="photoInput" accept="image/*"
+                                           class="absolute inset-0 opacity-0 cursor-pointer">
+                                </div>
+                                <span class="text-xs text-gray-400 mt-2">Profile photo <span class="text-gray-300">(optional)</span></span>
+                            </div>
+
+                            <!-- Farm Name -->
+                            <div class="mb-5">
+                                <label class="text-xs font-semibold text-gray-500 block mb-1.5">
+                                    What is the name of your farm? <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="farm_name" id="farmName" required
+                                       class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-400 input-focus transition-all outline-none"
+                                       placeholder="e.g., Green Valley Farm">
+                            </div>
+
+                            <!-- Location Section -->
+                            <div class="mb-2">
+                                <label class="text-xs font-semibold text-gray-500 block mb-3">
+                                    Where is your farm located? <span class="text-red-500">*</span>
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                    <div class="sm:col-span-2">
+                                        <select name="country" id="countryField"
+                                                class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none">
+                                            <option value="">Select Country</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <select name="district" id="districtState"
+                                                class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none">
+                                            <option value="">Select State / Division</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <select name="city" id="cityUpazila"
+                                                class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none">
+                                            <option value="">Select City / District</option>
+                                        </select>
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <input type="text" name="street_address" id="streetAddress"
+                                               class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-400 input-focus transition-all outline-none"
+                                               placeholder="Street Address (optional)">
+                                    </div>
+                                    <div>
+                                        <input type="text" name="postal_code" id="postalCode"
+                                               class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-400 input-focus transition-all outline-none"
+                                               placeholder="Postal Code">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Google Map Widget -->
+                            <div class="mb-6 rounded-xl overflow-hidden border-2 border-gray-100">
+                                <div id="mapWidget" class="w-full h-52 bg-gray-100 flex items-center justify-center relative">
+                                    <!-- Map loads here via Google Maps API -->
+                                    <div id="mapPlaceholder" class="text-center text-gray-400">
+                                        <i data-lucide="map-pin" class="w-8 h-8 mx-auto mb-2 text-green-400"></i>
+                                        <p class="text-xs">Drag the pin to set your farm location</p>
+                                        <p class="text-[10px] text-gray-300 mt-1">Map loads when API key is configured</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button type="button" id="step1Next"
+                                        class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-8 rounded-xl transition-all flex items-center gap-2">
+                                    Continue
+                                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Preferences -->
+            <div class="step-panel" id="step2Panel">
+                <div class="bg-white rounded-2xl shadow-lg shadow-green-100/30 overflow-hidden fade-enter">
+                    <div class="flex items-center justify-between px-6 pt-6 pb-2">
+                        <h2 class="text-lg font-bold text-gray-900">Preferences</h2>
+                        <a href="#" class="text-xs text-green-600 hover:underline font-medium">Need help?</a>
+                    </div>
+                    <div class="p-6 pt-4">
+                        <form id="step2Form" novalidate>
+                            {% csrf_token %}
+                            <!-- Measurement System -->
+                            <div class="mb-5">
+                                <label class="text-xs font-semibold text-gray-500 block mb-1.5">
+                                    Set your default measurement system
+                                </label>
+                                <select name="measurement_system" id="measurementSystem"
+                                        class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none appearance-none cursor-pointer">
+                                    <option value="metric">Metric (kg, L, hectares)</option>
+                                    <option value="imperial">Imperial (lbs, gallons, acres)</option>
+                                </select>
+                            </div>
+
+                            <!-- Currency -->
+                            <div class="mb-5">
+                                <label class="text-xs font-semibold text-gray-500 block mb-1.5">
+                                    What is your primary operating currency?
+                                </label>
+                                <select name="currency" id="currencySelect"
+                                        class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none appearance-none cursor-pointer">
+                                    <option value="BDT">BDT — Bangladeshi Taka (৳)</option>
+                                    <option value="INR">INR — Indian Rupee (₹)</option>
+                                    <option value="USD">USD — US Dollar ($)</option>
+                                    <option value="EUR">EUR — Euro (€)</option>
+                                    <option value="GBP">GBP — British Pound (£)</option>
+                                    <option value="MYR">MYR — Malaysian Ringgit (RM)</option>
+                                    <option value="SGD">SGD — Singapore Dollar (S$)</option>
+                                    <option value="AED">AED — UAE Dirham (د.إ)</option>
+                                    <option value="SAR">SAR — Saudi Riyal (﷼)</option>
+                                    <option value="PKR">PKR — Pakistani Rupee (₨)</option>
+                                    <option value="NPR">NPR — Nepalese Rupee (₨)</option>
+                                    <option value="LKR">LKR — Sri Lankan Rupee (₨)</option>
+                                </select>
+                            </div>
+
+                            <!-- Timezone -->
+                            <div class="mb-6">
+                                <label class="text-xs font-semibold text-gray-500 block mb-1.5">
+                                    Timezone
+                                </label>
+                                <select name="timezone" id="timezoneSelect"
+                                        class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none appearance-none cursor-pointer">
+                                    <option value="Asia/Dhaka">Asia/Dhaka (UTC+6)</option>
+                                    <option value="Asia/Kolkata">Asia/Kolkata (UTC+5:30)</option>
+                                    <option value="Asia/Karachi">Asia/Karachi (UTC+5)</option>
+                                    <option value="Asia/Colombo">Asia/Colombo (UTC+5:30)</option>
+                                    <option value="Asia/Kathmandu">Asia/Kathmandu (UTC+5:45)</option>
+                                    <option value="Asia/Singapore">Asia/Singapore (UTC+8)</option>
+                                    <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
+                                    <option value="Europe/London">Europe/London (UTC+0)</option>
+                                    <option value="America/New_York">America/New_York (UTC-5)</option>
+                                    <option value="America/Los_Angeles">America/Los_Angeles (UTC-8)</option>
+                                </select>
+                            </div>
+
+                            <div class="flex justify-between">
+                                <button type="button" id="step2Back"
+                                        class="border-2 border-gray-200 hover:border-gray-300 text-gray-600 font-semibold py-2.5 px-6 rounded-xl transition-all flex items-center gap-2">
+                                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                    Back
+                                </button>
+                                <button type="button" id="step2Next"
+                                        class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-8 rounded-xl transition-all flex items-center gap-2">
+                                    Finalize Profile
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div class="step-panel" id="step3Panel">
+                <div class="bg-white rounded-2xl shadow-lg shadow-green-100/30 overflow-hidden fade-enter">
+                    <div class="p-12 text-center">
+                        <lottie-player
+                            src="https://assets2.lottiefiles.com/packages/lf20_jbrw3hcz.json"
+                            background="transparent"
+                            speed="1"
+                            style="width:120px;height:120px;margin:0 auto 1.5rem;"
+                            autoplay>
+                        </lottie-player>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">You're all set!</h2>
+                        <p class="text-gray-500 text-sm mb-6">Your farm profile is ready. Let's head to your dashboard.</p>
+                        <a href="{% url 'dashboard' %}"
+                           class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all">
+                            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                            Go to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Location cascading dropdown data -->
+    <script src="{% static 'js/location_data.js' %}"></script>
+
+    <!-- Google Maps API (replace YOUR_KEY with actual API key) -->
+    <script>
+        let map, marker;
+        function initMap() {
+            const defaultPos = { lat: 23.8103, lng: 90.4125 }; // Dhaka
+            map = new google.maps.Map(document.getElementById('mapWidget'), {
+                center: defaultPos, zoom: 12,
+                disableDefaultUI: true, zoomControl: true,
+                styles: [{ featureType:'poi', stylers:[{visibility:'off'}] }]
+            });
+            document.getElementById('mapPlaceholder').style.display = 'none';
+            marker = new google.maps.Marker({ position: defaultPos, map, draggable: true });
+            marker.addListener('dragend', function() {
+                const pos = marker.getPosition();
+                reverseGeocode(pos.lat(), pos.lng());
+            });
+            map.addListener('click', function(e) {
+                marker.setPosition(e.latLng);
+                reverseGeocode(e.latLng.lat(), e.latLng.lng());
+            });
+        }
+        function reverseGeocode(lat, lng) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: { lat, lng } }, function(results, status) {
+                if (status === 'OK' && results[0]) {
+                    const c = results[0].address_components;
+                    const get = (type) => { const f = c.find(x => x.types.includes(type)); return f ? f.long_name : ''; };
+                    document.getElementById('streetAddress').value = get('route') || get('street_address') || get('premise');
+                    document.getElementById('postalCode').value = get('postal_code');
+                    // Try to match country/state/city in the dropdowns
+                    const countryName = get('country');
+                    const stateName = get('administrative_area_level_1');
+                    const cityName = get('locality') || get('sublocality') || get('administrative_area_level_2');
+                    const countryEl = document.getElementById('countryField');
+                    const stateEl = document.getElementById('districtState');
+                    const cityEl = document.getElementById('cityUpazila');
+                    if (countryName) { countryEl.value = countryName; countryEl.dispatchEvent(new Event('change')); }
+                    setTimeout(() => {
+                        if (stateName) { stateEl.value = stateName; stateEl.dispatchEvent(new Event('change')); }
+                        setTimeout(() => { if (cityName) cityEl.value = cityName; }, 50);
+                    }, 50);
+                }
+            });
+        }
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key|default:'' }}&callback=initMap">
+    </script>
+
+    <script>
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const step1 = document.getElementById('step1Panel');
+            const step2 = document.getElementById('step2Panel');
+            const step3 = document.getElementById('step3Panel');
+            const welcome = document.getElementById('welcomeCard');
+
+            // Progress badges/labels
+            const badges = [document.getElementById('step1Badge'), document.getElementById('step2Badge'), document.getElementById('step3Badge')];
+            const labels = [document.getElementById('step1Label'), document.getElementById('step2Label'), document.getElementById('step3Label')];
+            const bar12 = document.getElementById('progress12Bar');
+            const bar23 = document.getElementById('progress23Bar');
+
+            function goToStep(n) {
+                [step1, step2, step3].forEach(p => p.classList.remove('active'));
+                if (n === 1) { step1.classList.add('active'); welcome.style.display=''; }
+                if (n === 2) { step2.classList.add('active'); welcome.style.display='none'; }
+                if (n === 3) { step3.classList.add('active'); welcome.style.display='none'; }
+
+                // Update progress
+                badges.forEach((b,i) => {
+                    if (i < n-1) { b.className = 'w-7 h-7 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center'; }
+                    else if (i === n-1) { b.className = 'w-7 h-7 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center'; }
+                    else { b.className = 'w-7 h-7 rounded-full bg-gray-200 text-gray-400 text-xs font-bold flex items-center justify-center'; }
+                });
+                labels.forEach((l,i) => {
+                    if (i <= n-1) { l.className = 'text-sm font-semibold text-green-700'; }
+                    else { l.className = 'text-sm font-medium text-gray-400'; }
+                });
+                bar12.style.width = n >= 2 ? '100%' : '0%';
+                bar23.style.width = n >= 3 ? '100%' : '0%';
+
+                lucide.createIcons();
+            }
+
+            // Photo preview
+            document.getElementById('photoInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const container = document.getElementById('farmerPhoto');
+                        const placeholder = document.getElementById('photoPlaceholder');
+                        if (placeholder) placeholder.style.display = 'none';
+                        let img = container.querySelector('img');
+                        if (!img) { img = document.createElement('img'); container.insertBefore(img, container.firstChild); }
+                        img.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Auto-detect timezone
+            try {
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                const tzSelect = document.getElementById('timezoneSelect');
+                for (let i = 0; i < tzSelect.options.length; i++) {
+                    if (tzSelect.options[i].value === tz) { tzSelect.selectedIndex = i; break; }
+                }
+            } catch(e) {}
+
+            // Initialize cascading location dropdowns (country → state → city) with auto-currency
+            initLocationDropdowns('countryField', 'districtState', 'cityUpazila', 'currencySelect');
+
+            // Step 1 → 2
+            document.getElementById('step1Next').addEventListener('click', function() {
+                const farmName = document.getElementById('farmName').value.trim();
+                if (!farmName) {
+                    document.getElementById('farmName').classList.add('border-red-500');
+                    document.getElementById('farmName').focus();
+                    return;
+                }
+                goToStep(2);
+            });
+
+            // Step 2 → back
+            document.getElementById('step2Back').addEventListener('click', function() { goToStep(1); });
+
+            // Step 2 → 3 (submit)
+            document.getElementById('step2Next').addEventListener('click', function() {
+                const btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
+
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                // Step 1 data
+                const photoFile = document.getElementById('photoInput').files[0];
+                if (photoFile) formData.append('profile_picture', photoFile);
+                formData.append('farm_name', document.getElementById('farmName').value);
+                formData.append('street_address', document.getElementById('streetAddress').value);
+                formData.append('city', document.getElementById('cityUpazila').value);
+                formData.append('district', document.getElementById('districtState').value);
+                formData.append('postal_code', document.getElementById('postalCode').value);
+                formData.append('country', document.getElementById('countryField').value);
+                // Step 2 data
+                formData.append('measurement_system', document.getElementById('measurementSystem').value);
+                formData.append('currency', document.getElementById('currencySelect').value);
+                formData.append('timezone', document.getElementById('timezoneSelect').value);
+
+                fetch('{% url "farmer_onboarding" %}', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        goToStep(3);
+                        // Auto-redirect after 3s
+                        setTimeout(() => { window.location.href = '{% url "dashboard" %}'; }, 3000);
+                    } else {
+                        btn.disabled = false;
+                        btn.innerHTML = 'Finalize Profile <i data-lucide="check" class="w-4 h-4"></i>';
+                        lucide.createIcons();
+                        alert(data.error || 'Something went wrong. Please try again.');
+                    }
+                })
+                .catch(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Finalize Profile <i data-lucide="check" class="w-4 h-4"></i>';
+                    lucide.createIcons();
+                    alert('Network error. Please try again.');
+                });
+            });
+
+            // Remove red border on input
+            document.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('input', () => el.classList.remove('border-red-500'));
+            });
+        });
+    </script>
+</body>
+</html>

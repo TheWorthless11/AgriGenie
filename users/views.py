@@ -5,10 +5,49 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Avg, Count
 from django.http import JsonResponse
+from django.urls import reverse
 from users.models import CustomUser, FarmerProfile, BuyerProfile, Notification
 from users.forms import CustomUserCreationForm, CustomUserChangeForm, FarmerProfileForm, BuyerProfileForm, CustomAuthenticationForm, DynamicRegistrationForm
 from farmer.models import Crop, Order, Message
 from marketplace.models import CropListing
+
+
+def start_google_login(request):
+    """
+    Start Google OAuth from a guaranteed-clean session.
+
+    Flushes any stale / corrupted session data, creates a fresh session,
+    explicitly saves it to the DB, and sets the cookie on the redirect
+    response so the next hop (allauth's login view) inherits a valid,
+    persisted session that can safely store the OAuth state.
+    """
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+
+    # 1. Wipe every trace of the old (possibly corrupted) session.
+    request.session.flush()
+
+    # 2. Seed the fresh session with a marker so it is non-empty and
+    #    Django's SessionMiddleware will actually persist it + set the cookie.
+    request.session['_google_oauth'] = True
+    request.session.save()
+
+    # 3. Build redirect, then force-set the cookie ourselves as well
+    #    (belt-and-suspenders for Daphne / ASGI).
+    from django.conf import settings as _s
+    target = f"{reverse('google_login')}?process=login"
+    response = redirect(target)
+    response.set_cookie(
+        _s.SESSION_COOKIE_NAME,
+        request.session.session_key,
+        max_age=_s.SESSION_COOKIE_AGE,
+        path=_s.SESSION_COOKIE_PATH,
+        domain=_s.SESSION_COOKIE_DOMAIN,
+        secure=_s.SESSION_COOKIE_SECURE,
+        httponly=_s.SESSION_COOKIE_HTTPONLY,
+        samesite=_s.SESSION_COOKIE_SAMESITE,
+    )
+    return response
 
 
 def register(request):
@@ -64,21 +103,40 @@ def register(request):
                         'company_photo': form.cleaned_data.get('company_photo'),
                     }
                 )
+            
+            messages.success(request, f'Account created successfully for {user.first_name}!')
+            # Auto-login and redirect to onboarding wizard
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
+            login(request, user)
+            request.session.modified = True
+            request.session.cycle_key()
+            print(f"DEBUG REGISTER: User logged in: {request.user.is_authenticated}, session key: {request.session.session_key}")
 
-                admin_users = CustomUser.objects.filter(role='admin')
-                for admin_user in admin_users:
-                    Notification.objects.create(
-                        user=admin_user,
-                        notification_type='system',
-                        title='New Buyer Approval Request',
-                        message=f'New buyer "{user.username}" ({user.get_full_name()}) submitted documents and is awaiting approval.'
-                    )
+            from django.http import HttpResponseRedirect
+            from django.urls import reverse
+            from django.conf import settings as django_settings
 
-            if user.role == 'buyer':
-                messages.success(request, f'Account created successfully for {user.first_name}! Your buyer account is pending super admin approval.')
+            if user.role == 'farmer':
+                target = reverse('farmer_onboarding')
+            elif user.role == 'buyer':
+                target = reverse('buyer_onboarding')
             else:
-                messages.success(request, f'Account created successfully for {user.first_name}! Your farmer account is active now.')
-            return redirect('login')
+                target = reverse('login')
+
+            print(f"DEBUG REGISTER: Redirecting to {target}")
+            response = HttpResponseRedirect(target)
+
+            response.set_cookie(
+                django_settings.SESSION_COOKIE_NAME,
+                request.session.session_key,
+                max_age=getattr(django_settings, 'SESSION_COOKIE_AGE', 1209600),
+                path=getattr(django_settings, 'SESSION_COOKIE_PATH', '/'),
+                domain=getattr(django_settings, 'SESSION_COOKIE_DOMAIN', None),
+                secure=getattr(django_settings, 'SESSION_COOKIE_SECURE', False),
+                httponly=getattr(django_settings, 'SESSION_COOKIE_HTTPONLY', True),
+                samesite=getattr(django_settings, 'SESSION_COOKIE_SAMESITE', 'Lax'),
+            )
+            return response
         else:
             print(f"DEBUG REGISTER: Form errors: {form.errors}")
             # Return errors for AJAX requests
@@ -267,6 +325,110 @@ def login_view(request):
         'selected_role': request.POST.get('role', 'farmer') if request.method == 'POST' else 'farmer',
     }
     return render(request, 'users/login.html', context)
+
+
+@login_required(login_url='login')
+def farmer_onboarding(request):
+    """Farmer onboarding wizard — collects farm identity & preferences after registration."""
+    if request.user.role != 'farmer':
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        user = request.user
+
+        # Profile picture
+        if request.FILES.get('profile_picture'):
+            user.profile_picture = request.FILES['profile_picture']
+
+        # Location fields
+        city = request.POST.get('city', '').strip()
+        district = request.POST.get('district', '').strip()
+        postal_code = request.POST.get('postal_code', '').strip()
+        street = request.POST.get('street_address', '').strip()
+        country = request.POST.get('country', 'Bangladesh').strip()
+
+        user.upazila = city
+        user.district = district
+        user.country = country
+        user.location = ', '.join(filter(None, [street, city, district, postal_code, country]))
+        user.save()
+
+        # Update farmer profile
+        farm_name = request.POST.get('farm_name', '').strip() or f"{user.first_name}'s Farm"
+        measurement = request.POST.get('measurement_system', 'metric')
+        currency = request.POST.get('currency', 'BDT')
+        timezone = request.POST.get('timezone', 'Asia/Dhaka')
+
+        fp, _ = FarmerProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'farm_name': farm_name,
+                'farm_size': 0,
+                'farm_location': user.location or '',
+                'soil_type': 'Not specified',
+                'experience_years': 0,
+                'registration_number': f"FR-{user.id:06d}",
+            }
+        )
+        fp.farm_name = farm_name
+        fp.farm_location = user.location or ''
+        fp.save()
+
+        return JsonResponse({'success': True})
+
+    context = {
+        'google_maps_key': getattr(__import__('django.conf', fromlist=['settings']).settings, 'GOOGLE_MAPS_API_KEY', ''),
+    }
+    return render(request, 'users/farmer_onboarding.html', context)
+
+
+@login_required(login_url='login')
+def buyer_onboarding(request):
+    """Buyer onboarding wizard — collects location, preferences & account type."""
+    if request.user.role != 'buyer':
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        user = request.user
+
+        # Profile picture
+        if request.FILES.get('profile_picture'):
+            user.profile_picture = request.FILES['profile_picture']
+
+        # Location fields
+        city = request.POST.get('city', '').strip()
+        district = request.POST.get('district', '').strip()
+        postal_code = request.POST.get('postal_code', '').strip()
+        street = request.POST.get('street_address', '').strip()
+        country = request.POST.get('country', 'Bangladesh').strip()
+
+        user.upazila = city
+        user.district = district
+        user.country = country
+        user.location = ', '.join(filter(None, [street, city, district, postal_code, country]))
+        user.preferences = request.POST.get('preferences', '')
+        user.save()
+
+        # Update buyer profile
+        account_type = request.POST.get('account_type', 'household')
+        business_type = 'Individual' if account_type == 'household' else 'Wholesaler'
+
+        bp, _ = BuyerProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'company_name': user.first_name,
+                'business_type': business_type,
+            }
+        )
+        bp.business_type = business_type
+        bp.save()
+
+        return JsonResponse({'success': True})
+
+    context = {
+        'google_maps_key': getattr(__import__('django.conf', fromlist=['settings']).settings, 'GOOGLE_MAPS_API_KEY', ''),
+    }
+    return render(request, 'users/buyer_onboarding.html', context)
 
 
 def logout_view(request):

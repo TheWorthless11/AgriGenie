@@ -1,0 +1,397 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Up Your Account - AgriGenie</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#28a745',
+                        'primary-dark': '#1e7e34',
+                        'surface': '#f2fcf5',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <style>
+        .input-focus:focus { border-color: #28a745 !important; box-shadow: 0 0 0 3px rgba(40,167,69,0.1); }
+        .fade-enter { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .step-panel { display:none; }
+        .step-panel.active { display:block; }
+        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar-track { background:#f1f5f9; }
+        ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+        .photo-circle { width:100px; height:100px; border-radius:50%; border:3px dashed #d1d5db; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s; overflow:hidden; position:relative; }
+        .photo-circle:hover { border-color:#28a745; background:rgba(40,167,69,0.04); }
+        .photo-circle img { width:100%; height:100%; object-fit:cover; }
+        .chip { display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border-radius:999px; border:2px solid #e5e7eb; font-size:0.8rem; cursor:pointer; transition:all 0.2s; background:#fff; }
+        .chip:hover { border-color:#28a745; }
+        .chip.selected { border-color:#28a745; background:#f0fdf4; color:#15803d; font-weight:600; }
+        .chip input { display:none; }
+    </style>
+</head>
+<body class="bg-surface min-h-screen">
+
+    <!-- Static Header -->
+    <nav class="sticky top-0 z-50 bg-surface shadow-sm border-b border-[rgba(40,167,69,0.1)]">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="{% url 'home' %}" class="flex items-center gap-3 font-bold text-xl text-gray-900 no-underline hover:text-green-800">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-[0.9rem] bg-gradient-to-br from-green-100 to-green-200 text-green-700 text-lg">
+                        <i class="fas fa-leaf"></i>
+                    </span>
+                    <span>AgriGenie</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-8 px-4">
+        <div class="max-w-2xl mx-auto">
+
+            <!-- Welcome Card -->
+            <div class="bg-white rounded-2xl shadow-lg shadow-green-100/30 overflow-hidden fade-enter mb-6" id="welcomeCard">
+                <div class="px-6 pt-8 pb-6 text-center">
+                    <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="shopping-bag" class="w-8 h-8 text-green-600"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-900 mb-1">Welcome, {{ user.first_name|default:user.username }}!</h1>
+                    <p class="text-sm text-gray-500">Let's get started — tell us about yourself so we can match you with the best produce.</p>
+                </div>
+            </div>
+
+            <!-- Progress Tracker -->
+            <div class="bg-white rounded-2xl shadow-sm border border-green-100 p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center" id="step1Badge">1</span>
+                        <span class="text-sm font-semibold text-green-700" id="step1Label">Your Profile</span>
+                    </div>
+                    <div class="flex-1 h-0.5 mx-4 bg-gray-200 rounded">
+                        <div class="h-full bg-green-500 rounded transition-all duration-500" style="width:0%" id="progressBar"></div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-full bg-gray-200 text-gray-400 text-xs font-bold flex items-center justify-center" id="step2Badge">2</span>
+                        <span class="text-sm font-medium text-gray-400" id="step2Label">Complete</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1: Profile & Preferences -->
+            <div class="step-panel active fade-enter" id="step1Panel">
+                <div class="bg-white rounded-2xl shadow-lg shadow-green-100/30 overflow-hidden">
+                    <div class="flex items-center justify-between px-6 pt-6 pb-2">
+                        <h2 class="text-lg font-bold text-gray-900">Your Profile</h2>
+                        <a href="#" class="text-xs text-green-600 hover:underline font-medium">Need help?</a>
+                    </div>
+                    <div class="p-6 pt-4">
+                        <form id="step1Form" novalidate>
+                            {% csrf_token %}
+
+                            <!-- Profile Photo -->
+                            <div class="flex flex-col items-center mb-6">
+                                <div class="photo-circle" id="buyerPhoto">
+                                    <i data-lucide="camera" class="w-8 h-8 text-gray-400" id="photoPlaceholder"></i>
+                                    <input type="file" name="profile_picture" id="photoInput" accept="image/*"
+                                           class="absolute inset-0 opacity-0 cursor-pointer">
+                                </div>
+                                <span class="text-xs text-gray-400 mt-2">Profile photo <span class="text-gray-300">(optional)</span></span>
+                            </div>
+
+                            <!-- Location Section -->
+                            <div class="mb-5">
+                                <label class="text-xs font-semibold text-gray-500 block mb-3">
+                                    Where are you located? <span class="text-red-500">*</span>
+                                </label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                    <div class="sm:col-span-2">
+                                        <select name="country" id="countryField"
+                                                class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none">
+                                            <option value="">Select Country</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <select name="district" id="districtState"
+                                                class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none">
+                                            <option value="">Select State / Division</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <select name="city" id="cityUpazila"
+                                                class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 input-focus transition-all outline-none">
+                                            <option value="">Select City / District</option>
+                                        </select>
+                                    </div>
+                                    <div class="sm:col-span-2">
+                                        <input type="text" name="street_address" id="streetAddress"
+                                               class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-400 input-focus transition-all outline-none"
+                                               placeholder="Street Address (optional)">
+                                    </div>
+                                    <div>
+                                        <input type="text" name="postal_code" id="postalCode"
+                                               class="w-full px-4 py-2.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl text-sm text-gray-700 placeholder-gray-400 input-focus transition-all outline-none"
+                                               placeholder="Postal Code">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Google Map Widget -->
+                            <div class="mb-6 rounded-xl overflow-hidden border-2 border-gray-100">
+                                <div id="mapWidget" class="w-full h-44 bg-gray-100 flex items-center justify-center relative">
+                                    <div id="mapPlaceholder" class="text-center text-gray-400">
+                                        <i data-lucide="map-pin" class="w-8 h-8 mx-auto mb-2 text-green-400"></i>
+                                        <p class="text-xs">Drag the pin to set your location</p>
+                                        <p class="text-[10px] text-gray-300 mt-1">Map loads when API key is configured</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Crop Preferences -->
+                            <div class="mb-5">
+                                <label class="text-xs font-semibold text-gray-500 block mb-3">
+                                    What types of crops are you interested in?
+                                </label>
+                                <div class="flex flex-wrap gap-2" id="cropChips">
+                                    {% for crop in crop_choices %}
+                                    <label class="chip">
+                                        <input type="checkbox" name="preferences" value="{{ crop }}">
+                                        {{ crop }}
+                                    </label>
+                                    {% empty %}
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Rice"> Rice</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Vegetables"> Vegetables</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Fruits"> Fruits</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Grains"> Grains</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Spices"> Spices</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Dairy"> Dairy</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Fish"> Fish</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Poultry"> Poultry</label>
+                                    <label class="chip"><input type="checkbox" name="preferences" value="Organic"> Organic</label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Account Type -->
+                            <div class="mb-6">
+                                <label class="text-xs font-semibold text-gray-500 block mb-3">
+                                    What best describes you?
+                                </label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <label class="border-2 border-gray-100 rounded-xl p-4 cursor-pointer hover:border-green-400 transition-all text-center has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                                        <input type="radio" name="account_type" value="household" class="sr-only" checked>
+                                        <i data-lucide="home" class="w-6 h-6 mx-auto mb-2 text-green-600"></i>
+                                        <p class="text-sm font-semibold text-gray-700">Household</p>
+                                        <p class="text-[10px] text-gray-400 mt-1">Small quantities for personal use</p>
+                                    </label>
+                                    <label class="border-2 border-gray-100 rounded-xl p-4 cursor-pointer hover:border-green-400 transition-all text-center has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                                        <input type="radio" name="account_type" value="business" class="sr-only">
+                                        <i data-lucide="building-2" class="w-6 h-6 mx-auto mb-2 text-green-600"></i>
+                                        <p class="text-sm font-semibold text-gray-700">Restaurant / Wholesaler</p>
+                                        <p class="text-[10px] text-gray-400 mt-1">Bulk quantities for business</p>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button type="button" id="step1Next"
+                                        class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-8 rounded-xl transition-all flex items-center gap-2">
+                                    Complete Setup
+                                    <i data-lucide="check" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Success -->
+            <div class="step-panel" id="step2Panel">
+                <div class="bg-white rounded-2xl shadow-lg shadow-green-100/30 overflow-hidden fade-enter">
+                    <div class="p-12 text-center">
+                        <lottie-player
+                            src="https://assets2.lottiefiles.com/packages/lf20_jbrw3hcz.json"
+                            background="transparent"
+                            speed="1"
+                            style="width:120px;height:120px;margin:0 auto 1.5rem;"
+                            autoplay>
+                        </lottie-player>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">You're all set!</h2>
+                        <p class="text-gray-500 text-sm mb-6">Your profile is ready. Let's head to your dashboard.</p>
+                        <a href="{% url 'dashboard' %}"
+                           class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-xl transition-all">
+                            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                            Go to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Location cascading dropdown data -->
+    <script src="{% static 'js/location_data.js' %}"></script>
+
+    <!-- Google Maps API -->
+    <script>
+        let map, marker;
+        function initMap() {
+            const defaultPos = { lat: 23.8103, lng: 90.4125 };
+            map = new google.maps.Map(document.getElementById('mapWidget'), {
+                center: defaultPos, zoom: 12,
+                disableDefaultUI: true, zoomControl: true,
+                styles: [{ featureType:'poi', stylers:[{visibility:'off'}] }]
+            });
+            document.getElementById('mapPlaceholder').style.display = 'none';
+            marker = new google.maps.Marker({ position: defaultPos, map, draggable: true });
+            marker.addListener('dragend', function() {
+                const pos = marker.getPosition();
+                reverseGeocode(pos.lat(), pos.lng());
+            });
+            map.addListener('click', function(e) {
+                marker.setPosition(e.latLng);
+                reverseGeocode(e.latLng.lat(), e.latLng.lng());
+            });
+        }
+        function reverseGeocode(lat, lng) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ location: { lat, lng } }, function(results, status) {
+                if (status === 'OK' && results[0]) {
+                    const c = results[0].address_components;
+                    const get = (type) => { const f = c.find(x => x.types.includes(type)); return f ? f.long_name : ''; };
+                    document.getElementById('streetAddress').value = get('route') || get('street_address') || get('premise');
+                    document.getElementById('postalCode').value = get('postal_code');
+                    const countryName = get('country');
+                    const stateName = get('administrative_area_level_1');
+                    const cityName = get('locality') || get('sublocality') || get('administrative_area_level_2');
+                    const countryEl = document.getElementById('countryField');
+                    const stateEl = document.getElementById('districtState');
+                    const cityEl = document.getElementById('cityUpazila');
+                    if (countryName) { countryEl.value = countryName; countryEl.dispatchEvent(new Event('change')); }
+                    setTimeout(() => {
+                        if (stateName) { stateEl.value = stateName; stateEl.dispatchEvent(new Event('change')); }
+                        setTimeout(() => { if (cityName) cityEl.value = cityName; }, 50);
+                    }, 50);
+                }
+            });
+        }
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key|default:'' }}&callback=initMap">
+    </script>
+
+    <script>
+        lucide.createIcons();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const step1 = document.getElementById('step1Panel');
+            const step2 = document.getElementById('step2Panel');
+            const welcome = document.getElementById('welcomeCard');
+
+            // Chip selection toggle
+            document.querySelectorAll('#cropChips .chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const cb = this.querySelector('input[type=checkbox]');
+                    cb.checked = !cb.checked;
+                    this.classList.toggle('selected', cb.checked);
+                });
+            });
+
+            // Initialize cascading location dropdowns (country → state → city)
+            initLocationDropdowns('countryField', 'districtState', 'cityUpazila');
+
+            // Photo preview
+            document.getElementById('photoInput').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const container = document.getElementById('buyerPhoto');
+                        const placeholder = document.getElementById('photoPlaceholder');
+                        if (placeholder) placeholder.style.display = 'none';
+                        let img = container.querySelector('img');
+                        if (!img) { img = document.createElement('img'); container.insertBefore(img, container.firstChild); }
+                        img.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            function goToStep(n) {
+                step1.classList.toggle('active', n === 1);
+                step2.classList.toggle('active', n === 2);
+                welcome.style.display = n === 1 ? '' : 'none';
+
+                document.getElementById('step1Badge').className = 'w-7 h-7 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center';
+                document.getElementById('step1Label').className = 'text-sm font-semibold text-green-700';
+                if (n >= 2) {
+                    document.getElementById('step2Badge').className = 'w-7 h-7 rounded-full bg-green-600 text-white text-xs font-bold flex items-center justify-center';
+                    document.getElementById('step2Label').className = 'text-sm font-semibold text-green-700';
+                    document.getElementById('progressBar').style.width = '100%';
+                }
+                lucide.createIcons();
+            }
+
+            // Submit
+            document.getElementById('step1Next').addEventListener('click', function() {
+                const btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
+
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                const photoFile = document.getElementById('photoInput').files[0];
+                if (photoFile) formData.append('profile_picture', photoFile);
+                formData.append('street_address', document.getElementById('streetAddress').value);
+                formData.append('city', document.getElementById('cityUpazila').value);
+                formData.append('district', document.getElementById('districtState').value);
+                formData.append('postal_code', document.getElementById('postalCode').value);
+                formData.append('country', document.getElementById('countryField').value);
+                formData.append('account_type', document.querySelector('input[name=account_type]:checked').value);
+
+                // Collect selected preferences
+                const prefs = [];
+                document.querySelectorAll('#cropChips input[type=checkbox]:checked').forEach(cb => prefs.push(cb.value));
+                formData.append('preferences', prefs.join(', '));
+
+                fetch('{% url "buyer_onboarding" %}', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        goToStep(2);
+                        setTimeout(() => { window.location.href = '{% url "dashboard" %}'; }, 3000);
+                    } else {
+                        btn.disabled = false;
+                        btn.innerHTML = 'Complete Setup <i data-lucide="check" class="w-4 h-4"></i>';
+                        lucide.createIcons();
+                        alert(data.error || 'Something went wrong. Please try again.');
+                    }
+                })
+                .catch(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Complete Setup <i data-lucide="check" class="w-4 h-4"></i>';
+                    lucide.createIcons();
+                    alert('Network error. Please try again.');
+                });
+            });
+
+            document.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('input', () => el.classList.remove('border-red-500'));
+            });
+        });
+    </script>
+</body>
+</html>

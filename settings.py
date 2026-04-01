@@ -126,6 +126,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Session reliability (required for Daphne / ASGI)
+SESSION_SAVE_EVERY_REQUEST = True
+
 # 9. Authentication & AllAuth Routing
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'

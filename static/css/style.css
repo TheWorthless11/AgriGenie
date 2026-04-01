@@ -7,10 +7,41 @@
     --secondary-color: #6c757d;
     --danger-color: #dc3545;
     --info-color: #17a2b8;
-    --warning-color: #ffc107;
+    --warning-color: #8cc63f;
     --light-color: #f8f9fa;
     --dark-color: #343a40;
+
+    /* Override Bootstrap 5 primary to green */
+    --bs-primary: #28a745;
+    --bs-primary-rgb: 40, 167, 69;
+    --bs-link-color: #28a745;
+    --bs-link-hover-color: #1e7e34;
+
+    /* Override Bootstrap 5 warning to soft green */
+    --bs-warning: #8cc63f;
+    --bs-warning-rgb: 140, 198, 63;
 }
+
+/* ===========================
+   Bootstrap Color Overrides
+   =========================== */
+
+/* Primary → green */
+.btn-primary { background-color: #28a745 !important; border-color: #28a745 !important; color: #fff !important; }
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active { background-color: #1e7e34 !important; border-color: #1e7e34 !important; }
+.btn-outline-primary { color: #28a745 !important; border-color: #28a745 !important; }
+.btn-outline-primary:hover { background-color: #28a745 !important; border-color: #28a745 !important; color: #fff !important; }
+.bg-primary { background-color: #28a745 !important; }
+.text-primary { color: #28a745 !important; }
+.border-primary { border-color: #28a745 !important; }
+
+/* Warning → soft olive/lime green */
+.btn-warning { background-color: #d4edda !important; border-color: #c3e6cb !important; color: #155724 !important; }
+.btn-warning:hover { background-color: #c3e6cb !important; border-color: #b1dfbb !important; }
+.bg-warning { background-color: #d4edda !important; color: #155724 !important; }
+.text-warning { color: #2d8a4e !important; }
+.badge.bg-warning { background-color: #d4edda !important; color: #155724 !important; }
+.badge.bg-warning.text-dark { background-color: #d4edda !important; color: #155724 !important; }
 
 /* ===========================
    General Styles
@@ -263,8 +294,8 @@ a:hover {
 }
 
 .alert-warning {
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: #d4edda;
+    color: #155724;
 }
 
 .alert-info {
