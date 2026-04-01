@@ -92,39 +92,11 @@ class DynamicRegistrationForm(forms.ModelForm):
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
     )
     
-    # Location fields
-    district = forms.ChoiceField(
-        choices=BANGLADESH_DISTRICTS,
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    upazila = forms.CharField(
-        max_length=100,
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'Enter your Upazila'
-        })
-    )
-    
-    country = forms.CharField(
-        max_length=100,
-        initial='Bangladesh',
-        required=True,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'readonly': 'readonly'
-        })
-    )
-    
-    profile_picture = forms.ImageField(
-        required=False,
-        widget=forms.FileInput(attrs={
-            'class': 'form-control',
-            'accept': 'image/*'
-        })
-    )
+    # Location fields - moved to onboarding wizard
+    district = forms.CharField(max_length=100, required=False, widget=forms.HiddenInput())
+    upazila = forms.CharField(max_length=100, required=False, widget=forms.HiddenInput())
+    country = forms.CharField(max_length=100, initial='Bangladesh', required=False, widget=forms.HiddenInput())
+    profile_picture = forms.ImageField(required=False, widget=forms.HiddenInput())
     
     # Farmer-specific fields
     auth_type = forms.ChoiceField(
@@ -187,18 +159,12 @@ class DynamicRegistrationForm(forms.ModelForm):
         })
     )
     
-    preferences = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={
-            'class': 'form-control',
-            'rows': 3,
-            'placeholder': 'Enter your buying preferences (e.g., Rice, Vegetables, Fruits)'
-        })
-    )
+    # Preferences moved to onboarding wizard
+    preferences = forms.CharField(required=False, widget=forms.HiddenInput())
     
     class Meta:
         model = CustomUser
-        fields = ['phone_number', 'district', 'upazila', 'country', 'profile_picture']
+        fields = ['phone_number']
     
     def clean_phone_number(self):
         phone = self.cleaned_data.get('phone_number')
