@@ -21,6 +21,8 @@
         }
     </script>
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
@@ -58,14 +60,16 @@
 </head>
 <body class="bg-white min-h-screen">
     <!-- Sticky Navbar -->
-    <nav class="sticky top-0 z-50 bg-primary shadow-md">
+    <nav class="sticky top-0 z-50 bg-[#f2fcf5] shadow-sm border-b border-[rgba(40,167,69,0.1)]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-14">
-                <a href="{% url 'home' %}" class="flex items-center space-x-2 text-white font-bold text-xl">
-                    <i data-lucide="leaf" class="w-6 h-6"></i>
+            <div class="flex items-center justify-between h-16">
+                <a href="{% url 'home' %}" class="flex items-center gap-3 font-bold text-xl text-gray-900 no-underline hover:text-green-800">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-[0.9rem] bg-gradient-to-br from-green-100 to-green-200 text-green-700 text-lg">
+                        <i class="fas fa-leaf"></i>
+                    </span>
                     <span>AgriGenie</span>
                 </a>
-                <a href="{% url 'register' %}" class="text-white/90 hover:text-white text-sm font-medium flex items-center gap-1">
+                <a href="{% url 'register' %}" class="text-gray-600 hover:text-green-700 text-sm font-medium flex items-center gap-1">
                     <span>Create an account</span>
                     <i data-lucide="user-plus" class="w-4 h-4"></i>
                 </a>
@@ -325,7 +329,7 @@
                         </div>
 
                         <!-- Google OAuth Button -->
-                        <a href="/accounts/google/login/?process=login"
+                                <a href="{% url 'start_google_login' %}"
                            class="w-full flex items-center justify-center gap-3 border-2 border-slate-200 
                                   hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold 
                                   py-3 px-4 rounded-2xl transition-all duration-200 mb-2">

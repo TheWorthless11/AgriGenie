@@ -21,6 +21,8 @@
         }
     </script>
     
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     
@@ -74,14 +76,16 @@
 </head>
 <body class="bg-white min-h-screen">
     <!-- Sticky Navbar -->
-    <nav class="sticky top-0 z-50 bg-primary shadow-md">
+    <nav class="sticky top-0 z-50 bg-[#f2fcf5] shadow-sm border-b border-[rgba(40,167,69,0.1)]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-14">
-                <a href="{% url 'home' %}" class="flex items-center space-x-2 text-white font-bold text-xl">
-                    <i data-lucide="leaf" class="w-6 h-6"></i>
+            <div class="flex items-center justify-between h-16">
+                <a href="{% url 'home' %}" class="flex items-center gap-3 font-bold text-xl text-gray-900 no-underline hover:text-green-800">
+                    <span class="inline-flex items-center justify-center w-10 h-10 rounded-[0.9rem] bg-gradient-to-br from-green-100 to-green-200 text-green-700 text-lg">
+                        <i class="fas fa-leaf"></i>
+                    </span>
                     <span>AgriGenie</span>
                 </a>
-                <a href="{% url 'login' %}" class="text-white/90 hover:text-white text-sm font-medium flex items-center gap-1">
+                <a href="{% url 'login' %}" class="text-gray-600 hover:text-green-700 text-sm font-medium flex items-center gap-1">
                     <span>Already have an account?</span>
                     <i data-lucide="log-in" class="w-4 h-4"></i>
                 </a>
@@ -106,6 +110,20 @@
 
                 <!-- Form Body -->
                 <div class="p-6" id="formContainer">
+                    <!-- Django Messages -->
+                    {% if messages %}
+                    <div class="mb-4 space-y-2">
+                        {% for message in messages %}
+                        <div class="px-4 py-3 rounded-xl text-sm font-medium
+                            {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+                            {% elif message.tags == 'success' %}bg-green-50 text-green-700 border border-green-200
+                            {% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
                     <form method="post" enctype="multipart/form-data" id="registerForm" novalidate>
                         {% csrf_token %}
                         
@@ -177,7 +195,7 @@
                                                   rounded-xl text-sm text-slate-700 placeholder-slate-400
                                                   input-focus transition-all outline-none"
                                            placeholder="+8801XXXXXXXXX">
-                                    <p class="text-xs text-red-500 mt-1 hidden" id="phoneError">Enter valid Bangladesh number</p>
+                                    <p class="text-xs text-red-500 mt-1 hidden" id="phoneError">Enter a valid phone number (9-15 digits)</p>
                                 </div>
                             </div>
                         </div>
@@ -302,99 +320,6 @@
                             </div>
                         </div>
 
-                        <!-- Location Section -->
-                        <div class="mb-6">
-                            <div class="flex items-center gap-2 mb-4">
-                                <i data-lucide="map-pin" class="w-4 h-4 text-primary"></i>
-                                <span class="text-sm font-bold text-slate-700">Location Details</span>
-                            </div>
-                            
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-500 block mb-1.5">
-                                        District <span class="text-red-500">*</span>
-                                    </label>
-                                    <select name="district" id="district" required
-                                            class="w-full px-3 py-2.5 bg-slate-50/50 border-2 border-slate-100 
-                                                   rounded-xl text-sm text-slate-700
-                                                   input-focus transition-all outline-none appearance-none cursor-pointer">
-                                        <option value="">Select</option>
-                                        <option value="Dhaka">Dhaka</option>
-                                        <option value="Chittagong">Chittagong</option>
-                                        <option value="Rajshahi">Rajshahi</option>
-                                        <option value="Khulna">Khulna</option>
-                                        <option value="Sylhet">Sylhet</option>
-                                        <option value="Barishal">Barishal</option>
-                                        <option value="Rangpur">Rangpur</option>
-                                        <option value="Mymensingh">Mymensingh</option>
-                                        <option value="Comilla">Comilla</option>
-                                        <option value="Gazipur">Gazipur</option>
-                                        <option value="Narayanganj">Narayanganj</option>
-                                        <option value="Bogra">Bogra</option>
-                                        <option value="Jessore">Jessore</option>
-                                        <option value="Cox's Bazar">Cox's Bazar</option>
-                                        <option value="Dinajpur">Dinajpur</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-500 block mb-1.5">
-                                        Upazila <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" name="upazila" id="upazila" required
-                                           class="w-full px-3 py-2.5 bg-slate-50/50 border-2 border-slate-100 
-                                                  rounded-xl text-sm text-slate-700 placeholder-slate-400
-                                                  input-focus transition-all outline-none"
-                                           placeholder="Upazila">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-500 block mb-1.5">Country</label>
-                                    <input type="hidden" name="country" value="Bangladesh">
-                                    <input type="text" value="Bangladesh" readonly
-                                           class="w-full px-3 py-2.5 bg-slate-100 border-2 border-slate-100 
-                                                  rounded-xl text-sm text-slate-500 cursor-not-allowed">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Profile Photo Section (Optional) -->
-                        <div class="mb-6">
-                            <div class="flex items-center gap-2 mb-4">
-                                <i data-lucide="camera" class="w-4 h-4 text-primary"></i>
-                                <span class="text-sm font-bold text-slate-700">Profile Photo</span>
-                                <span class="text-xs text-slate-400">(Optional)</span>
-                            </div>
-                            
-                            <div class="flex items-center gap-4">
-                                <div class="w-16 h-16 border-2 border-dashed border-slate-200 rounded-xl 
-                                            flex items-center justify-center bg-slate-50/50 cursor-pointer
-                                            hover:border-primary hover:bg-primary/5 transition-all relative overflow-hidden"
-                                     id="photoPreview">
-                                    <i data-lucide="image-plus" class="w-6 h-6 text-slate-400"></i>
-                                    <input type="file" name="profile_picture" id="profilePhoto" accept="image/*"
-                                           class="absolute inset-0 opacity-0 cursor-pointer">
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-xs text-slate-600 mb-1">Upload a profile picture</p>
-                                    <p class="text-[10px] text-slate-400">JPG, PNG or GIF. Max 2MB.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Preferences Section (Buyer Only) -->
-                        <div class="mb-6 buyer-section field-hidden" id="preferencesSection">
-                            <div class="flex items-center gap-2 mb-4">
-                                <i data-lucide="heart" class="w-4 h-4 text-primary"></i>
-                                <span class="text-sm font-bold text-slate-700">Preferences</span>
-                                <span class="text-xs text-slate-400">(Optional)</span>
-                            </div>
-                            
-                            <textarea name="preferences" id="preferences" rows="2"
-                                      class="w-full px-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
-                                             rounded-xl text-sm text-slate-700 placeholder-slate-400
-                                             input-focus transition-all outline-none resize-none"
-                                      placeholder="What crops interest you? (e.g., Rice, Vegetables, Fruits)"></textarea>
-                        </div>
-
                         <!-- Terms Agreement -->
                         <div class="bg-slate-50 rounded-xl p-4 mb-6">
                             <label class="flex items-start gap-3 cursor-pointer">
@@ -436,7 +361,7 @@
                         </div>
 
                         <!-- Google OAuth Button -->
-                        <a href="/accounts/google/login/?process=login"
+                                <a href="{% url 'start_google_login' %}"
                            class="w-full flex items-center justify-center gap-3 border-2 border-slate-200 
                                   hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold 
                                   py-3 px-4 rounded-2xl transition-all duration-200 mb-2">
@@ -491,10 +416,6 @@
             const buyerRequired = document.querySelector('.buyer-required');
             const farmerOptional = document.querySelector('.farmer-optional');
             
-            // Profile photo
-            const profilePhotoInput = document.getElementById('profilePhoto');
-            const photoPreview = document.getElementById('photoPreview');
-            
             // Submit button elements
             const submitBtn = document.getElementById('submitBtn');
             const btnHint = document.getElementById('btnHint');
@@ -545,19 +466,17 @@
                 // Get required field values
                 const fullName = document.getElementById('full_name').value.trim();
                 const phone = document.getElementById('phone_number').value.trim();
-                const district = document.getElementById('district').value;
-                const upazila = document.getElementById('upazila').value.trim();
                 const termsAgreed = termsCheckbox.checked;
                 
                 let isValid = true;
                 
                 // Check common required fields
-                if (!fullName || !phone || !district || !upazila) {
+                if (!fullName || !phone) {
                     isValid = false;
                 }
                 
-                // Phone validation
-                const phoneRegex = /^(\+?880|0)?1[3-9]\d{8}$/;
+                // Phone validation (international format)
+                const phoneRegex = /^\+?\d{9,15}$/;
                 if (!phoneRegex.test(phone.replace(/[\s\-]/g, ''))) {
                     isValid = false;
                 }
@@ -638,24 +557,6 @@
                 input.addEventListener('change', checkFormValidity);
             });
             
-            // Profile photo preview
-            profilePhotoInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        photoPreview.innerHTML = `
-                            <img src="${e.target.result}" class="w-full h-full object-cover" alt="Preview">
-                            <input type="file" name="profile_picture" id="profilePhoto" accept="image/*"
-                                   class="absolute inset-0 opacity-0 cursor-pointer">
-                        `;
-                        // Reattach listener
-                        document.getElementById('profilePhoto').addEventListener('change', arguments.callee);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            
             // PIN input - only digits
             document.querySelectorAll('.pin-input').forEach(input => {
                 input.addEventListener('input', function() {
@@ -724,9 +625,9 @@
                     isValid = false;
                 }
                 
-                // Validate phone (Bangladesh format)
+                // Validate phone (international format)
                 const phone = document.getElementById('phone_number');
-                const phoneRegex = /^(\+?880|0)?1[3-9]\d{8}$/;
+                const phoneRegex = /^\+?\d{9,15}$/;
                 if (!phoneRegex.test(phone.value.replace(/[\s\-]/g, ''))) {
                     document.getElementById('phoneError').classList.remove('hidden');
                     phone.classList.add('border-red-500');
@@ -778,20 +679,6 @@
                         confirmPasswordEl.classList.add('border-red-500');
                         isValid = false;
                     }
-                }
-                
-                // Validate location
-                const district = document.getElementById('district');
-                const upazila = document.getElementById('upazila');
-                
-                if (!district.value) {
-                    district.classList.add('border-red-500');
-                    isValid = false;
-                }
-                
-                if (!upazila.value.trim()) {
-                    upazila.classList.add('border-red-500');
-                    isValid = false;
                 }
                 
                 // Validate terms
