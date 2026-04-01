@@ -69,7 +69,7 @@ def register(request):
             # Create role-specific profile
             if user.role == 'farmer':
                 # Create basic farmer profile
-                FarmerProfile.objects.get_or_create(
+                farmer_profile, _ = FarmerProfile.objects.get_or_create(
                     user=user,
                     defaults={
                         'farm_name': f"{user.first_name}'s Farm",
@@ -80,6 +80,9 @@ def register(request):
                         'registration_number': f"FR-{user.id:06d}",
                     }
                 )
+                # Farmers get full access immediately.
+                farmer_profile.is_approved = True
+                farmer_profile.save(update_fields=['is_approved'])
             elif user.role == 'buyer':
                 # Create basic buyer profile
                 BuyerProfile.objects.get_or_create(
@@ -89,22 +92,16 @@ def register(request):
                         'business_type': 'Individual',
                     }
                 )
-            
-            # Create approval request for admin review
-            from admin_panel.models import UserApproval
-            UserApproval.objects.get_or_create(
-                user=user,
-                defaults={'status': 'pending'}
-            )
-            
-            # Notify all admins about the new pending approval
-            admin_users = CustomUser.objects.filter(role='admin')
-            for admin_user in admin_users:
-                Notification.objects.create(
-                    user=admin_user,
-                    notification_type='system',
-                    title='New User Approval Request',
-                    message=f'New {user.get_role_display()} "{user.username}" ({user.get_full_name()}) has registered and is awaiting approval.'
+
+                # Buyers require super-admin approval with required documents.
+                from admin_panel.models import UserApproval
+                UserApproval.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'status': 'pending',
+                        'legal_paper_photo': form.cleaned_data.get('legal_paper_photo'),
+                        'company_photo': form.cleaned_data.get('company_photo'),
+                    }
                 )
             
             messages.success(request, f'Account created successfully for {user.first_name}!')
@@ -460,7 +457,7 @@ def dashboard(request):
         crops = Crop.objects.filter(farmer=user).count()
         orders = Order.objects.filter(farmer=user).count()
         messages_count = Message.objects.filter(recipient=user, is_read=False).count()
-        is_approved = farmer_profile.is_approved if farmer_profile else False
+        is_approved = True
         
         context.update({
             'farmer_profile': farmer_profile,
@@ -477,6 +474,18 @@ def dashboard(request):
         wishlist_count = user.wishlist_items.count()
         messages_count = Message.objects.filter(recipient=user, is_read=False).count()
         is_approved = buyer_profile.is_approved if buyer_profile else False
+
+        from admin_panel.models import UserApproval
+        approval_request = getattr(user, 'approval_request', None)
+        if not is_approved and approval_request is None:
+            approval_request, _ = UserApproval.objects.get_or_create(
+                user=user,
+                defaults={'status': 'pending'}
+            )
+
+        documents_submitted = bool(
+            approval_request and approval_request.legal_paper_photo and approval_request.company_photo
+        )
         
         context.update({
             'buyer_profile': buyer_profile,
@@ -484,6 +493,8 @@ def dashboard(request):
             'wishlist_count': wishlist_count,
             'unread_messages': messages_count,
             'is_approved': is_approved,
+            'approval_request': approval_request,
+            'documents_submitted': documents_submitted,
             'total_spent': buyer_profile.total_spent if buyer_profile else 0,
             'active_orders_count': Order.objects.filter(buyer=user, status__in=['pending', 'accepted', 'shipped']).count(),
             'saved_crops_count': 0,
@@ -507,6 +518,51 @@ def dashboard(request):
         return render(request, 'admin_panel/dashboard.html', context)
     
     return render(request, 'dashboard.html', context)
+
+
+@login_required(login_url='login')
+def submit_buyer_approval_documents(request):
+    """Allow pending buyers to submit or replace approval photos for super-admin review."""
+    if request.user.role != 'buyer':
+        messages.error(request, 'Only buyers can submit approval documents.')
+        return redirect('dashboard')
+
+    buyer_profile, _ = BuyerProfile.objects.get_or_create(user=request.user)
+    if buyer_profile.is_approved:
+        messages.info(request, 'Your buyer account is already approved.')
+        return redirect('dashboard')
+
+    if request.method != 'POST':
+        return redirect('dashboard')
+
+    legal_paper_photo = request.FILES.get('legal_paper_photo')
+    company_photo = request.FILES.get('company_photo')
+
+    if not legal_paper_photo or not company_photo:
+        messages.error(request, 'Please upload both legal papers photo and company photo.')
+        return redirect('dashboard')
+
+    from admin_panel.models import UserApproval
+    approval, _ = UserApproval.objects.get_or_create(user=request.user, defaults={'status': 'pending'})
+    approval.legal_paper_photo = legal_paper_photo
+    approval.company_photo = company_photo
+    approval.status = 'pending'
+    approval.reason_for_rejection = ''
+    approval.reviewed_by = None
+    approval.reviewed_at = None
+    approval.save()
+
+    admin_users = CustomUser.objects.filter(role='admin')
+    for admin_user in admin_users:
+        Notification.objects.create(
+            user=admin_user,
+            notification_type='system',
+            title='Buyer Documents Submitted',
+            message=f'Buyer "{request.user.username}" submitted approval documents for review.'
+        )
+
+    messages.success(request, 'Your documents were submitted successfully. Awaiting super admin review.')
+    return redirect('dashboard')
 
 
 @login_required(login_url='login')
@@ -1158,8 +1214,34 @@ def google_role_select(request):
         if role == 'buyer':
             from users.models import BuyerProfile
             BuyerProfile.objects.get_or_create(user=user)
+
+            from admin_panel.models import UserApproval
+            UserApproval.objects.get_or_create(user=user, defaults={'status': 'pending'})
+
+            admin_users = CustomUser.objects.filter(role='admin')
+            for admin_user in admin_users:
+                Notification.objects.create(
+                    user=admin_user,
+                    notification_type='system',
+                    title='New Buyer Approval Request',
+                    message=f'New buyer "{user.username}" selected role via Google sign-in and is awaiting approval.'
+                )
+
             response = redirect('dashboard')
         else:
+            farmer_profile, _ = FarmerProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'farm_name': f"{user.first_name or user.username}'s Farm",
+                    'farm_size': 0,
+                    'farm_location': f"{user.upazila}, {user.district}" if user.upazila and user.district else 'Not specified',
+                    'soil_type': 'Not specified',
+                    'experience_years': 0,
+                    'registration_number': f"FR-{user.id:06d}",
+                }
+            )
+            farmer_profile.is_approved = True
+            farmer_profile.save(update_fields=['is_approved'])
             response = redirect('profile_edit')
 
         # ASGI/Daphne session cookie fix

@@ -52,6 +52,8 @@ class UserApproval(models.Model):
         default='pending'
     )
     documents = models.FileField(upload_to='approvals/', null=True, blank=True)
+    legal_paper_photo = models.ImageField(upload_to='approvals/legal/', null=True, blank=True)
+    company_photo = models.ImageField(upload_to='approvals/company/', null=True, blank=True)
     reason_for_rejection = models.TextField(blank=True, null=True)
     reviewed_by = models.ForeignKey(
         CustomUser,

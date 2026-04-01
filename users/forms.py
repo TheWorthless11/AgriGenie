@@ -210,6 +210,7 @@ class DynamicRegistrationForm(forms.ModelForm):
         needs_password = (role == 'buyer') or (role == 'farmer' and auth_type == 'password')
         
         if needs_password:
+            
             if not password:
                 raise forms.ValidationError("Password is required.")
             if len(password) < 8:
@@ -241,6 +242,12 @@ class DynamicRegistrationForm(forms.ModelForm):
             confirm_password = cleaned_data.get('confirm_password')
             if password and confirm_password and password != confirm_password:
                 self.add_error('confirm_password', "Passwords do not match.")
+
+        if role == 'buyer':
+            if not cleaned_data.get('legal_paper_photo'):
+                self.add_error('legal_paper_photo', 'Legal papers photo is required for buyer approval.')
+            if not cleaned_data.get('company_photo'):
+                self.add_error('company_photo', 'Company photo is required for buyer approval.')
         
         return cleaned_data
     

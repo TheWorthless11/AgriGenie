@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - AgriGenie Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-file-import text-primary"></i> {{ title }}
+            </h1>
+            <p class="text-muted">Import crop varieties from the price prediction dataset as master crops</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'master_crops_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Master Crops
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-seedling"></i> Available Variants from Dataset</h5>
+        </div>
+        <div class="card-body">
+            {% if variant_list %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>{{ variant_list|length }}</strong> crop variants found in the prediction dataset.
+                    Click <strong>Import All</strong> to add them as master crops. Existing entries will be skipped.
+                </div>
+
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Commodity</th>
+                                <th>Variety</th>
+                                <th>Master Crop Name</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in variant_list %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><span class="badge bg-info">{{ v.commodity }}</span></td>
+                                <td>{{ v.variety }}</td>
+                                <td><strong>{{ v.name }}</strong></td>
+                                <td>
+                                    {% if v.exists %}
+                                        <span class="badge bg-secondary"><i class="fas fa-check"></i> Already exists</span>
+                                    {% else %}
+                                        <span class="badge bg-success"><i class="fas fa-plus"></i> Will be created</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted">
+                                <i class="fas fa-plus-circle text-success"></i>
+                                {% with new_count=0 %}
+                                    {% for v in variant_list %}{% if not v.exists %}
+                                        {% with new_count=new_count|add:1 %}{% endwith %}
+                                    {% endif %}{% endfor %}
+                                    {{ new_count }} new variant(s) to import
+                                {% endwith %}
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{% url 'master_crops_list' %}" class="btn btn-outline-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-file-import"></i> Import All Variants
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Variants Found</h5>
+                    <p class="text-muted">The price prediction dataset could not be loaded or contains no data.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -18,9 +18,8 @@ import json
 
 
 def is_farmer_approved(user):
-    """Check if a farmer is approved by admin"""
-    profile = FarmerProfile.objects.filter(user=user).first()
-    return profile and profile.is_approved
+    """Farmers have full access immediately."""
+    return True
 
 
 @login_required(login_url='login')
@@ -62,10 +61,6 @@ def add_crop(request):
         messages.error(request, 'Only farmers can add crops!')
         return redirect('dashboard')
     
-    if not is_farmer_approved(request.user):
-        messages.warning(request, 'Your account is pending admin approval. You cannot add crops until approved.')
-        return redirect('farmer_crops')
-    
     if request.method == 'POST':
         form = CropForm(request.POST, request.FILES)
         if form.is_valid():
@@ -100,10 +95,6 @@ def add_crop(request):
 @login_required(login_url='login')
 def edit_crop(request, crop_id):
     """Edit crop"""
-    if not is_farmer_approved(request.user):
-        messages.warning(request, 'Your account is pending admin approval. You cannot edit crops until approved.')
-        return redirect('farmer_crops')
-    
     crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
     
     if request.method == 'POST':
@@ -122,10 +113,6 @@ def edit_crop(request, crop_id):
 @login_required(login_url='login')
 def delete_crop(request, crop_id):
     """Delete crop"""
-    if not is_farmer_approved(request.user):
-        messages.warning(request, 'Your account is pending admin approval. You cannot delete crops until approved.')
-        return redirect('farmer_crops')
-    
     crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
     crop.delete()
     messages.success(request, 'Crop deleted successfully!')
@@ -489,10 +476,6 @@ def messages_view(request):
 @login_required(login_url='login')
 def send_message(request, recipient_id):
     """Send message to a user"""
-    if not is_farmer_approved(request.user):
-        messages.warning(request, 'Your account is pending admin approval. You cannot send messages until approved.')
-        return redirect('messages')
-    
     recipient = get_object_or_404(CustomUser, id=recipient_id)
     
     if request.method == 'POST':

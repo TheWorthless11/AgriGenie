@@ -516,6 +516,12 @@
                     if (password !== confirmPassword) {
                         isValid = false;
                     }
+
+                    const legalPaperPhoto = document.getElementById('legal_paper_photo').files.length > 0;
+                    const companyPhoto = document.getElementById('company_photo').files.length > 0;
+                    if (!legalPaperPhoto || !companyPhoto) {
+                        isValid = false;
+                    }
                 }
                 
                 // Check terms
@@ -678,6 +684,21 @@
                         errorEl.classList.remove('hidden');
                         confirmPasswordEl.classList.add('border-red-500');
                         isValid = false;
+                    }
+
+                    if (!isFarmer) {
+                        const legalPaperInput = document.getElementById('legal_paper_photo');
+                        const companyPhotoInput = document.getElementById('company_photo');
+                        if (!legalPaperInput.files.length) {
+                            document.getElementById('legalPaperError').classList.remove('hidden');
+                            legalPaperInput.classList.add('border-red-500');
+                            isValid = false;
+                        }
+                        if (!companyPhotoInput.files.length) {
+                            document.getElementById('companyPhotoError').classList.remove('hidden');
+                            companyPhotoInput.classList.add('border-red-500');
+                            isValid = false;
+                        }
                     }
                 }
                 

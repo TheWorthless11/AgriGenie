@@ -18,7 +18,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Google OAuth (django-allauth)
-    path('auth/google/', user_views.start_google_login, name='start_google_login'),
     path('accounts/', include('allauth.urls')),
     
     # Home and Authentication
@@ -28,10 +27,6 @@ urlpatterns = [
     path('logout/', user_views.logout_view, name='logout'),
     path('dashboard/', user_views.dashboard, name='dashboard'),
     path('google-role-select/', user_views.google_role_select, name='google_role_select'),
-    
-    # Onboarding Wizards
-    path('onboarding/farmer/', user_views.farmer_onboarding, name='farmer_onboarding'),
-    path('onboarding/buyer/', user_views.buyer_onboarding, name='buyer_onboarding'),
     
     # Forgot Credential System
     path('forgot/', user_views.forgot_credential, name='forgot_credential'),

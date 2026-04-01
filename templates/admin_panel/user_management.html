@@ -136,11 +136,7 @@
                             </td>
                             <td>
                                 {% if u.role == 'farmer' %}
-                                    {% if u.farmer_profile.is_approved %}
-                                        <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending</span>
-                                    {% endif %}
+                                    <span class="badge bg-success"><i class="fas fa-check"></i> Full Access</span>
                                 {% elif u.role == 'buyer' %}
                                     {% if u.buyer_profile.is_approved %}
                                         <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
@@ -155,10 +151,10 @@
                             </td>
                             <td>
                                 {% if u != request.user %}
-                                    {% if u.role == 'farmer' or u.role == 'buyer' %}
+                                    {% if u.role == 'buyer' %}
                                     <form method="POST" action="{% url 'toggle_user_approval' u.id %}" class="d-inline">
                                         {% csrf_token %}
-                                        {% if u.role == 'farmer' and u.farmer_profile.is_approved or u.role == 'buyer' and u.buyer_profile.is_approved %}
+                                        {% if u.buyer_profile.is_approved %}
                                             <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
                                                 <i class="fas fa-ban"></i>
                                             </button>

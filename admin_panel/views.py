@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Avg, Q
+from django.db import connection, IntegrityError, transaction
 from django.utils import timezone
 from datetime import timedelta
 
@@ -73,7 +74,7 @@ def admin_dashboard(request):
 @user_passes_test(is_admin)
 def user_approvals(request):
     """Manage user approvals - defaults to showing only pending"""
-    approvals = UserApproval.objects.all().select_related('user').order_by('-created_at')
+    approvals = UserApproval.objects.filter(user__role='buyer').select_related('user').order_by('-created_at')
     status_filter = request.GET.get('status', 'pending')  # Default to pending only
     role_filter = request.GET.get('role')
     
@@ -83,14 +84,14 @@ def user_approvals(request):
     if role_filter:
         approvals = approvals.filter(user__role=role_filter)
     
-    pending_count = UserApproval.objects.filter(status='pending').count()
+    pending_count = UserApproval.objects.filter(user__role='buyer', status='pending').count()
     
     context = {
         'approvals': approvals,
         'pending_count': pending_count,
         'status_filter': status_filter,
         'status_choices': [('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected'), ('all', 'All')],
-        'role_choices': [('farmer', 'Farmer'), ('buyer', 'Buyer')],
+        'role_choices': [('buyer', 'Buyer')],
         'title': 'User Approvals'
     }
     return render(request, 'admin_panel/user_approvals.html', context)
@@ -100,43 +101,35 @@ def user_approvals(request):
 @user_passes_test(is_admin)
 def approve_user(request, approval_id):
     """Approve a user"""
-    approval = get_object_or_404(UserApproval, id=approval_id)
+    approval = get_object_or_404(UserApproval.objects.select_related('user'), id=approval_id)
+    if approval.user.role != 'buyer':
+        messages.error(request, 'Only buyer approvals are managed here.')
+        return redirect('user_approvals')
     
     if request.method == 'POST':
         action = request.POST.get('action')
         
         if action == 'approve':
+            if not approval.legal_paper_photo or not approval.company_photo:
+                messages.error(request, 'Buyer must submit legal papers photo and company photo before approval.')
+                return redirect('approve_user', approval_id=approval.id)
+
             approval.status = 'approved'
             approval.reviewed_by = request.user
             approval.reviewed_at = timezone.now()
             approval.save()
             
-            # Update user profile (create if missing)
+            # Update buyer profile
             user = approval.user
-            if user.role == 'farmer':
-                farmer_profile, created = FarmerProfile.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        'farm_name': f"{user.first_name}'s Farm",
-                        'farm_size': 0,
-                        'farm_location': f"{user.upazila}, {user.district}" if hasattr(user, 'upazila') else 'Unknown',
-                        'soil_type': 'Not specified',
-                        'experience_years': 0,
-                        'registration_number': f"FR-{user.id:06d}",
-                    }
-                )
-                farmer_profile.is_approved = True
-                farmer_profile.save()
-            elif user.role == 'buyer':
-                buyer_profile, created = BuyerProfile.objects.get_or_create(
-                    user=user,
-                    defaults={
-                        'company_name': user.first_name or user.username,
-                        'business_type': 'Individual',
-                    }
-                )
-                buyer_profile.is_approved = True
-                buyer_profile.save()
+            buyer_profile, _ = BuyerProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'company_name': user.first_name or user.username,
+                    'business_type': 'Individual',
+                }
+            )
+            buyer_profile.is_approved = True
+            buyer_profile.save(update_fields=['is_approved'])
             
             # Send notification
             Notification.objects.create(
@@ -155,6 +148,11 @@ def approve_user(request, approval_id):
             approval.reviewed_by = request.user
             approval.reviewed_at = timezone.now()
             approval.save()
+
+            buyer_profile = BuyerProfile.objects.filter(user=approval.user).first()
+            if buyer_profile and buyer_profile.is_approved:
+                buyer_profile.is_approved = False
+                buyer_profile.save(update_fields=['is_approved'])
             
             # Send notification
             Notification.objects.create(
@@ -165,6 +163,28 @@ def approve_user(request, approval_id):
             )
             
             messages.success(request, f'{approval.user.username} rejected!')
+
+        elif action == 'notify_missing_docs':
+            missing_docs = []
+            if not approval.legal_paper_photo:
+                missing_docs.append('Legal Papers Photo')
+            if not approval.company_photo:
+                missing_docs.append('Company Photo')
+
+            if missing_docs:
+                Notification.objects.create(
+                    user=approval.user,
+                    notification_type='system',
+                    title='Documents Required For Approval',
+                    message=(
+                        'Please submit the missing verification document(s): '
+                        + ', '.join(missing_docs)
+                        + '. Your buyer account approval is pending until these are uploaded.'
+                    )
+                )
+                messages.success(request, f'Notification sent to {approval.user.username} for missing documents.')
+            else:
+                messages.info(request, 'All required documents are already submitted.')
         
         return redirect('user_approvals')
     
@@ -524,66 +544,62 @@ def ai_monitoring(request):
         t = d['type_label']
         type_counts[t] = type_counts.get(t, 0) + 1
 
-    # ── Price predictions for master crops (past 1 year) ─────────
-    master_crops = MasterCrop.objects.filter(is_active=True)
-    today = datetime.now().date()
-    one_year_ago = today - timedelta(days=365)
+    # ── Price predictions using REAL data from the prediction dataset ──
+    from ai_models.price_prediction.predictor import get_price_history, get_dropdown_options
 
-    # Base prices per category (₹/kg) — realistic Indian market ranges
-    base_prices = {
-        'vegetables': 35,
-        'fruits': 60,
-        'grains': 25,
-        'pulses': 80,
-        'spices': 150,
-        'cash_crops': 45,
-        'other': 40,
-    }
-    seasonal_weights = {
-        1: 1.10, 2: 1.15, 3: 1.20,
-        4: 1.00, 5: 0.90, 6: 0.80,
-        7: 0.75, 8: 0.70, 9: 0.80,
-        10: 1.00, 11: 1.15, 12: 1.20,
-    }
+    options = get_dropdown_options()
+    commodities = options.get('commodities', [])
+    varieties_map = options.get('varieties', {})
+    markets = options.get('markets', [])
+    default_market = markets[0] if markets else 'Dhaka'
 
-    crop_price_data = []  # list of {crop_name, monthly_prices:[{month_label, price}], avg, min, max}
-    for mc in master_crops:
-        base = base_prices.get(mc.category, 40)
-        random.seed(hash(mc.crop_name))  # deterministic per crop
-        monthly_prices = []
-        prices_only = []
-        for m_offset in range(12):
-            dt = one_year_ago + timedelta(days=m_offset * 30)
-            month_num = dt.month
-            seasonal = seasonal_weights.get(month_num, 1.0)
-            noise = random.uniform(-0.08, 0.08)
-            price = round(base * seasonal * (1 + noise), 2)
-            label = dt.strftime('%b %Y')
-            monthly_prices.append({'month': label, 'price': price})
-            prices_only.append(price)
-
-        crop_price_data.append({
-            'crop_name': mc.crop_name,
-            'category': mc.get_category_display(),
-            'monthly_prices': monthly_prices,
-            'avg_price': round(sum(prices_only) / len(prices_only), 2),
-            'min_price': round(min(prices_only), 2),
-            'max_price': round(max(prices_only), 2),
-        })
-
-    # JSON data for Chart.js
-    chart_labels = [p['month'] for p in crop_price_data[0]['monthly_prices']] if crop_price_data else []
+    crop_price_data = []
+    chart_labels = []
     chart_datasets = []
-    palette = ['#0d6efd', '#198754', '#dc3545', '#ffc107', '#0dcaf0', '#6f42c1']
-    for i, cpd in enumerate(crop_price_data):
-        chart_datasets.append({
-            'label': cpd['crop_name'],
-            'data': [p['price'] for p in cpd['monthly_prices']],
-            'borderColor': palette[i % len(palette)],
-            'backgroundColor': palette[i % len(palette)] + '22',
-            'fill': True,
-            'tension': 0.3,
-        })
+    palette = [
+        '#0d6efd', '#198754', '#dc3545', '#ffc107', '#0dcaf0', '#6f42c1',
+        '#fd7e14', '#20c997', '#d63384', '#6610f2', '#e83e8c', '#17a2b8',
+    ]
+    color_idx = 0
+
+    for commodity in commodities:
+        for variety in varieties_map.get(commodity, []):
+            history = get_price_history(commodity, variety, default_market, limit=12)
+            if not history:
+                continue
+
+            monthly_prices = []
+            prices_only = []
+            for h in history:
+                month_names = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                               'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+                label = f"{month_names[h['month']]} {h['year']}"
+                monthly_prices.append({'month': label, 'price': round(h['price'], 2)})
+                prices_only.append(h['price'])
+
+            display_name = f"{commodity} - {variety.replace('_', ' ')}"
+            crop_price_data.append({
+                'crop_name': display_name,
+                'category': commodity,
+                'monthly_prices': monthly_prices,
+                'avg_price': round(sum(prices_only) / len(prices_only), 2),
+                'min_price': round(min(prices_only), 2),
+                'max_price': round(max(prices_only), 2),
+            })
+
+            # Build chart labels from longest series
+            if len(monthly_prices) > len(chart_labels):
+                chart_labels = [p['month'] for p in monthly_prices]
+
+            chart_datasets.append({
+                'label': display_name,
+                'data': [p['price'] for p in monthly_prices],
+                'borderColor': palette[color_idx % len(palette)],
+                'backgroundColor': palette[color_idx % len(palette)] + '22',
+                'fill': False,
+                'tension': 0.3,
+            })
+            color_idx += 1
 
     # ── Recent disease detections (keep existing) ────────────────
     recent_diseases = CropDisease.objects.all().order_by('-detected_date')[:10]
@@ -595,6 +611,7 @@ def ai_monitoring(request):
         'chart_labels_json': json.dumps(chart_labels),
         'chart_datasets_json': json.dumps(chart_datasets),
         'recent_diseases': recent_diseases,
+        'default_market': default_market,
         'title': 'AI Monitoring',
     }
     return render(request, 'admin_panel/ai_monitoring.html', context)
@@ -854,9 +871,39 @@ def delete_user(request, user_id):
     
     if request.method == 'POST':
         username = user_to_delete.username
-        user_to_delete.delete()
-        messages.success(request, f'User "{username}" has been deleted successfully.')
-        return redirect('user_management')
+
+        try:
+            with transaction.atomic():
+                user_to_delete.delete()
+            messages.success(request, f'User "{username}" has been deleted successfully.')
+            return redirect('user_management')
+        except IntegrityError:
+            # Some older deployments can have legacy moderation tables still referencing users.
+            # Clean those rows first, then retry user deletion.
+            legacy_table = 'admin_panel_buyerinspectionphoto'
+            existing_tables = set(connection.introspection.table_names())
+
+            if legacy_table in existing_tables:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        'DELETE FROM admin_panel_buyerinspectionphoto WHERE uploaded_by_id = %s',
+                        [user_to_delete.id],
+                    )
+
+                try:
+                    with transaction.atomic():
+                        user_to_delete.delete()
+                    messages.success(request, f'User "{username}" has been deleted successfully.')
+                    return redirect('user_management')
+                except IntegrityError as exc:
+                    messages.error(request, f'Unable to delete user due to related records: {exc}')
+                    return redirect('delete_user', user_id=user_to_delete.id)
+
+            messages.error(
+                request,
+                'Unable to delete user because related records still exist. Please remove dependent records first.',
+            )
+            return redirect('delete_user', user_id=user_to_delete.id)
     
     context = {
         'user_to_delete': user_to_delete,
@@ -873,28 +920,8 @@ def toggle_user_approval(request, user_id):
     
     if request.method == 'POST':
         if user.role == 'farmer':
-            profile = FarmerProfile.objects.filter(user=user).first()
-            if profile:
-                profile.is_approved = not profile.is_approved
-                profile.save()
-                status = "approved" if profile.is_approved else "revoked"
-                
-                # Update UserApproval record
-                approval, _ = UserApproval.objects.get_or_create(user=user)
-                approval.status = 'approved' if profile.is_approved else 'rejected'
-                approval.reviewed_by = request.user
-                approval.reviewed_at = timezone.now()
-                approval.save()
-                
-                # Notify user
-                Notification.objects.create(
-                    user=user,
-                    notification_type='system',
-                    title=f'Account {status.title()}',
-                    message=f'Your farmer account has been {status} by admin.'
-                )
-                messages.success(request, f'Farmer "{user.username}" has been {status}.')
-        
+            messages.info(request, 'Farmers do not require approval.')
+
         elif user.role == 'buyer':
             profile = BuyerProfile.objects.filter(user=user).first()
             if profile:
@@ -921,3 +948,68 @@ def toggle_user_approval(request, user_id):
             messages.info(request, 'Admin accounts do not require approval.')
     
     return redirect('user_management')
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def import_crop_variants(request):
+    """Import all crop variants from the price prediction dataset as master crops."""
+    from ai_models.price_prediction.predictor import get_dropdown_options
+
+    CATEGORY_MAP = {
+        'Potato': 'vegetables',
+        'Tomato': 'vegetables',
+        'Rice': 'grains',
+    }
+
+    if request.method == 'POST':
+        options = get_dropdown_options()
+        commodities = options.get('commodities', [])
+        varieties_map = options.get('varieties', {})
+        created_count = 0
+        skipped_count = 0
+
+        for commodity in commodities:
+            for variety in varieties_map.get(commodity, []):
+                crop_name = f"{commodity} - {variety.replace('_', ' ')}"
+                category = CATEGORY_MAP.get(commodity, 'other')
+                _, created = MasterCrop.objects.get_or_create(
+                    crop_name=crop_name,
+                    defaults={
+                        'crop_type': 'conventional',
+                        'category': category,
+                        'description': f'{variety.replace("_", " ")} variant of {commodity}',
+                        'is_active': True,
+                        'created_by': request.user,
+                    }
+                )
+                if created:
+                    created_count += 1
+                else:
+                    skipped_count += 1
+
+        if created_count:
+            messages.success(request, f'Successfully imported {created_count} crop variant(s) as master crops!')
+        if skipped_count:
+            messages.info(request, f'{skipped_count} variant(s) already existed and were skipped.')
+        if not created_count and not skipped_count:
+            messages.warning(request, 'No variants found in the dataset.')
+
+        return redirect('master_crops_list')
+
+    # GET — show confirmation page
+    options = get_dropdown_options()
+    commodities = options.get('commodities', [])
+    variants_map = options.get('varieties', {})
+    variant_list = []
+    for commodity in commodities:
+        for variety in variants_map.get(commodity, []):
+            name = f"{commodity} - {variety.replace('_', ' ')}"
+            exists = MasterCrop.objects.filter(crop_name=name).exists()
+            variant_list.append({'commodity': commodity, 'variety': variety.replace('_', ' '), 'name': name, 'exists': exists})
+
+    context = {
+        'variant_list': variant_list,
+        'title': 'Import Crop Variants',
+    }
+    return render(request, 'admin_panel/import_crop_variants.html', context)
