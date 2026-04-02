@@ -89,6 +89,18 @@ class FarmerProfile(models.Model):
     is_approved = models.BooleanField(default=False)
     rating = models.FloatField(default=0, validators=[MinValueValidator(0), MaxValueValidator(5)])
     
+    # Approval tracking
+    approval_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected'),
+            ('not_submitted', 'Not Submitted')
+        ],
+        default='not_submitted'
+    )
+    
     def __str__(self):
         return self.farm_name
 

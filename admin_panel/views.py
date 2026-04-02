@@ -73,8 +73,9 @@ def admin_dashboard(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def user_approvals(request):
-    """Manage user approvals - defaults to showing only pending"""
-    approvals = UserApproval.objects.filter(user__role='buyer').select_related('user').order_by('-created_at')
+    """Manage user approvals for both buyers and farmers - defaults to showing only pending"""
+    # Show both farmers and buyers
+    approvals = UserApproval.objects.select_related('user').order_by('-created_at')
     status_filter = request.GET.get('status', 'pending')  # Default to pending only
     role_filter = request.GET.get('role')
     
@@ -83,15 +84,23 @@ def user_approvals(request):
     
     if role_filter:
         approvals = approvals.filter(user__role=role_filter)
+    else:
+        # Default: show both farmers and buyers if no filter specified
+        approvals = approvals.filter(user__role__in=['buyer', 'farmer'])
     
-    pending_count = UserApproval.objects.filter(user__role='buyer', status='pending').count()
+    pending_count_buyers = UserApproval.objects.filter(user__role='buyer', status='pending').count()
+    pending_count_farmers = UserApproval.objects.filter(user__role='farmer', status='pending').count()
+    pending_count = pending_count_buyers + pending_count_farmers
     
     context = {
         'approvals': approvals,
         'pending_count': pending_count,
+        'pending_count_buyers': pending_count_buyers,
+        'pending_count_farmers': pending_count_farmers,
         'status_filter': status_filter,
+        'role_filter': role_filter,
         'status_choices': [('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected'), ('all', 'All')],
-        'role_choices': [('buyer', 'Buyer')],
+        'role_choices': [('buyer', 'Buyer'), ('farmer', 'Farmer')],
         'title': 'User Approvals'
     }
     return render(request, 'admin_panel/user_approvals.html', context)
@@ -100,46 +109,62 @@ def user_approvals(request):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def approve_user(request, approval_id):
-    """Approve a user"""
+    """Approve or reject users (both buyers and farmers)"""
     approval = get_object_or_404(UserApproval.objects.select_related('user'), id=approval_id)
-    if approval.user.role != 'buyer':
-        messages.error(request, 'Only buyer approvals are managed here.')
+    user_role = approval.user.role
+    
+    # Validate that user can be approved
+    if user_role not in ['buyer', 'farmer']:
+        messages.error(request, 'Only buyer and farmer approvals are managed here.')
         return redirect('user_approvals')
     
     if request.method == 'POST':
         action = request.POST.get('action')
         
         if action == 'approve':
-            if not approval.legal_paper_photo or not approval.company_photo:
-                messages.error(request, 'Buyer must submit legal papers photo and company photo before approval.')
-                return redirect('approve_user', approval_id=approval.id)
+            # Validate required documents based on user type
+            if user_role == 'buyer':
+                if not approval.legal_paper_photo or not approval.company_photo:
+                    messages.error(request, 'Buyer must submit legal papers photo and company photo before approval.')
+                    return redirect('approve_user', approval_id=approval.id)
+            elif user_role == 'farmer':
+                if not approval.nid_number or not approval.nid_card_photo:
+                    messages.error(request, 'Farmer must submit NID number and NID card photo before approval.')
+                    return redirect('approve_user', approval_id=approval.id)
 
             approval.status = 'approved'
             approval.reviewed_by = request.user
             approval.reviewed_at = timezone.now()
             approval.save()
             
-            # Update buyer profile
+            # Update user profile based on role
             user = approval.user
-            buyer_profile, _ = BuyerProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    'company_name': user.first_name or user.username,
-                    'business_type': 'Individual',
-                }
-            )
-            buyer_profile.is_approved = True
-            buyer_profile.save(update_fields=['is_approved'])
+            if user_role == 'buyer':
+                buyer_profile, _ = BuyerProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'company_name': user.first_name or user.username,
+                        'business_type': 'Individual',
+                    }
+                )
+                buyer_profile.is_approved = True
+                buyer_profile.save(update_fields=['is_approved'])
+            elif user_role == 'farmer':
+                from users.models import FarmerProfile
+                farmer_profile = FarmerProfile.objects.filter(user=user).first()
+                if farmer_profile:
+                    farmer_profile.approval_status = 'approved'
+                    farmer_profile.save(update_fields=['approval_status'])
             
             # Send notification
             Notification.objects.create(
                 user=user,
                 notification_type='system',
                 title='Account Approved',
-                message=f'Your {user.get_role_display()} account has been approved!'
+                message=f'Your {user.get_role_display()} account has been approved! You can now access all features.'
             )
             
-            messages.success(request, f'{user.username} approved successfully!')
+            messages.success(request, f'{user.username} ({user_role}) approved successfully!')
         
         elif action == 'reject':
             reason = request.POST.get('reason', 'No reason provided')
@@ -148,11 +173,18 @@ def approve_user(request, approval_id):
             approval.reviewed_by = request.user
             approval.reviewed_at = timezone.now()
             approval.save()
-
-            buyer_profile = BuyerProfile.objects.filter(user=approval.user).first()
-            if buyer_profile and buyer_profile.is_approved:
-                buyer_profile.is_approved = False
-                buyer_profile.save(update_fields=['is_approved'])
+            
+            if user_role == 'buyer':
+                buyer_profile = BuyerProfile.objects.filter(user=approval.user).first()
+                if buyer_profile and buyer_profile.is_approved:
+                    buyer_profile.is_approved = False
+                    buyer_profile.save(update_fields=['is_approved'])
+            elif user_role == 'farmer':
+                from users.models import FarmerProfile
+                farmer_profile = FarmerProfile.objects.filter(user=approval.user).first()
+                if farmer_profile:
+                    farmer_profile.approval_status = 'rejected'
+                    farmer_profile.save(update_fields=['approval_status'])
             
             # Send notification
             Notification.objects.create(
@@ -162,33 +194,66 @@ def approve_user(request, approval_id):
                 message=f'Your {approval.user.get_role_display()} account was rejected. Reason: {reason}'
             )
             
-            messages.success(request, f'{approval.user.username} rejected!')
+            messages.success(request, f'{approval.user.username} ({user_role}) rejected!')
 
         elif action == 'notify_missing_docs':
             missing_docs = []
-            if not approval.legal_paper_photo:
-                missing_docs.append('Legal Papers Photo')
-            if not approval.company_photo:
-                missing_docs.append('Company Photo')
-
-            if missing_docs:
-                Notification.objects.create(
-                    user=approval.user,
-                    notification_type='system',
-                    title='Documents Required For Approval',
-                    message=(
-                        'Please submit the missing verification document(s): '
-                        + ', '.join(missing_docs)
-                        + '. Your buyer account approval is pending until these are uploaded.'
+            
+            if user_role == 'buyer':
+                if not approval.legal_paper_photo:
+                    missing_docs.append('Legal Papers Photo')
+                if not approval.company_photo:
+                    missing_docs.append('Company Photo')
+                    
+                if missing_docs:
+                    Notification.objects.create(
+                        user=approval.user,
+                        notification_type='system',
+                        title='Documents Required For Approval',
+                        message=(
+                            'Please submit the missing verification document(s): '
+                            + ', '.join(missing_docs)
+                            + '. Your buyer account approval is pending until these are uploaded.'
+                        )
                     )
-                )
-                messages.success(request, f'Notification sent to {approval.user.username} for missing documents.')
-            else:
-                messages.info(request, 'All required documents are already submitted.')
+                    messages.success(request, f'Notification sent to {approval.user.username} for missing documents.')
+                else:
+                    messages.info(request, 'All required documents are already submitted.')
+                    
+            elif user_role == 'farmer':
+                if not approval.nid_number:
+                    missing_docs.append('NID Card Number')
+                if not approval.nid_card_photo:
+                    missing_docs.append('NID Card Photo')
+                    
+                if missing_docs:
+                    Notification.objects.create(
+                        user=approval.user,
+                        notification_type='system',
+                        title='NID Verification Required',
+                        message=(
+                            'Please submit the missing NID verification document(s): '
+                            + ', '.join(missing_docs)
+                            + '. Your farmer account approval is pending until these are uploaded. '
+                            'Please ensure the NID photo is clear and legible.'
+                        )
+                    )
+                    from users.models import FarmerProfile
+                    fp = FarmerProfile.objects.filter(user=approval.user).first()
+                    if fp:
+                        fp.approval_status = 'resubmit_requested'
+                        fp.save()
+                    messages.success(request, f'Notification sent to {approval.user.username} to resubmit NID.')
+                else:
+                    messages.info(request, 'All required NID documents are already submitted.')
         
         return redirect('user_approvals')
     
-    context = {'approval': approval, 'title': 'Review User Approval'}
+    context = {
+        'approval': approval,
+        'user_role': user_role,
+        'title': f'Review {user_role.title()} Approval'
+    }
     return render(request, 'admin_panel/approval_detail.html', context)
 
 

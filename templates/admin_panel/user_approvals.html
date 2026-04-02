@@ -13,7 +13,11 @@
                     <span class="badge bg-warning text-dark">{{ pending_count }} Pending</span>
                 {% endif %}
             </h1>
-            <p class="text-muted">Review and approve/reject buyer registrations</p>
+            <p class="text-muted">
+                {% if pending_count_farmers > 0 %}<span class="badge bg-primary">{{ pending_count_farmers }} Farmer(s)</span>{% endif %}
+                {% if pending_count_buyers > 0 %}<span class="badge bg-info ms-2">{{ pending_count_buyers }} Buyer(s)</span>{% endif %}
+                {% if pending_count == 0 %}<span class="text-muted">No pending approvals</span>{% endif %}
+            </p>
         </div>
         <div class="col-md-4">
             <form method="GET" class="d-flex gap-2">
@@ -23,7 +27,7 @@
                     {% endfor %}
                 </select>
                 <select name="role" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">All</option>
+                    <option value="">All Roles</option>
                     {% for val, label in role_choices %}
                         <option value="{{ val }}" {% if request.GET.role == val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -67,20 +71,49 @@
                                     <span class="badge bg-danger">Rejected</span>
                                 {% endif %}
                             </p>
-                            {% if approval.legal_paper_photo %}
-                                <p class="mb-2">
-                                    <a href="{{ approval.legal_paper_photo.url }}" target="_blank" class="btn btn-sm btn-info">
-                                        <i class="fas fa-file-image"></i> Legal Papers Photo
-                                    </a>
-                                </p>
+
+                            {% if approval.user.role == 'farmer' %}
+                                {% if approval.nid_number %}
+                                    <p class="mb-2">
+                                        <strong>NID Number:</strong> {{ approval.nid_number }}
+                                    </p>
+                                {% endif %}
+                                {% if approval.nid_card_photo %}
+                                    <p class="mb-2">
+                                        <a href="{{ approval.nid_card_photo.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-id-card"></i> NID Card Photo
+                                        </a>
+                                    </p>
+                                {% endif %}
+                                {% if approval.status == 'pending' and not approval.nid_card_photo %}
+                                    <div class="small text-danger">
+                                        Farmer has not submitted NID verification yet.
+                                    </div>
+                                {% endif %}
+                            {% elif approval.user.role == 'buyer' %}
+                                {% if approval.legal_paper_photo %}
+                                    <p class="mb-2">
+                                        <a href="{{ approval.legal_paper_photo.url }}" target="_blank" class="btn btn-sm btn-info">
+                                            <i class="fas fa-file-image"></i> Legal Papers Photo
+                                        </a>
+                                    </p>
+                                {% endif %}
+                                {% if approval.company_photo %}
+                                    <p class="mb-2">
+                                        <a href="{{ approval.company_photo.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-building"></i> Company Photo
+                                        </a>
+                                    </p>
+                                {% endif %}
+                                {% if approval.status == 'pending' %}
+                                    {% if not approval.legal_paper_photo or not approval.company_photo %}
+                                        <div class="small text-danger">
+                                            Buyer has not submitted all required verification photos yet.
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
                             {% endif %}
-                            {% if approval.company_photo %}
-                                <p class="mb-2">
-                                    <a href="{{ approval.company_photo.url }}" target="_blank" class="btn btn-sm btn-primary">
-                                        <i class="fas fa-building"></i> Company Photo
-                                    </a>
-                                </p>
-                            {% endif %}
+
                             {% if approval.reason_for_rejection %}
                                 <p class="mb-2 text-danger">
                                     <strong>Rejection Reason:</strong><br>{{ approval.reason_for_rejection }}

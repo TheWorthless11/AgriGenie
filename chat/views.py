@@ -12,14 +12,17 @@ from django.utils import timezone
 import json
 from .models import ChatRoom, ChatMessage
 from farmer.models import Crop
+from farmer.decorators import farmer_approval_required
 from users.models import CustomUser
 
 
 @login_required
+@farmer_approval_required('marketplace')
 def chat_list(request):
     """
     Display list of all chat rooms for the current user.
     Shows farmer chats for farmers, buyer chats for buyers.
+    Farmers must be approved to access chat.
     """
     user = request.user
     
@@ -56,9 +59,11 @@ def chat_list(request):
 
 
 @login_required
+@farmer_approval_required('marketplace')
 def chat_room(request, room_id):
     """
     Display individual chat room with message history.
+    Farmers must be approved to access chat.
     """
     user = request.user
     room = get_object_or_404(ChatRoom, id=room_id)
@@ -88,10 +93,12 @@ def chat_room(request, room_id):
 
 
 @login_required
+@farmer_approval_required('marketplace')
 def start_chat(request, user_id, crop_id=None):
     """
     Start a new chat or open existing chat with another user.
     Optionally link to a specific crop.
+    Farmers must be approved to send messages.
     """
     current_user = request.user
     other_user = get_object_or_404(CustomUser, id=user_id)
@@ -167,10 +174,12 @@ def delete_chat(request, room_id):
 
 
 @login_required
+@farmer_approval_required('marketplace')
 @require_POST
 def send_message_ajax(request, room_id):
     """
     AJAX endpoint to send a message (fallback when WebSocket not available).
+    Farmers must be approved to send messages.
     """
     user = request.user
     room = get_object_or_404(ChatRoom, id=room_id)
@@ -209,11 +218,13 @@ def send_message_ajax(request, room_id):
 
 
 @login_required
+@farmer_approval_required('marketplace')
 @require_GET
 def get_messages_ajax(request, room_id):
     """
     AJAX endpoint to get messages (polling fallback when WebSocket not available).
     Returns messages after a given message ID or timestamp.
+    Farmers must be approved to view messages.
     """
     user = request.user
     room = get_object_or_404(ChatRoom, id=room_id)

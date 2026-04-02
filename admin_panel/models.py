@@ -45,15 +45,27 @@ class MasterCrop(models.Model):
 
 
 class UserApproval(models.Model):
+    """
+    Handles approval requests for both Farmers (NID) and Buyers (Company Documents).
+    - Farmers: Require NID number + NID card photo
+    - Buyers: Require company documents + legal papers + company photo
+    """
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='approval_request')
     status = models.CharField(
         max_length=20,
         choices=[('pending', 'Pending'), ('approved', 'Approved'), ('rejected', 'Rejected')],
         default='pending'
     )
+    
+    # Buyer approval fields
     documents = models.FileField(upload_to='approvals/', null=True, blank=True)
     legal_paper_photo = models.ImageField(upload_to='approvals/legal/', null=True, blank=True)
     company_photo = models.ImageField(upload_to='approvals/company/', null=True, blank=True)
+    
+    # Farmer approval fields
+    nid_number = models.CharField(max_length=100, null=True, blank=True)
+    nid_card_photo = models.ImageField(upload_to='approvals/nid/', null=True, blank=True)
+    
     reason_for_rejection = models.TextField(blank=True, null=True)
     reviewed_by = models.ForeignKey(
         CustomUser,

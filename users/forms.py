@@ -159,6 +159,23 @@ class DynamicRegistrationForm(forms.ModelForm):
         })
     )
     
+    # Document upload fields for buyer approval (REQUIRED for buyers)
+    legal_paper_photo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        })
+    )
+    
+    company_photo = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        })
+    )
+    
     # Preferences moved to onboarding wizard
     preferences = forms.CharField(required=False, widget=forms.HiddenInput())
     
@@ -243,6 +260,7 @@ class DynamicRegistrationForm(forms.ModelForm):
             if password and confirm_password and password != confirm_password:
                 self.add_error('confirm_password', "Passwords do not match.")
 
+        # Validate buyer documents are required
         if role == 'buyer':
             if not cleaned_data.get('legal_paper_photo'):
                 self.add_error('legal_paper_photo', 'Legal papers photo is required for buyer approval.')

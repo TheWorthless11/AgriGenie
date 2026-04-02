@@ -60,6 +60,7 @@ def register(request):
     
     if request.method == 'POST':
         print(f"DEBUG REGISTER: POST data keys: {list(request.POST.keys())}")
+        print(f"DEBUG REGISTER: FILES data keys: {list(request.FILES.keys())}")
         print(f"DEBUG REGISTER: Role: {request.POST.get('role')}")
         form = DynamicRegistrationForm(request.POST, request.FILES)
         if form.is_valid():
@@ -334,47 +335,94 @@ def farmer_onboarding(request):
         return redirect('dashboard')
 
     if request.method == 'POST':
-        user = request.user
+        try:
+            user = request.user
 
-        # Profile picture
-        if request.FILES.get('profile_picture'):
-            user.profile_picture = request.FILES['profile_picture']
+            # Profile picture
+            if request.FILES.get('profile_picture'):
+                user.profile_picture = request.FILES['profile_picture']
 
-        # Location fields
-        city = request.POST.get('city', '').strip()
-        district = request.POST.get('district', '').strip()
-        postal_code = request.POST.get('postal_code', '').strip()
-        street = request.POST.get('street_address', '').strip()
-        country = request.POST.get('country', 'Bangladesh').strip()
+            # Location fields
+            city = request.POST.get('city', '').strip()
+            district = request.POST.get('district', '').strip()
+            postal_code = request.POST.get('postal_code', '').strip()
+            street = request.POST.get('street_address', '').strip()
+            country = request.POST.get('country', 'Bangladesh').strip()
 
-        user.upazila = city
-        user.district = district
-        user.country = country
-        user.location = ', '.join(filter(None, [street, city, district, postal_code, country]))
-        user.save()
+            user.upazila = city
+            user.district = district
+            user.country = country
+            user.location = ', '.join(filter(None, [street, city, district, postal_code, country]))
+            user.save()
 
-        # Update farmer profile
-        farm_name = request.POST.get('farm_name', '').strip() or f"{user.first_name}'s Farm"
-        measurement = request.POST.get('measurement_system', 'metric')
-        currency = request.POST.get('currency', 'BDT')
-        timezone = request.POST.get('timezone', 'Asia/Dhaka')
+            # Update farmer profile
+            farm_name = request.POST.get('farm_name', '').strip() or f"{user.first_name}'s Farm"
+            measurement = request.POST.get('measurement_system', 'metric')
+            currency = request.POST.get('currency', 'BDT')
+            timezone = request.POST.get('timezone', 'Asia/Dhaka')
 
-        fp, _ = FarmerProfile.objects.get_or_create(
-            user=user,
-            defaults={
-                'farm_name': farm_name,
-                'farm_size': 0,
-                'farm_location': user.location or '',
-                'soil_type': 'Not specified',
-                'experience_years': 0,
-                'registration_number': f"FR-{user.id:06d}",
-            }
-        )
-        fp.farm_name = farm_name
-        fp.farm_location = user.location or ''
-        fp.save()
+            fp, _ = FarmerProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    'farm_name': farm_name,
+                    'farm_size': 0,
+                    'farm_location': user.location or '',
+                    'soil_type': 'Not specified',
+                    'experience_years': 0,
+                    'registration_number': f"FR-{user.id:06d}",
+                }
+            )
+            fp.farm_name = farm_name
+            fp.farm_location = user.location or ''
+            
+            # Handle NID submission
+            nid_number = request.POST.get('nid_number', '').strip()
+            nid_card_photo = request.FILES.get('nid_card_photo')
+            
+            if nid_number and nid_card_photo:
+                from admin_panel.models import UserApproval
+                
+                # Create or update UserApproval for farmer
+                approval, _ = UserApproval.objects.get_or_create(
+                    user=user,
+                    defaults={'status': 'pending'}
+                )
+                approval.nid_number = nid_number
+                approval.nid_card_photo = nid_card_photo
+                approval.status = 'pending'
+                approval.reason_for_rejection = ''
+                approval.reviewed_by = None
+                approval.reviewed_at = None
+                approval.save()
+                
+                # Update farmer profile approval status
+                fp.approval_status = 'pending'
+                
+                # Notify super admins about new farmer submission
+                admin_users = CustomUser.objects.filter(role='admin', is_superuser=True)
+                for admin_user in admin_users:
+                    Notification.objects.create(
+                        user=admin_user,
+                        notification_type='system',
+                        title='New Farmer NID Submission',
+                        message=f'Farmer "{user.get_full_name() or user.username}" submitted NID for approval.'
+                    )
+            else:
+                # No NID submitted, mark as not_submitted
+                fp.approval_status = 'not_submitted'
+            
+            fp.save()
 
-        return JsonResponse({'success': True})
+            return JsonResponse({'success': True})
+        
+        except Exception as e:
+            import traceback
+            print(f"ERROR in farmer_onboarding: {str(e)}")
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'error': f'Server error: {str(e)}'
+            }, status=500)
 
     context = {
         'google_maps_key': getattr(__import__('django.conf', fromlist=['settings']).settings, 'GOOGLE_MAPS_API_KEY', ''),

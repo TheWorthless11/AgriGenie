@@ -19,6 +19,7 @@ from farmer.models import (
     IrrigationSchedule,
 )
 from farmer.forms import CropForm, OrderForm, MessageForm, WeatherAlertForm, CropDiseaseForm
+from farmer.decorators import farmer_approval_required
 from farmer.services.irrigation import (
     ensure_default_irrigation_crops,
     ensure_schedule_defaults,
@@ -490,8 +491,9 @@ def farmer_dashboard(request):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def add_crop(request):
-    """Add a new crop"""
+    """Add a new crop - REQUIRES FARMER APPROVAL"""
     if request.user.role != 'farmer':
         messages.error(request, 'Only farmers can add crops!')
         return redirect('dashboard')
@@ -528,8 +530,9 @@ def add_crop(request):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def edit_crop(request, crop_id):
-    """Edit crop"""
+    """Edit crop - REQUIRES FARMER APPROVAL"""
     crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
     
     if request.method == 'POST':
@@ -546,8 +549,9 @@ def edit_crop(request, crop_id):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def delete_crop(request, crop_id):
-    """Delete crop"""
+    """Delete crop - REQUIRES FARMER APPROVAL"""
     crop = get_object_or_404(Crop, id=crop_id, farmer=request.user)
     crop.delete()
     messages.success(request, 'Crop deleted successfully!')
@@ -568,8 +572,9 @@ def farmer_crops(request):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def farmer_orders(request):
-    """View all orders for farmer's crops"""
+    """View all orders for farmer's crops - REQUIRES FARMER APPROVAL"""
     if request.user.role != 'farmer':
         messages.error(request, 'Access denied!')
         return redirect('dashboard')
@@ -589,8 +594,9 @@ def farmer_orders(request):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def order_detail(request, order_id):
-    """View order detail"""
+    """View order detail - REQUIRES FARMER APPROVAL"""
     order = get_object_or_404(Order, id=order_id)
     
     if request.user not in [order.farmer, order.buyer]:
@@ -659,8 +665,9 @@ def disease_result(request, disease_id):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def disease_detection(request, crop_id=None):
-    """AI Crop Disease Detection"""
+    """AI Crop Disease Detection - REQUIRES FARMER APPROVAL"""
     if request.user.role != 'farmer':
         messages.error(request, 'Only farmers can use disease detection!')
         return redirect('dashboard')
@@ -751,8 +758,9 @@ def disease_history(request, crop_id):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def weather_alerts(request):
-    """View real-time weather and disaster alerts"""
+    """View real-time weather and disaster alerts - REQUIRES FARMER APPROVAL"""
     if request.user.role != 'farmer':
         messages.error(request, 'Access denied!')
         return redirect('dashboard')
@@ -1054,8 +1062,9 @@ def irrigation_schedule_api(request):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def crop_price_prediction(request):
-    """Render crop price prediction page with dropdown options."""
+    """Render crop price prediction page with dropdown options - REQUIRES FARMER APPROVAL."""
     if request.user.role != 'farmer':
         messages.error(request, 'Access denied!')
         return redirect('dashboard')
@@ -1073,8 +1082,9 @@ def crop_price_prediction(request):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def price_predict_api(request):
-    """AJAX endpoint: predict crop price for given inputs."""
+    """AJAX endpoint: predict crop price for given inputs - REQUIRES FARMER APPROVAL."""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
     if request.user.role != 'farmer':
@@ -1118,8 +1128,9 @@ def price_predict_api(request):
 
 
 @login_required(login_url='login')
+@farmer_approval_required()
 def price_history_api(request):
-    """AJAX endpoint: return historical price data for chart."""
+    """AJAX endpoint: return historical price data for chart - REQUIRES FARMER APPROVAL."""
     if request.user.role != 'farmer':
         return JsonResponse({'error': 'Access denied'}, status=403)
 

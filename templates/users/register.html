@@ -296,7 +296,7 @@
                                     <label class="text-xs font-semibold text-slate-500 block mb-1.5">
                                         Password <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="password" id="buyer_password"
+                                    <input type="password" name="password" id="buyer_password"
                                            class="w-full px-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
                                                   rounded-xl text-sm text-slate-700
                                                   input-focus transition-all outline-none"
@@ -310,12 +310,54 @@
                                     <label class="text-xs font-semibold text-slate-500 block mb-1.5">
                                         Confirm Password <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="password" id="buyer_confirm_password"
+                                    <input type="password" name="confirm_password" id="buyer_confirm_password"
                                            class="w-full px-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
                                                   rounded-xl text-sm text-slate-700
                                                   input-focus transition-all outline-none"
                                            placeholder="Confirm password">
                                     <p class="text-xs text-red-500 mt-1 hidden" id="buyerConfirmPwError">Passwords don't match</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Buyer Documents Section -->
+                        <div class="mb-6 buyer-section field-hidden" id="buyerDocumentsSection">
+                            <div class="flex items-center gap-2 mb-4">
+                                <i data-lucide="file-text" class="w-4 h-4 text-primary"></i>
+                                <span class="text-sm font-bold text-slate-700">Verification Documents</span>
+                            </div>
+                            
+                            <p class="text-xs text-slate-500 mb-4">
+                                Upload your company's legal documents for verification. Required for admin approval.
+                            </p>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-500 block mb-2">
+                                        Legal Papers Photo <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <input type="file" name="legal_paper_photo" id="legal_paper_photo" accept="image/*"
+                                               class="w-full px-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                      rounded-xl text-sm text-slate-700
+                                                      input-focus transition-all outline-none cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                                        <p class="text-xs text-slate-400 mt-1">Upload a clear image of legal papers</p>
+                                    </div>
+                                    <p class="text-xs text-red-500 mt-1 hidden" id="legalPhotoError">Legal papers photo is required</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-500 block mb-2">
+                                        Company Photo <span class="text-red-500">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <input type="file" name="company_photo" id="company_photo" accept="image/*"
+                                               class="w-full px-4 py-2.5 bg-slate-50/50 border-2 border-slate-100 
+                                                      rounded-xl text-sm text-slate-700
+                                                      input-focus transition-all outline-none cursor-pointer file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-dark">
+                                        <p class="text-xs text-slate-400 mt-1">Upload a photo of your company</p>
+                                    </div>
+                                    <p class="text-xs text-red-500 mt-1 hidden" id="companyPhotoError">Company photo is required</p>
                                 </div>
                             </div>
                         </div>
@@ -469,16 +511,19 @@
                 const termsAgreed = termsCheckbox.checked;
                 
                 let isValid = true;
+                const debugInfo = [];
                 
                 // Check common required fields
                 if (!fullName || !phone) {
                     isValid = false;
+                    debugInfo.push(`Missing: fullName="${fullName}", phone="${phone}"`);
                 }
                 
                 // Phone validation (international format)
                 const phoneRegex = /^\+?\d{9,15}$/;
                 if (!phoneRegex.test(phone.replace(/[\s\-]/g, ''))) {
                     isValid = false;
+                    debugInfo.push(`Invalid phone: "${phone}"`);
                 }
                 
                 if (isFarmer) {
@@ -488,6 +533,7 @@
                         const confirmPin = document.getElementById('confirm_pin').value;
                         if (!/^\d{4,6}$/.test(pin) || pin !== confirmPin) {
                             isValid = false;
+                            debugInfo.push(`PIN validation failed`);
                         }
                     } else {
                         // Check password
@@ -495,38 +541,57 @@
                         const confirmPassword = document.getElementById('farmer_confirm_password').value;
                         if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
                             isValid = false;
+                            debugInfo.push(`Password strength insufficient`);
                         }
                         if (password !== confirmPassword) {
                             isValid = false;
+                            debugInfo.push(`Farmer passwords don't match`);
                         }
                     }
                 } else {
-                    // Buyer - check email and password
+                    // Buyer - check email, password, and documents
                     const email = document.getElementById('email').value.trim();
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                     if (!emailRegex.test(email)) {
                         isValid = false;
+                        debugInfo.push(`Invalid email: "${email}"`);
                     }
                     
                     const password = document.getElementById('buyer_password').value;
                     const confirmPassword = document.getElementById('buyer_confirm_password').value;
                     if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
                         isValid = false;
+                        debugInfo.push(`Password strength insufficient`);
                     }
                     if (password !== confirmPassword) {
                         isValid = false;
+                        debugInfo.push(`Buyer passwords don't match`);
                     }
 
-                    const legalPaperPhoto = document.getElementById('legal_paper_photo').files.length > 0;
-                    const companyPhoto = document.getElementById('company_photo').files.length > 0;
-                    if (!legalPaperPhoto || !companyPhoto) {
+                    // Check document uploads are required for buyers
+                    const legalPaperPhotoElement = document.getElementById('legal_paper_photo');
+                    const companyPhotoElement = document.getElementById('company_photo');
+                    const legalPaperPhoto = legalPaperPhotoElement ? legalPaperPhotoElement.files.length > 0 : false;
+                    const companyPhoto = companyPhotoElement ? companyPhotoElement.files.length > 0 : false;
+                    
+                    if (!legalPaperPhoto) {
                         isValid = false;
+                        debugInfo.push(`Legal paper photo not selected`);
+                    }
+                    if (!companyPhoto) {
+                        isValid = false;
+                        debugInfo.push(`Company photo not selected`);
                     }
                 }
                 
                 // Check terms
                 if (!termsAgreed) {
                     isValid = false;
+                    debugInfo.push(`Terms not agreed`);
+                }
+                
+                if (debugInfo.length > 0) {
+                    console.log('Form validation issues:', debugInfo);
                 }
                 
                 // Update button state
@@ -716,27 +781,45 @@
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
+                console.log('Form submit handler called');
+                
+                // Validate form
                 if (!validateForm()) {
+                    console.log('Form validation failed');
                     return;
                 }
                 
-                // Sync password fields
+                console.log('Form validation passed');
+                
+                // Log form data
+                const formData = new FormData(form);
+                console.log('Form data being submitted:');
+                for (let [key, value] of formData.entries()) {
+                    if (value instanceof File) {
+                        console.log(`  ${key}: File(${value.name})`);
+                    } else {
+                        console.log(`  ${key}: ${value}`);
+                    }
+                }
+                
+                // Sync password fields (only for farmers using password, since buyers already have name attributes)
                 const isFarmer = document.querySelector('input[name="role"]:checked').value === 'farmer';
                 const isPin = document.querySelector('input[name="auth_type"]:checked')?.value === 'pin';
                 
-                if (!isFarmer) {
-                    // Buyer - create hidden inputs for password
+                if (isFarmer && !isPin) {
+                    // Farmer with password auth - create hidden inputs for password
                     const passwordInput = document.createElement('input');
                     passwordInput.type = 'hidden';
                     passwordInput.name = 'password';
-                    passwordInput.value = document.getElementById('buyer_password').value;
+                    passwordInput.value = document.getElementById('farmer_password').value;
                     form.appendChild(passwordInput);
                     
                     const confirmPasswordInput = document.createElement('input');
                     confirmPasswordInput.type = 'hidden';
                     confirmPasswordInput.name = 'confirm_password';
-                    confirmPasswordInput.value = document.getElementById('buyer_confirm_password').value;
+                    confirmPasswordInput.value = document.getElementById('farmer_confirm_password').value;
                     form.appendChild(confirmPasswordInput);
+                    console.log('Added farmer password hidden inputs');
                 }
                 
                 // Show loading
@@ -750,6 +833,7 @@
                 submitSpinner.classList.remove('hidden');
                 if (chevron) chevron.classList.add('hidden');
                 
+                console.log('Submitting form now');
                 // Submit the form
                 form.submit();
             });
