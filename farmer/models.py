@@ -241,3 +241,100 @@ class CropPriceData(models.Model):
 
     def __str__(self):
         return f"{self.commodity}/{self.variety} - {self.market} ({self.month}/{self.year})"
+
+
+IRRIGATION_WATER_REQUIREMENT_CHOICES = (
+    ('low', 'Low'),
+    ('medium', 'Medium'),
+    ('high', 'High'),
+)
+
+
+class IrrigationCropCatalog(models.Model):
+    """Admin-controlled crop catalog for irrigation settings."""
+
+    name = models.CharField(max_length=100, unique=True)
+    water_requirement = models.CharField(
+        max_length=10,
+        choices=IRRIGATION_WATER_REQUIREMENT_CHOICES,
+        default='medium',
+    )
+    base_water_liters = models.FloatField(validators=[MinValueValidator(0)], default=9.0)
+    ideal_moisture = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
+    irrigation_frequency_days = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(30)],
+        default=3,
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Irrigation Crop Catalog'
+        verbose_name_plural = 'Irrigation Crop Catalog'
+
+    def __str__(self):
+        return f"{self.name.title()} ({self.water_requirement})"
+
+
+class IrrigationCrop(models.Model):
+    """Farmer-specific crop profile used by irrigation planning."""
+
+    farmer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='irrigation_crops')
+    name = models.CharField(max_length=100)
+    water_requirement = models.CharField(max_length=10, choices=IRRIGATION_WATER_REQUIREMENT_CHOICES, default='medium')
+    base_water_liters = models.FloatField(validators=[MinValueValidator(0)], default=9.0)
+    ideal_moisture = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
+    irrigation_frequency_days = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(30)],
+        default=3,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = ('farmer', 'name')
+
+    def __str__(self):
+        return f"{self.name.title()} ({self.water_requirement}, {self.base_water_liters}L)"
+
+
+class IrrigationRecord(models.Model):
+    """Logged irrigation events for water usage tracking."""
+
+    METHOD_CHOICES = (
+        ('manual', 'Manual'),
+        ('automatic', 'Automatic'),
+    )
+
+    crop = models.ForeignKey(IrrigationCrop, on_delete=models.CASCADE, related_name='irrigation_records')
+    date = models.DateField(default=timezone.localdate)
+    water_amount = models.FloatField(validators=[MinValueValidator(0)])
+    method = models.CharField(max_length=10, choices=METHOD_CHOICES, default='manual')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+    def __str__(self):
+        return f"{self.crop.name} - {self.water_amount}L on {self.date}"
+
+
+class IrrigationSchedule(models.Model):
+    """Persisted next-irrigation schedule derived from crop and weather."""
+
+    crop = models.OneToOneField(IrrigationCrop, on_delete=models.CASCADE, related_name='irrigation_schedule')
+    next_irrigation_date = models.DateField()
+    frequency_days = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(30)]
+    )
+    recommendation = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['next_irrigation_date']
+
+    def __str__(self):
+        return f"{self.crop.name} -> {self.next_irrigation_date} (every {self.frequency_days} days)"
