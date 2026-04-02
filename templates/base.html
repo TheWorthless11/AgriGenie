@@ -93,14 +93,15 @@
                         <a class="sidebar-link {% if current_url == 'farmer_orders' or current_url == 'order_detail' %}active{% endif %}" href="{% url 'farmer_orders' %}">
                             <i class="fas fa-bag-shopping"></i><span>Orders</span>
                         </a>
-                        <button class="sidebar-link sidebar-link-toggle {% if current_url == 'crop_price_prediction' or current_url == 'disease_detection' or current_url == 'disease_result' or current_url == 'disease_history' or current_url == 'weather_alerts' or current_url == 'farmer_ratings' %}active{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#toolsSidebarMenu" aria-expanded="{% if current_url == 'crop_price_prediction' or current_url == 'disease_detection' or current_url == 'disease_result' or current_url == 'disease_history' or current_url == 'weather_alerts' or current_url == 'farmer_ratings' %}true{% else %}false{% endif %}" aria-controls="toolsSidebarMenu">
+                        <button class="sidebar-link sidebar-link-toggle {% if current_url == 'crop_price_prediction' or current_url == 'disease_detection' or current_url == 'disease_result' or current_url == 'disease_history' or current_url == 'weather_alerts' or current_url == 'irrigation_module' or current_url == 'farmer_ratings' %}active{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#toolsSidebarMenu" aria-expanded="{% if current_url == 'crop_price_prediction' or current_url == 'disease_detection' or current_url == 'disease_result' or current_url == 'disease_history' or current_url == 'weather_alerts' or current_url == 'irrigation_module' or current_url == 'farmer_ratings' %}true{% else %}false{% endif %}" aria-controls="toolsSidebarMenu">
                             <span class="sidebar-link-main"><i class="fas fa-chart-line"></i><span>Tools &amp; Insights</span></span>
                             <i class="fas fa-chevron-down sidebar-link-caret"></i>
                         </button>
-                        <div class="collapse sidebar-submenu {% if current_url == 'crop_price_prediction' or current_url == 'disease_detection' or current_url == 'disease_result' or current_url == 'disease_history' or current_url == 'weather_alerts' or current_url == 'farmer_ratings' %}show{% endif %}" id="toolsSidebarMenu">
+                        <div class="collapse sidebar-submenu {% if current_url == 'crop_price_prediction' or current_url == 'disease_detection' or current_url == 'disease_result' or current_url == 'disease_history' or current_url == 'weather_alerts' or current_url == 'irrigation_module' or current_url == 'farmer_ratings' %}show{% endif %}" id="toolsSidebarMenu">
                             <a class="sidebar-sublink {% if current_url == 'crop_price_prediction' %}active{% endif %}" href="{% url 'crop_price_prediction' %}">Price Prediction</a>
                             <a class="sidebar-sublink {% if current_url == 'disease_detection' or current_url == 'disease_result' or current_url == 'disease_history' %}active{% endif %}" href="{% url 'disease_detection' %}">Disease Detection</a>
-                            <a class="sidebar-sublink {% if current_url == 'weather_alerts' %}active{% endif %}" href="{% url 'weather_alerts' %}">Weather Alerts</a>
+                            <a class="sidebar-sublink {% if current_url == 'weather_alerts' %}active{% endif %}" href="{% url 'weather_alerts' %}">Weather Forecast</a>
+                            <a class="sidebar-sublink {% if current_url == 'irrigation_module' %}active{% endif %}" href="{% url 'irrigation_module' %}">Irrigation Module</a>
                         </div>
                         <a class="sidebar-link {% if current_url == 'chat_list' or current_url == 'messages' or current_url == 'send_message' %}active{% endif %}" href="{% url 'chat_list' %}" id="messages-nav-link">
                             <i class="fas fa-comments"></i><span>Messages</span>
@@ -132,6 +133,9 @@
                         </a>
                         <a class="sidebar-link {% if current_url == 'master_crops_list' or current_url == 'add_master_crop' or current_url == 'edit_master_crop' or current_url == 'delete_master_crop' %}active{% endif %}" href="{% url 'master_crops_list' %}">
                             <i class="fas fa-wheat-awn"></i><span>Master Crops</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'irrigation_crops_admin' or current_url == 'add_irrigation_crop_admin' or current_url == 'edit_irrigation_crop_admin' or current_url == 'delete_irrigation_crop_admin' %}active{% endif %}" href="{% url 'irrigation_crops_admin' %}">
+                            <i class="fas fa-droplet"></i><span>Irrigation</span>
                         </a>
                         <a class="sidebar-link {% if current_url == 'crop_management' or current_url == 'admin_crop_detail' %}active{% endif %}" href="{% url 'crop_management' %}">
                             <i class="fas fa-list-check"></i><span>Crop Listings</span>

@@ -1,5 +1,16 @@
 from django.contrib import admin
-from .models import Crop, Order, CropDisease, WeatherAlert, Message, FarmerRating
+from .models import (
+    Crop,
+    Order,
+    CropDisease,
+    WeatherAlert,
+    Message,
+    FarmerRating,
+    IrrigationCropCatalog,
+    IrrigationCrop,
+    IrrigationRecord,
+    IrrigationSchedule,
+)
 
 
 @admin.register(Crop)
@@ -50,3 +61,32 @@ class FarmerRatingAdmin(admin.ModelAdmin):
     list_filter = ['rating', 'created_at']
     search_fields = ['farmer__username', 'buyer__username']
     readonly_fields = ['created_at']
+
+
+@admin.register(IrrigationCrop)
+class IrrigationCropAdmin(admin.ModelAdmin):
+    list_display = ['name', 'farmer', 'water_requirement', 'base_water_liters', 'ideal_moisture', 'irrigation_frequency_days', 'updated_at']
+    list_filter = ['water_requirement', 'updated_at']
+    search_fields = ['name', 'farmer__username']
+
+
+@admin.register(IrrigationCropCatalog)
+class IrrigationCropCatalogAdmin(admin.ModelAdmin):
+    list_display = ['name', 'water_requirement', 'base_water_liters', 'ideal_moisture', 'irrigation_frequency_days', 'is_active', 'updated_at']
+    list_filter = ['water_requirement', 'is_active', 'updated_at']
+    search_fields = ['name']
+
+
+@admin.register(IrrigationRecord)
+class IrrigationRecordAdmin(admin.ModelAdmin):
+    list_display = ['crop', 'date', 'water_amount', 'method', 'created_at']
+    list_filter = ['method', 'date']
+    search_fields = ['crop__name', 'crop__farmer__username']
+    readonly_fields = ['created_at']
+
+
+@admin.register(IrrigationSchedule)
+class IrrigationScheduleAdmin(admin.ModelAdmin):
+    list_display = ['crop', 'next_irrigation_date', 'frequency_days', 'updated_at']
+    list_filter = ['next_irrigation_date', 'frequency_days']
+    search_fields = ['crop__name', 'crop__farmer__username']
