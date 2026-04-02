@@ -222,7 +222,8 @@ CHANNEL_LAYERS = {
 }
 
 # 13. Other APIs & CORS
-WEATHER_API_KEY = os.getenv('WEATHER_API_KEY')
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY') or os.getenv('WEATHER_API_KEY')
+WEATHER_API_KEY = OPENWEATHER_API_KEY
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:8000',

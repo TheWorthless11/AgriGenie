@@ -1,0 +1,672 @@
+{% extends 'base.html' %}
+
+{% block title %}Irrigation Module - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .irrigation-card {
+        border: 1px solid #d9e8db;
+        border-radius: 14px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+        background: #ffffff;
+        height: 100%;
+    }
+
+    .irrigation-card .card-header {
+        background: #f6fbf5;
+        border-bottom: 1px solid #e4efe5;
+        font-weight: 700;
+        color: #14532d;
+    }
+
+    .urgency-banner {
+        border-radius: 12px;
+        padding: 12px 14px;
+        border: 1px solid transparent;
+        font-weight: 600;
+    }
+
+    .urgency-safe {
+        background: #effaf0;
+        border-color: #c7eccc;
+        color: #14532d;
+    }
+
+    .urgency-moderate {
+        background: #fff9e8;
+        border-color: #ffe08a;
+        color: #7a5600;
+    }
+
+    .urgency-caution {
+        background: #fff9e8;
+        border-color: #ffe08a;
+        color: #7a5600;
+    }
+
+    .urgency-urgent {
+        background: #fff1f1;
+        border-color: #f5b5b5;
+        color: #7f1d1d;
+    }
+
+    .soil-meter {
+        background: #edf2f7;
+        border-radius: 999px;
+        height: 16px;
+        overflow: hidden;
+    }
+
+    .soil-meter-bar {
+        height: 100%;
+        transition: width 0.35s ease;
+    }
+
+    .soil-safe {
+        background: linear-gradient(90deg, #16a34a, #22c55e);
+    }
+
+    .soil-moderate {
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+
+    .soil-caution {
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    }
+
+    .soil-urgent {
+        background: linear-gradient(90deg, #dc2626, #ef4444);
+    }
+
+    .metric-box {
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        background: #f8fafc;
+    }
+
+    .metric-label {
+        color: #64748b;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .metric-value {
+        color: #0f172a;
+        font-size: 1.35rem;
+        font-weight: 700;
+    }
+
+    .history-table-wrap {
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .usage-chart-wrap {
+        position: relative;
+        height: 220px;
+        min-height: 220px;
+    }
+
+    .table th,
+    .table td {
+        vertical-align: middle;
+    }
+
+    .recommendation-list {
+        margin: 0;
+        padding-left: 1.1rem;
+    }
+
+    .recommendation-list li {
+        margin-bottom: 6px;
+        color: #334155;
+    }
+
+    .section-title {
+        font-weight: 700;
+        color: #1e293b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4" id="irrigationApp">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h2 class="mb-1">💧 Irrigation Module</h2>
+            <p class="text-muted mb-0">Smart irrigation planning and water usage tracking for your crops.</p>
+        </div>
+    </div>
+
+    <div id="irrigationError" class="alert alert-danger d-none" role="alert"></div>
+    <div id="irrigationReminder" class="alert alert-warning d-none" role="alert"></div>
+
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card irrigation-card">
+                <div class="card-header">🌱 Crop Selector</div>
+                <div class="card-body">
+                    <label for="cropSelect" class="form-label fw-semibold">Choose Crop</label>
+                    <select id="cropSelect" class="form-select mb-3">
+                        <option value="">Loading crops...</option>
+                    </select>
+
+                    <p class="small text-muted mb-3">📍 Location: <span id="locationLabel">Detecting...</span></p>
+
+                    <div class="d-grid gap-2">
+                        <button id="useLocationBtn" type="button" class="btn btn-outline-success">
+                            <i class="fas fa-location-crosshairs me-2"></i>Use My Location
+                        </button>
+                        <button id="refreshPlanBtn" type="button" class="btn btn-success">
+                            <i class="fas fa-rotate me-2"></i>Refresh Plan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card irrigation-card">
+                <div class="card-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                    <span>💧 Irrigation Recommendation</span>
+                    <span id="urgencyBadge" class="badge text-bg-secondary">Waiting for analysis</span>
+                </div>
+                <div class="card-body">
+                    <div id="recommendationBanner" class="urgency-banner urgency-moderate mb-3">
+                        Select a crop and refresh the plan to get irrigation recommendations.
+                    </div>
+                    <div class="metric-box mb-3 text-start">
+                        <div class="metric-label">💧 Recommended Water</div>
+                        <div class="metric-value" id="recommendedWater">-- L</div>
+                    </div>
+                    <h6 class="section-title">Decision Factors</h6>
+                    <ul id="recommendationList" class="recommendation-list"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+            <div class="card irrigation-card">
+                <div class="card-header">🧪 Soil Moisture Indicator</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>💧 Soil Moisture</span>
+                        <strong id="soilMoistureValue">--%</strong>
+                    </div>
+                    <div class="soil-meter mb-2">
+                        <div id="soilMoistureBar" class="soil-meter-bar soil-moderate" style="width: 0%"></div>
+                    </div>
+                    <small id="soilMoistureSummary" class="text-muted">💧 Soil Moisture: --% (--)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card irrigation-card">
+                <div class="card-header">⏰ Irrigation Schedule</div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="metric-box">
+                                <div class="metric-label">Next Date</div>
+                                <div class="metric-value" id="nextIrrigationDate">--</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-box">
+                                <div class="metric-label">Frequency</div>
+                                <div class="metric-value" id="frequencyDays">--</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="scheduleRecommendation" class="mt-3 mb-0 text-muted">Schedule updates after weather analysis.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-12">
+            <div class="card irrigation-card">
+                <div class="card-header">💧 Water Usage Dashboard</div>
+                <div class="card-body">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <div class="metric-box">
+                                <div class="metric-label">Daily Usage</div>
+                                <div class="metric-value" id="dailyUsage">0 L</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="metric-box">
+                                <div class="metric-label">Weekly Usage</div>
+                                <div class="metric-value" id="weeklyUsage">0 L</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="metric-box">
+                                <div class="metric-label">Total Usage</div>
+                                <div class="metric-value" id="totalUsage">0 L</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="usage-chart-wrap">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (() => {
+        const app = document.getElementById('irrigationApp');
+        if (!app) {
+            return;
+        }
+
+        const PLAN_ENDPOINT = '/api/irrigation/plan/';
+        const HISTORY_ENDPOINT = '/api/irrigation/history/';
+        const SCHEDULE_ENDPOINT = '/api/irrigation/schedule/';
+        const CROPS_ENDPOINT = '/api/crops/';
+        const AUTO_REFRESH_MS = 30 * 60 * 1000;
+        const DEFAULT_COORDS = {
+            lat: 23.8103,
+            lon: 90.4125,
+        };
+
+        const cropSelect = document.getElementById('cropSelect');
+        const locationLabel = document.getElementById('locationLabel');
+        const useLocationBtn = document.getElementById('useLocationBtn');
+        const refreshPlanBtn = document.getElementById('refreshPlanBtn');
+        const irrigationError = document.getElementById('irrigationError');
+        const irrigationReminder = document.getElementById('irrigationReminder');
+
+        const urgencyBadge = document.getElementById('urgencyBadge');
+        const recommendationBanner = document.getElementById('recommendationBanner');
+        const recommendedWater = document.getElementById('recommendedWater');
+        const recommendationList = document.getElementById('recommendationList');
+
+        const soilMoistureValue = document.getElementById('soilMoistureValue');
+        const soilMoistureSummary = document.getElementById('soilMoistureSummary');
+        const soilMoistureBar = document.getElementById('soilMoistureBar');
+
+        const nextIrrigationDate = document.getElementById('nextIrrigationDate');
+        const frequencyDays = document.getElementById('frequencyDays');
+        const scheduleRecommendation = document.getElementById('scheduleRecommendation');
+
+        const dailyUsage = document.getElementById('dailyUsage');
+        const weeklyUsage = document.getElementById('weeklyUsage');
+        const totalUsage = document.getElementById('totalUsage');
+
+        let usageChart = null;
+        let currentCoords = { ...DEFAULT_COORDS };
+        let hasAvailableCrops = false;
+
+        function setError(message) {
+            if (!message) {
+                irrigationError.classList.add('d-none');
+                irrigationError.textContent = '';
+                return;
+            }
+            irrigationError.textContent = message;
+            irrigationError.classList.remove('d-none');
+        }
+
+        function setLoading(isLoading) {
+            cropSelect.disabled = isLoading || !hasAvailableCrops;
+            useLocationBtn.disabled = isLoading || !hasAvailableCrops;
+            refreshPlanBtn.disabled = isLoading || !hasAvailableCrops;
+        }
+
+        function toTitleCase(value) {
+            return String(value || '')
+                .trim()
+                .replace(/\w\S*/g, token => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase());
+        }
+
+        function resetPlanView(message) {
+            urgencyBadge.className = 'badge text-bg-secondary';
+            urgencyBadge.textContent = 'Waiting for analysis';
+
+            recommendationBanner.classList.remove('urgency-safe', 'urgency-moderate', 'urgency-caution', 'urgency-urgent');
+            recommendationBanner.classList.add('urgency-moderate');
+            recommendationBanner.textContent = message || 'Select a crop and refresh the plan to get irrigation recommendations.';
+
+            recommendedWater.textContent = '-- L';
+            recommendationList.innerHTML = '';
+
+            const fallbackItem = document.createElement('li');
+            fallbackItem.textContent = message || 'No recommendation data available.';
+            recommendationList.appendChild(fallbackItem);
+
+            soilMoistureValue.textContent = '--%';
+            soilMoistureSummary.textContent = '💧 Soil Moisture: --% (--)';
+            soilMoistureBar.style.width = '0%';
+            soilMoistureBar.classList.remove('soil-safe', 'soil-moderate', 'soil-caution', 'soil-urgent');
+            soilMoistureBar.classList.add('soil-moderate');
+
+            nextIrrigationDate.textContent = '--';
+            frequencyDays.textContent = '--';
+            scheduleRecommendation.textContent = 'Schedule updates after weather analysis.';
+            locationLabel.textContent = 'Location unavailable';
+        }
+
+        function clamp(value, minValue, maxValue) {
+            return Math.min(maxValue, Math.max(minValue, value));
+        }
+
+        function urgencyConfig(level) {
+            const normalizedLevel = String(level || 'SAFE').toUpperCase();
+
+            if (normalizedLevel === 'URGENT') {
+                return {
+                    label: '🔴 URGENT',
+                    badgeClass: 'text-bg-danger',
+                    bannerClass: 'urgency-urgent',
+                };
+            }
+
+            if (normalizedLevel === 'MODERATE') {
+                return {
+                    label: '🟡 MODERATE',
+                    badgeClass: 'text-bg-warning text-dark',
+                    bannerClass: 'urgency-moderate',
+                };
+            }
+
+            return {
+                label: '🟢 SAFE',
+                badgeClass: 'text-bg-success',
+                bannerClass: 'urgency-safe',
+            };
+        }
+
+        async function fetchJson(url, options = {}) {
+            const response = await fetch(url, options);
+            let payload = {};
+            try {
+                payload = await response.json();
+            } catch (error) {
+                throw new Error('Server returned an invalid response.');
+            }
+
+            if (!response.ok) {
+                throw new Error(payload.error || 'Request failed.');
+            }
+
+            return payload;
+        }
+
+        async function loadCrops() {
+            const payload = await fetchJson(CROPS_ENDPOINT);
+            const crops = Array.isArray(payload.crops) ? payload.crops : [];
+
+            cropSelect.innerHTML = '';
+
+            if (!crops.length) {
+                hasAvailableCrops = false;
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No active crops available';
+                cropSelect.appendChild(option);
+                return false;
+            }
+
+            crops.forEach(crop => {
+                const option = document.createElement('option');
+                option.value = crop.id;
+                option.textContent = `${toTitleCase(crop.name)} (${toTitleCase(crop.water_requirement)})`;
+                cropSelect.appendChild(option);
+            });
+
+            hasAvailableCrops = true;
+            return true;
+        }
+
+        function renderPlan(planPayload) {
+            const status = String(planPayload.status || 'SAFE').toUpperCase();
+            const irrigationMessage = planPayload.irrigation_message || 'No recommendation available.';
+            const decisionFactors = Array.isArray(planPayload.decision_factors) ? planPayload.decision_factors : [];
+            const moistureLabel = String(planPayload.soil_moisture_label || 'Moderate');
+            const moisture = Number(planPayload.soil_moisture);
+            const waterAmount = Number(planPayload.recommended_water_liters);
+            const location = String(planPayload.location || '').trim();
+            const config = urgencyConfig(status);
+
+            locationLabel.textContent = location || 'Location unavailable';
+
+            urgencyBadge.className = `badge ${config.badgeClass}`;
+            urgencyBadge.textContent = config.label;
+
+            recommendationBanner.classList.remove('urgency-safe', 'urgency-moderate', 'urgency-caution', 'urgency-urgent');
+            recommendationBanner.classList.add(config.bannerClass);
+            recommendationBanner.textContent = irrigationMessage;
+
+            if (Number.isFinite(waterAmount)) {
+                recommendedWater.textContent = `${waterAmount.toFixed(2)} L`;
+            } else {
+                recommendedWater.textContent = '-- L';
+            }
+
+            recommendationList.innerHTML = '';
+            if (!decisionFactors.length) {
+                const fallbackItem = document.createElement('li');
+                fallbackItem.textContent = 'No additional factors available.';
+                recommendationList.appendChild(fallbackItem);
+            } else {
+                decisionFactors.forEach(reason => {
+                    const item = document.createElement('li');
+                    item.textContent = reason;
+                    recommendationList.appendChild(item);
+                });
+            }
+
+            const safeMoisture = Number.isFinite(moisture) ? clamp(moisture, 0, 100) : 0;
+            soilMoistureValue.textContent = `${safeMoisture.toFixed(1)}%`;
+            soilMoistureSummary.textContent = `💧 Soil Moisture: ${safeMoisture.toFixed(1)}% (${moistureLabel})`;
+            soilMoistureBar.style.width = `${safeMoisture}%`;
+            soilMoistureBar.classList.remove('soil-safe', 'soil-moderate', 'soil-caution', 'soil-urgent');
+            if (safeMoisture < 40) {
+                soilMoistureBar.classList.add('soil-urgent');
+            } else if (safeMoisture <= 60) {
+                soilMoistureBar.classList.add('soil-moderate');
+            } else {
+                soilMoistureBar.classList.add('soil-safe');
+            }
+
+            scheduleRecommendation.textContent = irrigationMessage;
+        }
+
+        function renderUsage(summary) {
+            const daily = Number(summary.daily_usage_liters || 0).toFixed(2);
+            const weekly = Number(summary.weekly_usage_liters || 0).toFixed(2);
+            const total = Number(summary.total_usage_liters || 0).toFixed(2);
+
+            dailyUsage.textContent = `${daily} L`;
+            weeklyUsage.textContent = `${weekly} L`;
+            totalUsage.textContent = `${total} L`;
+
+            const breakdown = Array.isArray(summary.daily_breakdown) ? summary.daily_breakdown : [];
+            const labels = breakdown.map(item => item.date);
+            const values = breakdown.map(item => Number(item.water_amount || 0));
+
+            const canvas = document.getElementById('usageChart');
+            if (!canvas) {
+                return;
+            }
+
+            if (!usageChart) {
+                usageChart = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: 'Daily Water (L)',
+                                data: values,
+                                borderRadius: 8,
+                                backgroundColor: '#22c55e',
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                            },
+                        },
+                    },
+                });
+                return;
+            }
+
+            usageChart.data.labels = labels;
+            usageChart.data.datasets[0].data = values;
+            usageChart.update('none');
+        }
+
+        function renderSchedule(schedulePayload) {
+            const reminder = schedulePayload.reminder || {};
+            if (reminder.show) {
+                irrigationReminder.textContent = reminder.message || '⏰ Time to irrigate your crops';
+                irrigationReminder.classList.remove('d-none');
+            } else {
+                irrigationReminder.classList.add('d-none');
+                irrigationReminder.textContent = '';
+            }
+
+            const selectedCropId = Number(cropSelect.value);
+            const schedules = Array.isArray(schedulePayload.schedules) ? schedulePayload.schedules : [];
+            const cropSchedule = schedules.find(item => Number(item.crop_id) === selectedCropId);
+
+            if (cropSchedule) {
+                nextIrrigationDate.textContent = cropSchedule.next_irrigation_date || '--';
+                frequencyDays.textContent = cropSchedule.frequency_days ? `${cropSchedule.frequency_days} days` : '--';
+                if (cropSchedule.recommendation) {
+                    scheduleRecommendation.textContent = cropSchedule.recommendation;
+                }
+            }
+        }
+
+        async function loadPlan() {
+            const cropId = cropSelect.value;
+
+            if (!cropId) {
+                throw new Error('Please select a crop.');
+            }
+
+            const planUrl = `${PLAN_ENDPOINT}?crop_id=${encodeURIComponent(cropId)}&lat=${encodeURIComponent(currentCoords.lat)}&lon=${encodeURIComponent(currentCoords.lon)}`;
+            const payload = await fetchJson(planUrl);
+            renderPlan(payload);
+        }
+
+        async function loadHistory() {
+            const cropId = cropSelect.value;
+            const historyUrl = `${HISTORY_ENDPOINT}?crop_id=${encodeURIComponent(cropId)}`;
+            const payload = await fetchJson(historyUrl);
+            if (payload.usage_summary) {
+                renderUsage(payload.usage_summary);
+            }
+        }
+
+        async function loadSchedule() {
+            const cropId = cropSelect.value;
+            const scheduleUrl = `${SCHEDULE_ENDPOINT}?crop_id=${encodeURIComponent(cropId)}`;
+            const payload = await fetchJson(scheduleUrl);
+            renderSchedule(payload);
+        }
+
+        async function loadAllData() {
+            if (!cropSelect.value) {
+                resetPlanView('No active irrigation crops found. Ask admin to configure crop catalog.');
+                setError('No active irrigation crops found. Ask admin to configure crop catalog.');
+                return;
+            }
+
+            setError('');
+            setLoading(true);
+            try {
+                await Promise.all([loadPlan(), loadHistory(), loadSchedule()]);
+            } catch (error) {
+                setError(error.message || 'Unable to load irrigation module data.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function handleUseMyLocation() {
+            if (!navigator.geolocation) {
+                setError('Geolocation is not supported in this browser.');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    currentCoords = {
+                        lat: Number(position.coords.latitude.toFixed(6)),
+                        lon: Number(position.coords.longitude.toFixed(6)),
+                    };
+                    loadAllData();
+                },
+                () => {
+                    setError('Could not get your location right now. Using default location.');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0,
+                }
+            );
+        }
+
+        cropSelect.addEventListener('change', loadAllData);
+        refreshPlanBtn.addEventListener('click', loadAllData);
+        useLocationBtn.addEventListener('click', handleUseMyLocation);
+
+        async function initializeIrrigationModule() {
+            setError('');
+            setLoading(true);
+            try {
+                const hasCrops = await loadCrops();
+                if (!hasCrops) {
+                    resetPlanView('No active irrigation crops found. Ask admin to configure crop catalog.');
+                    setError('No active irrigation crops found. Ask admin to configure crop catalog.');
+                    return;
+                }
+
+                await loadAllData();
+
+                window.setInterval(() => {
+                    if (!refreshPlanBtn.disabled && cropSelect.value) {
+                        loadAllData();
+                    }
+                }, AUTO_REFRESH_MS);
+            } catch (error) {
+                setError(error.message || 'Unable to initialize irrigation module.');
+                resetPlanView('Unable to initialize irrigation module.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        initializeIrrigationModule();
+    })();
+</script>
+{% endblock %}
