@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from admin_panel.models import UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog, UserReport, MasterCrop
 from users.models import CustomUser, FarmerProfile, BuyerProfile, Notification
-from farmer.models import Crop, Order, CropDisease
+from farmer.models import Crop, Order, CropDisease, IrrigationCropCatalog
 from marketplace.models import CropListing
 
 
@@ -695,6 +695,128 @@ def admin_remove_crop(request, crop_id):
     crop.delete()
     messages.success(request, f'Crop "{crop.crop_name}" has been removed.')
     return redirect('crop_management')
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def irrigation_crops_admin(request):
+    """View and filter irrigation crop catalog entries in custom admin panel."""
+    crops = IrrigationCropCatalog.objects.all().order_by('name')
+
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    water_filter = request.GET.get('water_requirement', '').strip()
+
+    if search_query:
+        crops = crops.filter(name__icontains=search_query)
+
+    if status_filter == 'active':
+        crops = crops.filter(is_active=True)
+    elif status_filter == 'inactive':
+        crops = crops.filter(is_active=False)
+
+    if water_filter:
+        crops = crops.filter(water_requirement=water_filter)
+
+    total_count = IrrigationCropCatalog.objects.count()
+    active_count = IrrigationCropCatalog.objects.filter(is_active=True).count()
+    inactive_count = total_count - active_count
+
+    context = {
+        'title': 'Irrigation Crop Catalog',
+        'crops': crops,
+        'total_count': total_count,
+        'active_count': active_count,
+        'inactive_count': inactive_count,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'water_filter': water_filter,
+        'water_requirement_choices': IrrigationCropCatalog._meta.get_field('water_requirement').choices,
+    }
+    return render(request, 'admin_panel/irrigation_crops_list.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def add_irrigation_crop_admin(request):
+    """Create irrigation crop catalog entry from custom admin panel."""
+    from admin_panel.forms import IrrigationCropCatalogForm
+
+    if request.method == 'POST':
+        form = IrrigationCropCatalogForm(request.POST)
+        if form.is_valid():
+            crop = form.save(commit=False)
+            crop.name = str(crop.name or '').strip().lower()
+            crop.save()
+            messages.success(request, f'Irrigation crop "{crop.name.title()}" created successfully.')
+            return redirect('irrigation_crops_admin')
+    else:
+        form = IrrigationCropCatalogForm()
+
+    context = {
+        'title': 'Add Irrigation Crop',
+        'form': form,
+    }
+    return render(request, 'admin_panel/add_irrigation_crop.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def edit_irrigation_crop_admin(request, crop_id):
+    """Edit irrigation crop catalog entry from custom admin panel."""
+    from admin_panel.forms import IrrigationCropCatalogForm
+
+    crop = get_object_or_404(IrrigationCropCatalog, id=crop_id)
+
+    if request.method == 'POST':
+        form = IrrigationCropCatalogForm(request.POST, instance=crop)
+        if form.is_valid():
+            updated_crop = form.save(commit=False)
+            updated_crop.name = str(updated_crop.name or '').strip().lower()
+            updated_crop.save()
+            messages.success(request, f'Irrigation crop "{updated_crop.name.title()}" updated successfully.')
+            return redirect('irrigation_crops_admin')
+    else:
+        form = IrrigationCropCatalogForm(instance=crop)
+
+    context = {
+        'title': f'Edit Irrigation Crop: {crop.name.title()}',
+        'form': form,
+        'crop': crop,
+    }
+    return render(request, 'admin_panel/edit_irrigation_crop.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def delete_irrigation_crop_admin(request, crop_id):
+    """Delete irrigation crop catalog entry from custom admin panel."""
+    crop = get_object_or_404(IrrigationCropCatalog, id=crop_id)
+
+    if request.method == 'POST':
+        crop_name = crop.name.title()
+        crop.delete()
+        messages.success(request, f'Irrigation crop "{crop_name}" deleted successfully.')
+        return redirect('irrigation_crops_admin')
+
+    context = {
+        'title': f'Delete Irrigation Crop: {crop.name.title()}',
+        'crop': crop,
+    }
+    return render(request, 'admin_panel/delete_irrigation_crop.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def toggle_irrigation_crop_status_admin(request, crop_id):
+    """Toggle irrigation crop active status from custom admin panel."""
+    crop = get_object_or_404(IrrigationCropCatalog, id=crop_id)
+    crop.is_active = not crop.is_active
+    crop.save(update_fields=['is_active', 'updated_at'])
+
+    status = 'activated' if crop.is_active else 'deactivated'
+    messages.success(request, f'Irrigation crop "{crop.name.title()}" has been {status}.')
+    return redirect('irrigation_crops_admin')
 
 
 # ========== MASTER CROP MANAGEMENT ==========

@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - AgriGenie Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-droplet text-primary"></i> {{ title }}
+            </h1>
+            <p class="text-muted">Manage irrigation crop settings used by the irrigation module.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'add_irrigation_crop_admin' %}" class="btn btn-success me-2">
+                <i class="fas fa-plus"></i> Add Irrigation Crop
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label">Search</label>
+                            <input type="text" name="search" class="form-control" value="{{ search_query }}" placeholder="Search crop name">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Water Requirement</label>
+                            <select name="water_requirement" class="form-select">
+                                <option value="">All Levels</option>
+                                {% for value, label in water_requirement_choices %}
+                                    <option value="{{ value }}" {% if water_filter == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                            <a href="{% url 'irrigation_crops_admin' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header agri-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Irrigation Crop Entries</h5>
+                    <span class="badge bg-light text-dark">{{ crops|length }} shown</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Water Need</th>
+                                <th>Base Water (L)</th>
+                                <th>Ideal Moisture (%)</th>
+                                <th>Frequency (days)</th>
+                                <th>Status</th>
+                                <th>Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if crops %}
+                                {% for crop in crops %}
+                                <tr>
+                                    <td><strong>{{ crop.name|title }}</strong></td>
+                                    <td><span class="badge bg-info">{{ crop.get_water_requirement_display }}</span></td>
+                                    <td>{{ crop.base_water_liters }}</td>
+                                    <td>{{ crop.ideal_moisture }}</td>
+                                    <td>{{ crop.irrigation_frequency_days }}</td>
+                                    <td>
+                                        {% if crop.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><small class="text-muted">{{ crop.updated_at|date:"M d, Y H:i" }}</small></td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'edit_irrigation_crop_admin' crop.id %}" class="btn btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% if crop.is_active %}
+                                                <a href="{% url 'toggle_irrigation_crop_status_admin' crop.id %}" class="btn btn-outline-warning" title="Deactivate">
+                                                    <i class="fas fa-ban"></i>
+                                                </a>
+                                            {% else %}
+                                                <a href="{% url 'toggle_irrigation_crop_status_admin' crop.id %}" class="btn btn-outline-success" title="Activate">
+                                                    <i class="fas fa-check"></i>
+                                                </a>
+                                            {% endif %}
+                                            <a href="{% url 'delete_irrigation_crop_admin' crop.id %}" class="btn btn-outline-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <i class="fas fa-droplet fa-3x text-muted mb-3"></i>
+                                        <h5 class="text-muted">No Irrigation Crops Found</h5>
+                                        <p class="text-muted">Create irrigation crop entries to drive module behavior dynamically.</p>
+                                        <a href="{% url 'add_irrigation_crop_admin' %}" class="btn btn-success">
+                                            <i class="fas fa-plus"></i> Add First Irrigation Crop
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 g-3">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-database fa-2x mb-2"></i>
+                    <h4>{{ total_count }}</h4>
+                    <small>Total Entries</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h4>{{ active_count }}</h4>
+                    <small>Active Entries</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-secondary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-pause-circle fa-2x mb-2"></i>
+                    <h4>{{ inactive_count }}</h4>
+                    <small>Inactive Entries</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
