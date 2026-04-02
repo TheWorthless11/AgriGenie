@@ -15,7 +15,7 @@ class WeatherService:
     Uses OpenWeatherMap API (free tier)
     """
     
-    API_KEY = os.getenv('WEATHER_API_KEY', 'demo_key')
+    API_KEY = os.getenv('OPENWEATHER_API_KEY', 'demo_key')
     BASE_URL = 'https://api.openweathermap.org/data/2.5'
     
     # Disaster thresholds
