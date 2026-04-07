@@ -12,11 +12,219 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
+        <style>
+        /* Chat Popup Window Styles */
+        .chat-popup-window {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            height: 550px;
+            border-radius: 12px;
+            box-shadow: 0 5px 40px rgba(0,0,0,0.16);
+            background: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            margin-bottom: 0;
+        }
+
+        .chat-popup-window.offset-1 {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .chat-popup-window.offset-2 {
+            bottom: 20px;
+            right: 430px;
+        }
+
+        .chat-popup-window.offset-3 {
+            bottom: 20px;
+            right: 860px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px) translateX(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .chat-popup-header {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            flex-shrink: 0;
+        }
+
+        .chat-popup-header-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .chat-popup-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        .chat-popup-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-popup-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .chat-popup-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .chat-popup-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .chat-popup-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 0;
+        }
+
+        .chat-popup-message {
+            display: flex;
+            margin-bottom: 4px;
+            word-wrap: break-word;
+        }
+
+        .chat-popup-message.sent {
+            justify-content: flex-end;
+        }
+
+        .chat-popup-message.received {
+            justify-content: flex-start;
+        }
+
+        .chat-popup-bubble {
+            max-width: 85%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .chat-popup-message.sent .chat-popup-bubble {
+            background: #28a745;
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+
+        .chat-popup-message.received .chat-popup-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 3px;
+        }
+
+        .chat-popup-input-area {
+            padding: 10px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 8px;
+            background: white;
+            border-radius: 0 0 12px 12px;
+            flex-shrink: 0;
+        }
+
+        .chat-popup-input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-popup-input:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40,167,69,0.1);
+        }
+
+        .chat-popup-send {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-popup-send:hover {
+            background: #1e7e34;
+        }
+
+        .chat-popup-timestamp {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body class="{% if user.is_authenticated %}dashboard-layout{% endif %}">
 
     {% if user.is_authenticated %}
         {% with current_url=request.resolver_match.url_name %}
+        {% csrf_token %}
         <div class="app-shell">
             <header class="app-top-header">
                 <div class="app-top-header-left">
@@ -246,8 +454,14 @@
     <script src="{% static 'js/main.js' %}"></script>
     {% if user.is_authenticated %}
         <script>
+            let displayedConversationIds = new Set();
+            let popupRefreshIntervals = {};
+
+            // Initialize chat system immediately
+            console.log('[Chat System] Initializing...');
+            
             function checkUnreadMessages() {
-                fetch('/chat/api/unread/')
+                fetch('/chat/api/unread/', {timeout: 5000})
                     .then(response => response.json())
                     .then(data => {
                         const badge = document.getElementById('unread-messages-badge');
@@ -264,13 +478,337 @@
                         } else if (badgeBuyer) {
                             badgeBuyer.classList.add('d-none');
                         }
+                        console.log(`[Chat System] Unread count: ${data.unread_count}`);
                     })
-                    .catch(err => console.log('Could not check messages'));
+                    .catch(err => console.log('[Chat System] Could not check messages'));
             }
-            document.addEventListener('DOMContentLoaded', function() {
+
+            function fetchAndDisplayChatPopups() {
+                console.log('[Chat Popup] Fetching unread conversations...');
+                fetch('/chat/api/unread-conversations/')
+                    .then(response => {
+                        console.log('[Chat Popup] Response status:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('[Chat Popup] Full API Response:', data);
+                        console.log('[Chat Popup] Success:', data.success);
+                        console.log('[Chat Popup] Conversations count:', data.conversations ? data.conversations.length : 'N/A');
+                        
+                        if (data.success && data.conversations && data.conversations.length > 0) {
+                            console.log(`[Chat Popup] Found ${data.conversations.length} unread conversations`);
+                            data.conversations.forEach((conv, idx) => {
+                                console.log(`[Chat Popup] Conversation ${idx}:`, {
+                                    room_id: conv.room_id,
+                                    other_user: conv.other_user_username,
+                                    message: conv.last_message?.substring(0, 50)
+                                });
+                                
+                                // Skip if popup is already open in DOM
+                                const existingPopup = document.querySelector(`.chat-popup-window[data-room-id="${conv.room_id}"]`);
+                                if (existingPopup) {
+                                    console.log(`[Chat Popup] Popup already open for room ${conv.room_id}`);
+                                    return;
+                                }
+                                
+                                // Skip if we already tracked it
+                                if (displayedConversationIds.has(conv.room_id)) {
+                                    console.log(`[Chat Popup] Already tracked room ${conv.room_id}`);
+                                    return;
+                                }
+                                
+                                console.log(`[Chat Popup] Displaying popup for room ${conv.room_id}`);
+                                // Use actual count of displayed popups to determine offset
+                                const currentPopupCount = document.querySelectorAll('.chat-popup-window').length;
+                                displayChatPopup(conv, currentPopupCount);
+                                displayedConversationIds.add(conv.room_id);
+                            });
+                        } else {
+                            console.log('[Chat Popup] No unread conversations or API error');
+                            if (!data.success) {
+                                console.warn('[Chat Popup] API returned success=false');
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('[Chat Popup] Fetch error:', err);
+                        console.error('[Chat Popup] Error details:', err.message, err.stack);
+                    });
+            }
+
+            function displayChatPopup(conversation, offset = 0) {
+                // Don't show more than 3 popups
+                const existingPopups = document.querySelectorAll('.chat-popup-window').length;
+                console.log(`[displayChatPopup] Current popups: ${existingPopups}, Max: 3`);
+                if (existingPopups >= 3) {
+                    console.log('[displayChatPopup] Max popups reached, skipping');
+                    return;
+                }
+
+                const roomId = conversation.room_id;
+                console.log(`[displayChatPopup] Creating popup for room ${roomId}`);
+
+                const popupHTML = `
+                    <div class="chat-popup-window offset-${offset + 1}" data-room-id="${roomId}">
+                        <div class="chat-popup-header">
+                            <div class="chat-popup-header-info">
+                                <div class="chat-popup-avatar">
+                                    ${conversation.other_user_avatar 
+                                        ? `<img src="${conversation.other_user_avatar}" alt="${conversation.other_user_username}">` 
+                                        : `<span style="font-weight: bold; color: white;">${conversation.other_user_username[0].toUpperCase()}</span>`}
+                                </div>
+                                <div>
+                                    <p class="chat-popup-title" style="margin: 0; font-size: 14px; font-weight: 600;">${conversation.room_name}</p>
+                                    <small style="opacity: 0.8; font-size: 11px;">${conversation.other_user_role}</small>
+                                </div>
+                            </div>
+                            <button class="chat-popup-close" data-room-id="${roomId}" onclick="this.closest('.chat-popup-window').remove(); clearPopupRefresh(${roomId});">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div class="chat-popup-messages" data-room-id="${roomId}">
+                            <div style="text-align: center; color: #999; padding: 20px;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </div>
+                        </div>
+
+                        <div class="chat-popup-input-area">
+                            <form data-room-id="${roomId}" class="chat-popup-form" style="display: flex; width: 100%; gap: 8px;">
+                                <input type="text" class="chat-popup-input" placeholder="Type message..." maxlength="1000" data-room-id="${roomId}" data-message-input="" required>
+                                <button type="submit" class="chat-popup-send">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+                // Insert popup into the page
+                const container = document.createElement('div');
+                container.innerHTML = popupHTML;
+                const popupElement = container.firstElementChild;
+                document.body.appendChild(popupElement);
+                console.log('[displayChatPopup] Popup added to DOM');
+
+                // Load full conversation
+                loadChatPopupConversation(roomId);
+
+                // Set up form submission
+                const form = document.querySelector(`.chat-popup-form[data-room-id="${roomId}"]`);
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const messageInput = this.querySelector('[data-message-input]');
+                        const message = messageInput.value.trim();
+                        if (message) {
+                            console.log(`[displayChatPopup] Submitting message for room ${roomId}`);
+                            sendChatPopupMessage(roomId, message, messageInput);
+                        }
+                    });
+                }
+
+                // Start polling for new messages (every 1 second for real-time feel)
+                startPopupMessageRefresh(roomId);
+            }
+
+            function loadChatPopupConversation(roomId) {
+                console.log(`[loadChatPopupConversation] Loading conversation for room ${roomId}`);
+                fetch(`/chat/api/conversation/${roomId}/`)
+                    .then(response => {
+                        console.log(`[loadChatPopupConversation] Response status for room ${roomId}:`, response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log(`[loadChatPopupConversation] Response data for room ${roomId}:`, data);
+                        if (data.success) {
+                            console.log(`[loadChatPopupConversation] Loaded ${data.messages.length} messages for room ${roomId}`);
+                            renderChatPopupMessages(roomId, data.messages, data.current_user_id);
+                            
+                            // NOTE: DO NOT mark as read here - wait for user to send a reply
+                            console.log(`[loadChatPopupConversation] Conversation stays unread until user sends a reply`);
+                        } else {
+                            console.error(`[loadChatPopupConversation] Error for room ${roomId}:`, data.error);
+                        }
+                    })
+                    .catch(err => {
+                        console.error(`[loadChatPopupConversation] Fetch error for room ${roomId}:`, err);
+                        console.error('[loadChatPopupConversation] Error details:', err.message);
+                    });
+            }
+
+            function renderChatPopupMessages(roomId, messages, currentUserId) {
+                const messagesContainer = document.querySelector(`.chat-popup-messages[data-room-id="${roomId}"]`);
+                if (!messagesContainer) return;
+
+                messagesContainer.innerHTML = '';
+
+                messages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `chat-popup-message ${msg.is_own ? 'sent' : 'received'}`;
+                    messageDiv.setAttribute('data-message-id', msg.id);
+
+                    const bubbleDiv = document.createElement('div');
+                    bubbleDiv.className = 'chat-popup-bubble';
+                    // Use textContent to prevent XSS
+                    bubbleDiv.textContent = msg.content;
+
+                    messageDiv.appendChild(bubbleDiv);
+                    messagesContainer.appendChild(messageDiv);
+                });
+
+                // Auto-scroll to bottom
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                console.log(`[renderChatPopupMessages] Rendered ${messages.length} messages for room ${roomId}`);
+            }
+
+            function startPopupMessageRefresh(roomId) {
+                // Clear existing interval if any
+                if (popupRefreshIntervals[roomId]) {
+                    clearInterval(popupRefreshIntervals[roomId]);
+                }
+
+                // Get last message ID to poll only for new messages
+                let lastMessageId = 0;
+                const messagesContainer = document.querySelector(`.chat-popup-messages[data-room-id="${roomId}"]`);
+                if (messagesContainer) {
+                    const messages = messagesContainer.querySelectorAll('[data-message-id]');
+                    if (messages.length > 0) {
+                        lastMessageId = parseInt(messages[messages.length - 1].getAttribute('data-message-id'));
+                    }
+                }
+
+                // Poll every 1 second
+                popupRefreshIntervals[roomId] = setInterval(() => {
+                    fetch(`/chat/api/messages/${roomId}/?after_id=${lastMessageId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.messages && data.messages.length > 0) {
+                                const messagesContainer = document.querySelector(`.chat-popup-messages[data-room-id="${roomId}"]`);
+                                if (messagesContainer) {
+                                    data.messages.forEach(msg => {
+                                        // Check if message already exists
+                                        if (!document.querySelector(`[data-message-id="${msg.id}"]`)) {
+                                            const messageDiv = document.createElement('div');
+                                            messageDiv.className = `chat-popup-message ${msg.sender_id === data.current_user_id ? 'sent' : 'received'}`;
+                                            messageDiv.setAttribute('data-message-id', msg.id);
+
+                                            const bubbleDiv = document.createElement('div');
+                                            bubbleDiv.className = 'chat-popup-bubble';
+                                            bubbleDiv.textContent = msg.content;
+
+                                            messageDiv.appendChild(bubbleDiv);
+                                            messagesContainer.appendChild(messageDiv);
+
+                                            lastMessageId = msg.id;
+                                        }
+                                    });
+
+                                    // Auto-scroll to bottom
+                                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                                    console.log(`[startPopupMessageRefresh] Added ${data.messages.length} new messages to room ${roomId}`);
+                                }
+                            }
+                        })
+                        .catch(err => console.error(`[startPopupMessageRefresh] Error for room ${roomId}:`, err));
+                }, 1000); // 1 second polling
+            }
+
+            function clearPopupRefresh(roomId) {
+                if (popupRefreshIntervals[roomId]) {
+                    clearInterval(popupRefreshIntervals[roomId]);
+                    delete popupRefreshIntervals[roomId];
+                    console.log(`[clearPopupRefresh] Cleared refresh for room ${roomId}`);
+                }
+            }
+
+            function sendChatPopupMessage(roomId, message, inputElement) {
+                console.log(`[sendChatPopupMessage] Sending message to room ${roomId}`);
+                
+                // Disable button while sending
+                const form = inputElement.closest('form');
+                const submitBtn = form.querySelector('.chat-popup-send');
+                submitBtn.disabled = true;
+
+                fetch(`/chat/api/send/${roomId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+                    },
+                    body: JSON.stringify({ message: message })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(`[sendChatPopupMessage] Response:`, data);
+                    if (data.success) {
+                        inputElement.value = '';
+                        console.log(`[sendChatPopupMessage] Message sent successfully for room ${roomId}`);
+                        
+                        // Mark conversation as read NOW that user replied
+                        console.log(`[sendChatPopupMessage] Marking conversation as read after reply for room ${roomId}`);
+                        fetch(`/chat/api/mark-read/${roomId}/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+                            }
+                        })
+                        .then(r => r.json())
+                        .then(d => {
+                            console.log(`[sendChatPopupMessage] Marked ${d.updated_count} messages as read for room ${roomId}`);
+                        })
+                        .catch(err => console.error(`[sendChatPopupMessage] Error marking as read:`, err));
+                    } else {
+                        console.error('[sendChatPopupMessage] Error:', data.error);
+                        alert('Error sending message: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => {
+                    console.error('[sendChatPopupMessage] Fetch error:', err);
+                    alert('Error sending message');
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                });
+            }
+
+            // Initialize right away or on DOM ready
+            function initializeChatSystem() {
+                console.log('[Chat System] Initializing popups and polling');
+                console.log('[Chat System] displayedConversationIds:', displayedConversationIds);
+                console.log('[Chat System] popupRefreshIntervals:', popupRefreshIntervals);
+                
+                // Get debug info
+                fetch('/chat/api/debug/')
+                    .then(r => r.json())
+                    .then(data => {
+                        console.log('[Chat System] DEBUG INFO:', data);
+                    })
+                    .catch(err => console.error('[Chat System] Debug fetch failed:', err));
+                
                 checkUnreadMessages();
-                setInterval(checkUnreadMessages, 10000);
-            });
+                fetchAndDisplayChatPopups();
+                
+                // Polling every 1.5 seconds for new conversations
+                const pollInterval = setInterval(function() {
+                    console.log('[Chat System] Running polling cycle...');
+                    checkUnreadMessages();
+                    fetchAndDisplayChatPopups();
+                }, 1500);
+                
+                console.log('[Chat System] Polling started with interval:', pollInterval);
+            }
+
+            // Initialize as soon as possible
+            console.log('[Chat System] Page load state:', document.readyState);
+            if (document.readyState === 'loading') {
+                console.log('[Chat System] Document still loading, waiting for DOMContentLoaded');
+                document.addEventListener('DOMContentLoaded', initializeChatSystem);
+            } else {
+                // Document already loaded, initialize immediately
+                console.log('[Chat System] Document already loaded, initializing immediately');
+                initializeChatSystem();
+            }
         </script>
     {% endif %}
     {% block extra_js %}{% endblock %}

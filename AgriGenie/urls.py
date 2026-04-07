@@ -115,10 +115,19 @@ urlpatterns = [
     path('admin-panel/irrigation/<int:crop_id>/delete/', admin_views.delete_irrigation_crop_admin, name='delete_irrigation_crop_admin'),
     path('admin-panel/irrigation/<int:crop_id>/toggle/', admin_views.toggle_irrigation_crop_status_admin, name='toggle_irrigation_crop_status_admin'),
     
-    # Master Crop Management (Admin)
+    # User Management (Admin)
     path('admin-panel/users/', admin_views.user_management, name='user_management'),
+    path('admin-panel/users/<int:user_id>/details/', admin_views.user_detail_view, name='user_detail_view'),
     path('admin-panel/users/<int:user_id>/delete/', admin_views.delete_user, name='delete_user'),
+    path('admin-panel/users/<int:user_id>/block/', admin_views.block_user, name='block_user'),
+    path('admin-panel/users/<int:user_id>/unblock/', admin_views.unblock_user, name='unblock_user'),
     path('admin-panel/users/<int:user_id>/toggle-approval/', admin_views.toggle_user_approval, name='toggle_user_approval'),
+    
+    # AJAX Validation endpoints
+    path('api/check-nid-uniqueness/', admin_views.check_nid_uniqueness, name='check_nid_uniqueness'),
+    path('api/check-company-name/', admin_views.check_company_name_uniqueness, name='check_company_name'),
+    
+    # Master Crop Management (Admin)
     path('admin-panel/master-crops/', admin_views.master_crops_list, name='master_crops_list'),
     path('admin-panel/master-crops/add/', admin_views.add_master_crop, name='add_master_crop'),
     path('admin-panel/master-crops/import-variants/', admin_views.import_crop_variants, name='import_crop_variants'),

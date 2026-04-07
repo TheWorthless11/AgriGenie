@@ -27,4 +27,16 @@ urlpatterns = [
     
     # API: Get messages (polling fallback)
     path('api/messages/<int:room_id>/', views.get_messages_ajax, name='get_messages_ajax'),
+    
+    # API: Get unread conversations for popup notifications (top 3)
+    path('api/unread-conversations/', views.get_unread_conversations, name='get_unread_conversations'),
+    
+    # API: Get full conversation history for popup
+    path('api/conversation/<int:room_id>/', views.get_conversation_history, name='get_conversation_history'),
+    
+    # API: Mark conversation messages as read (for popup)
+    path('api/mark-read/<int:room_id>/', views.mark_conversation_read, name='mark_conversation_read'),
+    
+    # API: Debug endpoint
+    path('api/debug/', views.debug_user_info, name='debug_user_info'),
 ]

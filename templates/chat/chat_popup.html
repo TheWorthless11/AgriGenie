@@ -1,0 +1,260 @@
+<!-- Chat Popup Modal Template -->
+<div class="chat-popup-container" id="">
+    <style>
+        .chat-popup-window {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            border-radius: 12px;
+            box-shadow: 0 5px 40px rgba(0,0,0,0.16);
+            background: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            margin-bottom: 0;
+        }
+
+        .chat-popup-window.offset-1 {
+            bottom: 20px;
+            right: 20px;
+        }
+
+        .chat-popup-window.offset-2 {
+            bottom: 20px;
+            right: 390px;
+        }
+
+        .chat-popup-window.offset-3 {
+            bottom: 20px;
+            right: 760px;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px) translateX(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .chat-popup-header {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .chat-popup-header-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .chat-popup-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            overflow: hidden;
+        }
+
+        .chat-popup-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .chat-popup-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .chat-popup-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .chat-popup-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .chat-popup-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 350px;
+        }
+
+        .chat-popup-message {
+            display: flex;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+
+        .chat-popup-message.sent {
+            justify-content: flex-end;
+        }
+
+        .chat-popup-message.received {
+            justify-content: flex-start;
+        }
+
+        .chat-popup-bubble {
+            max-width: 75%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .chat-popup-message.sent .chat-popup-bubble {
+            background: #28a745;
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+
+        .chat-popup-message.received .chat-popup-bubble {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 3px;
+        }
+
+        .chat-popup-input-area {
+            padding: 10px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 8px;
+            background: white;
+            border-radius: 0 0 12px 12px;
+        }
+
+        .chat-popup-input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-popup-input:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40,167,69,0.1);
+        }
+
+        .chat-popup-send {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-popup-send:hover {
+            background: #1e7e34;
+        }
+
+        .chat-popup-unread-badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .chat-popup-timestamp {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
+            text-align: center;
+        }
+
+        ::-webkit-scrollbar-small {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track-small {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb-small {
+            background: #ccc;
+            border-radius: 2px;
+        }
+    </style>
+
+    <div class="chat-popup-window" data-room-id="">
+        <!-- Header -->
+        <div class="chat-popup-header">
+            <div class="chat-popup-header-info">
+                <div class="chat-popup-avatar">
+                    <img src="" alt="Avatar" data-avatar-url="">
+                </div>
+                <div>
+                    <p class="chat-popup-title" data-room-name="">User Name</p>
+                </div>
+            </div>
+            <button class="chat-popup-close" onclick="this.closest('.chat-popup-window').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-popup-messages" data-messages-container="">
+            <div class="chat-popup-timestamp">Loading messages...</div>
+        </div>
+
+        <!-- Input -->
+        <div class="chat-popup-input-area">
+            <input type="text" class="chat-popup-input" placeholder="Type message..." data-message-input="" maxlength="500">
+            <button class="chat-popup-send" data-send-btn="">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>

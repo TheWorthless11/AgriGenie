@@ -128,7 +128,11 @@
                             </td>
                             <td>{{ u.date_joined|date:"M d, Y" }}</td>
                             <td>
-                                {% if u.is_active %}
+                                {% if u.is_blocked_by_admin %}
+                                    <span class="badge bg-danger" title="{{ u.blocked_reason }}">
+                                        <i class="fas fa-ban"></i> Blocked
+                                    </span>
+                                {% elif u.is_active %}
                                     <span class="badge bg-success">Active</span>
                                 {% else %}
                                     <span class="badge bg-secondary">Inactive</span>
@@ -136,7 +140,11 @@
                             </td>
                             <td>
                                 {% if u.role == 'farmer' %}
-                                    <span class="badge bg-success"><i class="fas fa-check"></i> Full Access</span>
+                                    {% if u.farmer_profile.is_approved %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending</span>
+                                    {% endif %}
                                 {% elif u.role == 'buyer' %}
                                     {% if u.buyer_profile.is_approved %}
                                         <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
@@ -150,18 +158,33 @@
                                 {% endif %}
                             </td>
                             <td>
+                                <a href="{% url 'user_detail_view' u.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i> Details
+                                </a>
                                 {% if u != request.user %}
-                                    {% if u.role == 'buyer' %}
+                                    {% if u.role in 'farmer,buyer' %}
                                     <form method="POST" action="{% url 'toggle_user_approval' u.id %}" class="d-inline">
                                         {% csrf_token %}
-                                        {% if u.buyer_profile.is_approved %}
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
-                                                <i class="fas fa-ban"></i>
-                                            </button>
-                                        {% else %}
-                                            <button type="submit" class="btn btn-sm btn-success" title="Approve User">
-                                                <i class="fas fa-check"></i>
-                                            </button>
+                                        {% if u.role == 'farmer' %}
+                                            {% if u.farmer_profile.is_approved %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve User">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            {% endif %}
+                                        {% elif u.role == 'buyer' %}
+                                            {% if u.buyer_profile.is_approved %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve User">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            {% endif %}
                                         {% endif %}
                                     </form>
                                     {% endif %}
