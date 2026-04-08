@@ -18,38 +18,54 @@
     <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-users fa-2x text-success mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_users }}</h4>
-                    <small class="text-muted">Total Users</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Total Users</p>
+                            <h3 class="fw-bold text-success">{{ total_users }}</h3>
+                        </div>
+                        <i class="fas fa-users fa-2x text-success opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-tractor fa-2x text-primary mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_farmers }}</h4>
-                    <small class="text-muted">Farmers</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Farmers</p>
+                            <h3 class="fw-bold text-primary">{{ total_farmers }}</h3>
+                        </div>
+                        <i class="fas fa-tractor fa-2x text-primary opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-shopping-cart fa-2x text-info mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_buyers }}</h4>
-                    <small class="text-muted">Buyers</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Buyers</p>
+                            <h3 class="fw-bold text-info">{{ total_buyers }}</h3>
+                        </div>
+                        <i class="fas fa-shopping-cart fa-2x text-info opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-user-shield fa-2x text-danger mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_admins }}</h4>
-                    <small class="text-muted">Admins</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Admins</p>
+                            <h3 class="fw-bold text-danger">{{ total_admins }}</h3>
+                        </div>
+                        <i class="fas fa-user-shield fa-2x text-danger opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
