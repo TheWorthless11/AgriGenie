@@ -56,6 +56,18 @@
                                 {{ form.base_water_liters }}
                             </div>
                             <div class="col-md-4">
+                                <label for="{{ form.water_per_m2.id_for_label }}" class="form-label">Water per m² (L)</label>
+                                {{ form.water_per_m2 }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.moisture_threshold.id_for_label }}" class="form-label">Moisture Threshold (%)</label>
+                                {{ form.moisture_threshold }}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.retention_factor.id_for_label }}" class="form-label">Retention Factor</label>
+                                {{ form.retention_factor }}
+                            </div>
+                            <div class="col-md-4">
                                 <label for="{{ form.ideal_moisture.id_for_label }}" class="form-label">Ideal Moisture (%)</label>
                                 {{ form.ideal_moisture }}
                             </div>

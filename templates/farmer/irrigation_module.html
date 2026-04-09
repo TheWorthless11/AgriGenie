@@ -19,35 +19,103 @@
         color: #14532d;
     }
 
-    .urgency-banner {
+    .main-action-card {
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    .action-safe {
+        background: #effaf0;
+        border-color: #bfe5c6;
+    }
+
+    .action-moderate {
+        background: #fff9e8;
+        border-color: #ffd46b;
+    }
+
+    .action-urgent {
+        background: #fff1f1;
+        border-color: #ef4444;
+    }
+
+    .main-action-text {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .weather-context {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.95rem;
+        color: #334155;
+    }
+
+    .water-figure {
+        border: 1px solid #dbeafe;
         border-radius: 12px;
-        padding: 12px 14px;
-        border: 1px solid transparent;
+        background: #f0f9ff;
+        border-radius: 12px;
+        padding: 14px;
+        color: #0f172a;
+    }
+
+    .water-main {
+        font-size: 1.7rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .water-sub {
+        color: #334155;
+        font-size: 0.95rem;
+    }
+
+    .why-list {
+        margin: 0;
+        padding-left: 1.1rem;
+    }
+
+    .why-list li {
+        margin-bottom: 6px;
+        color: #334155;
+    }
+
+    .warning-box {
+        border-radius: 10px;
+        border: 1px solid #fecaca;
+        background: #fff7ed;
+        color: #7c2d12;
+        padding: 10px 12px;
         font-weight: 600;
     }
 
-    .urgency-safe {
-        background: #effaf0;
-        border-color: #c7eccc;
+    .log-card {
+        border: 1px solid #d9e8db;
+        border-radius: 14px;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+        background: #ffffff;
+    }
+
+    .log-card .card-header {
+        background: #f6fbf5;
+        border-bottom: 1px solid #e4efe5;
+        font-weight: 700;
         color: #14532d;
     }
 
-    .urgency-moderate {
-        background: #fff9e8;
-        border-color: #ffe08a;
-        color: #7a5600;
+    .section-title {
+        font-weight: 700;
+        color: #1e293b;
     }
 
-    .urgency-caution {
-        background: #fff9e8;
-        border-color: #ffe08a;
-        color: #7a5600;
-    }
-
-    .urgency-urgent {
-        background: #fff1f1;
-        border-color: #f5b5b5;
-        color: #7f1d1d;
+    .next-countdown {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #0f172a;
     }
 
     .soil-meter {
@@ -99,9 +167,12 @@
         font-weight: 700;
     }
 
-    .history-table-wrap {
-        max-height: 280px;
-        overflow-y: auto;
+    .empty-state {
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        background: #f8fafc;
+        padding: 14px;
+        color: #475569;
     }
 
     .usage-chart-wrap {
@@ -115,19 +186,14 @@
         vertical-align: middle;
     }
 
-    .recommendation-list {
-        margin: 0;
-        padding-left: 1.1rem;
-    }
+    @media (max-width: 768px) {
+        .main-action-text {
+            font-size: 1.05rem;
+        }
 
-    .recommendation-list li {
-        margin-bottom: 6px;
-        color: #334155;
-    }
-
-    .section-title {
-        font-weight: 700;
-        color: #1e293b;
+        .water-main {
+            font-size: 1.4rem;
+        }
     }
 </style>
 {% endblock %}
@@ -137,12 +203,39 @@
     <div class="row mb-3">
         <div class="col-12">
             <h2 class="mb-1">💧 Irrigation Module</h2>
-            <p class="text-muted mb-0">Smart irrigation planning and water usage tracking for your crops.</p>
+            <p class="text-muted mb-0">Action assistant for irrigation planning and quick field logging.</p>
         </div>
     </div>
 
     <div id="irrigationError" class="alert alert-danger d-none" role="alert"></div>
+    <div id="irrigationSuccess" class="alert alert-success d-none" role="alert"></div>
     <div id="irrigationReminder" class="alert alert-warning d-none" role="alert"></div>
+    <input type="hidden" id="csrfToken" value="{{ csrf_token }}">
+
+    <div id="mainActionCard" class="card main-action-card action-moderate mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-2">
+                <h4 class="mb-0">🔥 MAIN ACTION</h4>
+                <span id="urgencyBadge" class="badge text-bg-secondary">Waiting for analysis</span>
+            </div>
+            <p id="mainActionText" class="main-action-text mb-3">Select a crop and refresh the plan to get irrigation recommendations.</p>
+            <div class="weather-context mb-3">
+                <div>📍 Location: <span id="locationLabel">Detecting...</span></div>
+                <div id="weatherContextText">🌤 Based on current weather conditions</div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button id="irrigateNowBtn" type="button" class="btn btn-danger btn-lg">
+                    🔥 Irrigate Now
+                </button>
+                <button id="refreshPlanBtn" type="button" class="btn btn-success">
+                    <i class="fas fa-rotate me-2"></i>Refresh Plan
+                </button>
+                <button id="useLocationBtn" type="button" class="btn btn-outline-success">
+                    <i class="fas fa-location-crosshairs me-2"></i>Use My Location
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div class="row g-3">
         <div class="col-lg-4">
@@ -154,36 +247,49 @@
                         <option value="">Loading crops...</option>
                     </select>
 
-                    <p class="small text-muted mb-3">📍 Location: <span id="locationLabel">Detecting...</span></p>
+                    <div class="row g-2">
+                        <div class="col-7">
+                            <label for="cropAreaSize" class="form-label mb-1">Field area</label>
+                            <input id="cropAreaSize" type="number" class="form-control" min="0.01" step="0.01" placeholder="e.g., 6">
+                        </div>
+                        <div class="col-5">
+                            <label for="cropAreaUnit" class="form-label mb-1">Unit</label>
+                            <select id="cropAreaUnit" class="form-select">
+                                <option value="m2">m²</option>
+                                <option value="acre">acre</option>
+                                <option value="hectare">hectare</option>
+                            </select>
+                        </div>
+                    </div>
 
-                    <div class="d-grid gap-2">
-                        <button id="useLocationBtn" type="button" class="btn btn-outline-success">
-                            <i class="fas fa-location-crosshairs me-2"></i>Use My Location
-                        </button>
-                        <button id="refreshPlanBtn" type="button" class="btn btn-success">
-                            <i class="fas fa-rotate me-2"></i>Refresh Plan
+                    <div class="d-grid mt-2">
+                        <button id="saveCropAreaBtn" type="button" class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-ruler-combined me-1"></i>Save Crop Area
                         </button>
                     </div>
+                    <small id="cropAreaHint" class="text-muted d-block mt-2">Set area for this crop to calculate water needed for that field.</small>
+
+                    <p class="small text-muted mb-0">Choose crop first, then use <strong>Irrigate Now</strong> for fast action logging.</p>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-8">
             <div class="card irrigation-card">
-                <div class="card-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                    <span>💧 Irrigation Recommendation</span>
-                    <span id="urgencyBadge" class="badge text-bg-secondary">Waiting for analysis</span>
-                </div>
+                <div class="card-header">💧 Recommended Water</div>
                 <div class="card-body">
-                    <div id="recommendationBanner" class="urgency-banner urgency-moderate mb-3">
-                        Select a crop and refresh the plan to get irrigation recommendations.
+                    <div class="water-figure mb-3">
+                        <div class="water-main">💧 Recommended: <span id="recommendedWater">-- L</span></div>
+                        <div id="bucketEstimate" class="water-sub">≈ -- buckets of water</div>
+                        <div id="recommendationFormula" class="water-sub">Recommended: -- L/m² × -- m² = -- L</div>
                     </div>
-                    <div class="metric-box mb-3 text-start">
-                        <div class="metric-label">💧 Recommended Water</div>
-                        <div class="metric-value" id="recommendedWater">-- L</div>
+
+                    <h6 class="section-title">🧠 Why?</h6>
+                    <ul id="whyList" class="why-list mb-3"></ul>
+
+                    <div id="delayWarning" class="warning-box d-none">
+                        ⚠️ If you delay irrigation: Soil may become too dry and stress crops.
                     </div>
-                    <h6 class="section-title">Decision Factors</h6>
-                    <ul id="recommendationList" class="recommendation-list"></ul>
                 </div>
             </div>
         </div>
@@ -191,7 +297,33 @@
 
     <div class="row g-3 mt-1">
         <div class="col-lg-6">
-            <div class="card irrigation-card">
+            <div id="logIrrigationCard" class="card log-card">
+                <div class="card-header">💧 Log Irrigation</div>
+                <div class="card-body">
+                    <p class="text-muted small">Use this quick form after irrigating to keep your records and dashboard updated.</p>
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label for="logWaterAmount" class="form-label">Water amount (L)</label>
+                            <input id="logWaterAmount" type="number" min="0.1" step="0.1" class="form-control" placeholder="e.g., 10.4">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="logMethod" class="form-label">Method</label>
+                            <select id="logMethod" class="form-select">
+                                <option value="manual">Manual</option>
+                                <option value="pump">Pump</option>
+                                <option value="drip">Drip</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-grid">
+                        <button id="saveLogBtn" type="button" class="btn btn-success btn-lg">✅ Save Irrigation Event</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card irrigation-card mb-3">
                 <div class="card-header">🧪 Soil Moisture Indicator</div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
@@ -204,26 +336,13 @@
                     <small id="soilMoistureSummary" class="text-muted">💧 Soil Moisture: --% (--)</small>
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-6">
             <div class="card irrigation-card">
                 <div class="card-header">⏰ Irrigation Schedule</div>
                 <div class="card-body">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="metric-box">
-                                <div class="metric-label">Next Date</div>
-                                <div class="metric-value" id="nextIrrigationDate">--</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="metric-box">
-                                <div class="metric-label">Frequency</div>
-                                <div class="metric-value" id="frequencyDays">--</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div id="nextIrrigationCountdown" class="next-countdown mb-1">⏳ Next irrigation in: --</div>
+                    <div class="text-muted small mb-2">Next date: <span id="nextIrrigationDate">--</span></div>
+                    <div class="text-muted small">Frequency: <span id="frequencyDays">--</span></div>
                     <p id="scheduleRecommendation" class="mt-3 mb-0 text-muted">Schedule updates after weather analysis.</p>
                 </div>
             </div>
@@ -258,6 +377,30 @@
                     <div class="usage-chart-wrap">
                         <canvas id="usageChart"></canvas>
                     </div>
+                    <div id="usageEmptyState" class="empty-state mt-3 d-none">No irrigation recorded yet. Start by logging your first irrigation.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-12">
+            <div class="card irrigation-card">
+                <div class="card-header">🗂️ Recent Irrigation History</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Water (L)</th>
+                                    <th>Method</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="historyEmptyState" class="empty-state mt-3 d-none">No irrigation recorded yet. Start by logging your first irrigation.</div>
                 </div>
             </div>
         </div>
@@ -274,10 +417,13 @@
         }
 
         const PLAN_ENDPOINT = '/api/irrigation/plan/';
+        const CROP_AREA_ENDPOINT = '/api/irrigation/crop-area/';
+        const LOG_ENDPOINT = '/api/irrigation/log/';
         const HISTORY_ENDPOINT = '/api/irrigation/history/';
         const SCHEDULE_ENDPOINT = '/api/irrigation/schedule/';
         const CROPS_ENDPOINT = '/api/crops/';
         const AUTO_REFRESH_MS = 30 * 60 * 1000;
+        const LITERS_PER_BUCKET = 5;
         const DEFAULT_COORDS = {
             lat: 23.8103,
             lon: 90.4125,
@@ -285,20 +431,36 @@
 
         const cropSelect = document.getElementById('cropSelect');
         const locationLabel = document.getElementById('locationLabel');
+        const weatherContextText = document.getElementById('weatherContextText');
         const useLocationBtn = document.getElementById('useLocationBtn');
+        const irrigateNowBtn = document.getElementById('irrigateNowBtn');
         const refreshPlanBtn = document.getElementById('refreshPlanBtn');
+        const cropAreaSize = document.getElementById('cropAreaSize');
+        const cropAreaUnit = document.getElementById('cropAreaUnit');
+        const saveCropAreaBtn = document.getElementById('saveCropAreaBtn');
+        const cropAreaHint = document.getElementById('cropAreaHint');
+        const saveLogBtn = document.getElementById('saveLogBtn');
         const irrigationError = document.getElementById('irrigationError');
+        const irrigationSuccess = document.getElementById('irrigationSuccess');
         const irrigationReminder = document.getElementById('irrigationReminder');
+        const mainActionCard = document.getElementById('mainActionCard');
+        const mainActionText = document.getElementById('mainActionText');
+        const delayWarning = document.getElementById('delayWarning');
+        const logIrrigationCard = document.getElementById('logIrrigationCard');
+        const logWaterAmount = document.getElementById('logWaterAmount');
+        const logMethod = document.getElementById('logMethod');
 
         const urgencyBadge = document.getElementById('urgencyBadge');
-        const recommendationBanner = document.getElementById('recommendationBanner');
         const recommendedWater = document.getElementById('recommendedWater');
-        const recommendationList = document.getElementById('recommendationList');
+        const bucketEstimate = document.getElementById('bucketEstimate');
+        const recommendationFormula = document.getElementById('recommendationFormula');
+        const whyList = document.getElementById('whyList');
 
         const soilMoistureValue = document.getElementById('soilMoistureValue');
         const soilMoistureSummary = document.getElementById('soilMoistureSummary');
         const soilMoistureBar = document.getElementById('soilMoistureBar');
 
+        const nextIrrigationCountdown = document.getElementById('nextIrrigationCountdown');
         const nextIrrigationDate = document.getElementById('nextIrrigationDate');
         const frequencyDays = document.getElementById('frequencyDays');
         const scheduleRecommendation = document.getElementById('scheduleRecommendation');
@@ -306,10 +468,16 @@
         const dailyUsage = document.getElementById('dailyUsage');
         const weeklyUsage = document.getElementById('weeklyUsage');
         const totalUsage = document.getElementById('totalUsage');
+        const usageEmptyState = document.getElementById('usageEmptyState');
+        const historyTableBody = document.getElementById('historyTableBody');
+        const historyEmptyState = document.getElementById('historyEmptyState');
 
         let usageChart = null;
         let currentCoords = { ...DEFAULT_COORDS };
         let hasAvailableCrops = false;
+        const cropMetaById = new Map();
+        let lastRecommendedLiters = null;
+        let lastKnownStatus = 'SAFE';
 
         function setError(message) {
             if (!message) {
@@ -321,10 +489,24 @@
             irrigationError.classList.remove('d-none');
         }
 
+        function setSuccess(message) {
+            if (!message) {
+                irrigationSuccess.classList.add('d-none');
+                irrigationSuccess.textContent = '';
+                return;
+            }
+            irrigationSuccess.textContent = message;
+            irrigationSuccess.classList.remove('d-none');
+        }
+
         function setLoading(isLoading) {
             cropSelect.disabled = isLoading || !hasAvailableCrops;
             useLocationBtn.disabled = isLoading || !hasAvailableCrops;
             refreshPlanBtn.disabled = isLoading || !hasAvailableCrops;
+            irrigateNowBtn.disabled = isLoading || !hasAvailableCrops;
+            cropAreaSize.disabled = isLoading || !hasAvailableCrops;
+            cropAreaUnit.disabled = isLoading || !hasAvailableCrops;
+            saveCropAreaBtn.disabled = isLoading || !hasAvailableCrops;
         }
 
         function toTitleCase(value) {
@@ -333,35 +515,112 @@
                 .replace(/\w\S*/g, token => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase());
         }
 
-        function resetPlanView(message) {
-            urgencyBadge.className = 'badge text-bg-secondary';
-            urgencyBadge.textContent = 'Waiting for analysis';
-
-            recommendationBanner.classList.remove('urgency-safe', 'urgency-moderate', 'urgency-caution', 'urgency-urgent');
-            recommendationBanner.classList.add('urgency-moderate');
-            recommendationBanner.textContent = message || 'Select a crop and refresh the plan to get irrigation recommendations.';
-
-            recommendedWater.textContent = '-- L';
-            recommendationList.innerHTML = '';
-
-            const fallbackItem = document.createElement('li');
-            fallbackItem.textContent = message || 'No recommendation data available.';
-            recommendationList.appendChild(fallbackItem);
-
-            soilMoistureValue.textContent = '--%';
-            soilMoistureSummary.textContent = '💧 Soil Moisture: --% (--)';
-            soilMoistureBar.style.width = '0%';
-            soilMoistureBar.classList.remove('soil-safe', 'soil-moderate', 'soil-caution', 'soil-urgent');
-            soilMoistureBar.classList.add('soil-moderate');
-
-            nextIrrigationDate.textContent = '--';
-            frequencyDays.textContent = '--';
-            scheduleRecommendation.textContent = 'Schedule updates after weather analysis.';
-            locationLabel.textContent = 'Location unavailable';
+        function unitLabel(unitValue) {
+            const normalized = String(unitValue || '').toLowerCase();
+            if (normalized === 'acre') {
+                return 'acre';
+            }
+            if (normalized === 'hectare') {
+                return 'hectare';
+            }
+            return 'm²';
         }
 
-        function clamp(value, minValue, maxValue) {
-            return Math.min(maxValue, Math.max(minValue, value));
+        function syncAreaInputsWithSelection() {
+            const selectedCropId = Number(cropSelect.value);
+            const selectedCrop = cropMetaById.get(selectedCropId);
+
+            if (!selectedCrop) {
+                cropAreaSize.value = '';
+                cropAreaUnit.value = 'm2';
+                cropAreaHint.textContent = 'Set area for this crop to calculate water needed for that field.';
+                return;
+            }
+
+            const areaSizeValue = Number(selectedCrop.area_size);
+            cropAreaSize.value = Number.isFinite(areaSizeValue) ? areaSizeValue.toString() : '';
+
+            const areaUnitValue = String(selectedCrop.area_unit || 'm2').toLowerCase();
+            if (['m2', 'acre', 'hectare'].includes(areaUnitValue)) {
+                cropAreaUnit.value = areaUnitValue;
+            } else {
+                cropAreaUnit.value = 'm2';
+            }
+
+            const areaM2Value = Number(selectedCrop.area_m2);
+            if (Number.isFinite(areaM2Value)) {
+                cropAreaHint.textContent = `Current area: ${cropAreaSize.value} ${unitLabel(cropAreaUnit.value)} (${areaM2Value.toFixed(2)} m²)`;
+            } else {
+                cropAreaHint.textContent = 'Set area for this crop to calculate water needed for that field.';
+            }
+        }
+
+        function formatMethodLabel(method) {
+            const normalized = String(method || '').toLowerCase();
+            if (normalized === 'manual') {
+                return 'Manual';
+            }
+            if (normalized === 'pump') {
+                return 'Pump';
+            }
+            if (normalized === 'drip') {
+                return 'Drip';
+            }
+            if (normalized === 'automatic') {
+                return 'Automatic';
+            }
+            return toTitleCase(normalized);
+        }
+
+        function estimateBucketCount(liters) {
+            if (!Number.isFinite(liters) || liters <= 0) {
+                return 0;
+            }
+            return Math.max(1, Math.round(liters / LITERS_PER_BUCKET));
+        }
+
+        function buildSimpleReasons(soilMoisture, decisionFactors) {
+            const reasons = [];
+
+            if (soilMoisture < 40) {
+                reasons.push('Soil moisture is low');
+            } else if (soilMoisture <= 60) {
+                reasons.push('Soil moisture is moderate');
+            } else {
+                reasons.push('Soil moisture is healthy');
+            }
+
+            const hasRainExpected = decisionFactors.some(item => String(item).toLowerCase().includes('rain expected'));
+            const hasNoRainExpected = decisionFactors.some(item => String(item).toLowerCase().includes('no rain expected'));
+            if (hasNoRainExpected || !hasRainExpected) {
+                reasons.push('No rain expected');
+            } else {
+                reasons.push('Rain expected soon');
+            }
+
+            const highTemp = decisionFactors.some(item => String(item).toLowerCase().includes('high temperature'));
+            reasons.push(highTemp ? 'Temperature is high and soil may dry faster' : 'Suitable temperature');
+
+            return reasons;
+        }
+
+        function daysUntilLabel(dateValue) {
+            const target = new Date(`${dateValue}T00:00:00`);
+            if (Number.isNaN(target.getTime())) {
+                return '--';
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 0) {
+                return 'today';
+            }
+            if (diffDays === 1) {
+                return '1 day';
+            }
+            return `${diffDays} days`;
         }
 
         function urgencyConfig(level) {
@@ -369,29 +628,124 @@
 
             if (normalizedLevel === 'URGENT') {
                 return {
-                    label: '🔴 URGENT',
+                    label: '🔴 URGENT — Action required today',
                     badgeClass: 'text-bg-danger',
-                    bannerClass: 'urgency-urgent',
+                    cardClass: 'action-urgent',
                 };
             }
 
             if (normalizedLevel === 'MODERATE') {
                 return {
-                    label: '🟡 MODERATE',
+                    label: '🟡 MODERATE — Plan irrigation soon',
                     badgeClass: 'text-bg-warning text-dark',
-                    bannerClass: 'urgency-moderate',
+                    cardClass: 'action-moderate',
                 };
             }
 
             return {
-                label: '🟢 SAFE',
+                label: '🟢 SAFE — No immediate action needed',
                 badgeClass: 'text-bg-success',
-                bannerClass: 'urgency-safe',
+                cardClass: 'action-safe',
             };
         }
 
+        function resetPlanView(message) {
+            setSuccess('');
+            urgencyBadge.className = 'badge text-bg-secondary';
+            urgencyBadge.textContent = 'Waiting for analysis';
+
+            mainActionCard.classList.remove('action-safe', 'action-moderate', 'action-urgent');
+            mainActionCard.classList.add('action-moderate');
+            mainActionText.textContent = message || 'Select a crop and refresh the plan to get irrigation recommendations.';
+            locationLabel.textContent = 'Location unavailable';
+            weatherContextText.textContent = '🌤 Based on current weather conditions';
+
+            recommendedWater.textContent = '-- L';
+            bucketEstimate.textContent = '≈ -- buckets of water';
+            recommendationFormula.textContent = 'Recommended: -- L/m² × -- m² = -- L';
+            whyList.innerHTML = '';
+
+            const fallbackReason = document.createElement('li');
+            fallbackReason.textContent = message || 'No recommendation available yet.';
+            whyList.appendChild(fallbackReason);
+
+            delayWarning.classList.add('d-none');
+            delayWarning.textContent = '⚠️ If you delay irrigation: Soil may become too dry and stress crops.';
+
+            soilMoistureValue.textContent = '--%';
+            soilMoistureSummary.textContent = '💧 Soil Moisture: --% (--)';
+            soilMoistureBar.style.width = '0%';
+            soilMoistureBar.classList.remove('soil-safe', 'soil-moderate', 'soil-caution', 'soil-urgent');
+            soilMoistureBar.classList.add('soil-moderate');
+
+            nextIrrigationCountdown.textContent = '⏳ Next irrigation in: --';
+            nextIrrigationDate.textContent = '--';
+            frequencyDays.textContent = '--';
+            scheduleRecommendation.textContent = 'Schedule updates after weather analysis.';
+
+            lastRecommendedLiters = null;
+            lastKnownStatus = 'SAFE';
+        }
+
+        function clamp(value, minValue, maxValue) {
+            return Math.min(maxValue, Math.max(minValue, value));
+        }
+
+        function getCookie(name) {
+            const cookieString = document.cookie || '';
+            const parts = cookieString.split(';');
+
+            for (const part of parts) {
+                const cookie = part.trim();
+                if (cookie.startsWith(`${name}=`)) {
+                    return decodeURIComponent(cookie.slice(name.length + 1));
+                }
+            }
+
+            return '';
+        }
+
+        function getCsrfToken() {
+            const cookieToken = getCookie('csrftoken');
+            if (cookieToken) {
+                return cookieToken;
+            }
+
+            const hiddenInputToken = document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
+            if (hiddenInputToken && hiddenInputToken !== 'NOTPROVIDED') {
+                return hiddenInputToken;
+            }
+
+            const pageToken = document.getElementById('csrfToken')?.value;
+            if (pageToken && pageToken !== 'NOTPROVIDED') {
+                return pageToken;
+            }
+
+            return '';
+        }
+
         async function fetchJson(url, options = {}) {
-            const response = await fetch(url, options);
+            const requestOptions = {
+                credentials: 'same-origin',
+                ...options,
+            };
+
+            const method = String(requestOptions.method || 'GET').toUpperCase();
+            const isStateChanging = !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method);
+
+            if (isStateChanging) {
+                const csrfToken = getCsrfToken();
+                const headers = new Headers(requestOptions.headers || {});
+                headers.set('X-Requested-With', 'XMLHttpRequest');
+
+                if (csrfToken) {
+                    headers.set('X-CSRFToken', csrfToken);
+                }
+
+                requestOptions.headers = headers;
+            }
+
+            const response = await fetch(url, requestOptions);
             let payload = {};
             try {
                 payload = await response.json();
@@ -411,6 +765,7 @@
             const crops = Array.isArray(payload.crops) ? payload.crops : [];
 
             cropSelect.innerHTML = '';
+            cropMetaById.clear();
 
             if (!crops.length) {
                 hasAvailableCrops = false;
@@ -418,10 +773,14 @@
                 option.value = '';
                 option.textContent = 'No active crops available';
                 cropSelect.appendChild(option);
+                cropAreaSize.value = '';
+                cropAreaUnit.value = 'm2';
+                cropAreaHint.textContent = 'Set area for this crop to calculate water needed for that field.';
                 return false;
             }
 
             crops.forEach(crop => {
+                cropMetaById.set(Number(crop.id), crop);
                 const option = document.createElement('option');
                 option.value = crop.id;
                 option.textContent = `${toTitleCase(crop.name)} (${toTitleCase(crop.water_requirement)})`;
@@ -429,48 +788,75 @@
             });
 
             hasAvailableCrops = true;
+            syncAreaInputsWithSelection();
             return true;
         }
 
         function renderPlan(planPayload) {
+            setSuccess('');
             const status = String(planPayload.status || 'SAFE').toUpperCase();
+            const action = String(planPayload.action || '').toLowerCase();
+            lastKnownStatus = status;
             const irrigationMessage = planPayload.irrigation_message || 'No recommendation available.';
             const decisionFactors = Array.isArray(planPayload.decision_factors) ? planPayload.decision_factors : [];
             const moistureLabel = String(planPayload.soil_moisture_label || 'Moderate');
             const moisture = Number(planPayload.soil_moisture);
             const waterAmount = Number(planPayload.recommended_water_liters);
+            const waterPerM2 = Number(planPayload.water_per_m2);
+            const areaM2 = Number(planPayload.area_m2);
+            const nextHours = Number(planPayload.next_irrigation_in_hours);
+            const formulaText = String(planPayload.recommendation_formula || '').trim();
             const location = String(planPayload.location || '').trim();
             const config = urgencyConfig(status);
 
             locationLabel.textContent = location || 'Location unavailable';
+            weatherContextText.textContent = '🌤 Based on current weather conditions';
 
             urgencyBadge.className = `badge ${config.badgeClass}`;
             urgencyBadge.textContent = config.label;
 
-            recommendationBanner.classList.remove('urgency-safe', 'urgency-moderate', 'urgency-caution', 'urgency-urgent');
-            recommendationBanner.classList.add(config.bannerClass);
-            recommendationBanner.textContent = irrigationMessage;
+            mainActionCard.classList.remove('action-safe', 'action-moderate', 'action-urgent');
+            mainActionCard.classList.add(config.cardClass);
+            mainActionText.textContent = irrigationMessage;
 
             if (Number.isFinite(waterAmount)) {
-                recommendedWater.textContent = `${waterAmount.toFixed(2)} L`;
-            } else {
-                recommendedWater.textContent = '-- L';
-            }
+                lastRecommendedLiters = waterAmount;
+                recommendedWater.textContent = `${waterAmount.toFixed(1)} L`;
+                const bucketCount = estimateBucketCount(waterAmount);
+                bucketEstimate.textContent = `≈ ${bucketCount} bucket${bucketCount === 1 ? '' : 's'} of water`;
 
-            recommendationList.innerHTML = '';
-            if (!decisionFactors.length) {
-                const fallbackItem = document.createElement('li');
-                fallbackItem.textContent = 'No additional factors available.';
-                recommendationList.appendChild(fallbackItem);
+                if (formulaText) {
+                    recommendationFormula.textContent = formulaText;
+                } else if (Number.isFinite(waterPerM2) && Number.isFinite(areaM2)) {
+                    recommendationFormula.textContent = `Recommended: ${waterPerM2.toFixed(2)} L/m² × ${areaM2.toFixed(2)} m² = ${waterAmount.toFixed(2)} L`;
+                } else {
+                    recommendationFormula.textContent = 'Recommended: -- L/m² × -- m² = -- L';
+                }
+
+                logWaterAmount.value = waterAmount.toFixed(1);
             } else {
-                decisionFactors.forEach(reason => {
-                    const item = document.createElement('li');
-                    item.textContent = reason;
-                    recommendationList.appendChild(item);
-                });
+                lastRecommendedLiters = null;
+                recommendedWater.textContent = '-- L';
+                bucketEstimate.textContent = '≈ -- buckets of water';
+                recommendationFormula.textContent = 'Recommended: -- L/m² × -- m² = -- L';
             }
 
             const safeMoisture = Number.isFinite(moisture) ? clamp(moisture, 0, 100) : 0;
+            const simpleReasons = buildSimpleReasons(safeMoisture, decisionFactors);
+
+            whyList.innerHTML = '';
+            if (!simpleReasons.length) {
+                const fallbackItem = document.createElement('li');
+                fallbackItem.textContent = 'No additional reasons available.';
+                whyList.appendChild(fallbackItem);
+            } else {
+                simpleReasons.forEach(reason => {
+                    const item = document.createElement('li');
+                    item.textContent = reason;
+                    whyList.appendChild(item);
+                });
+            }
+
             soilMoistureValue.textContent = `${safeMoisture.toFixed(1)}%`;
             soilMoistureSummary.textContent = `💧 Soil Moisture: ${safeMoisture.toFixed(1)}% (${moistureLabel})`;
             soilMoistureBar.style.width = `${safeMoisture}%`;
@@ -483,6 +869,26 @@
                 soilMoistureBar.classList.add('soil-safe');
             }
 
+            if (status === 'URGENT') {
+                delayWarning.textContent = '⚠️ If you delay irrigation: Soil may become too dry and stress crops.';
+                delayWarning.classList.remove('d-none');
+            } else if (status === 'MODERATE') {
+                delayWarning.textContent = '⚠️ If you delay irrigation: Soil moisture may drop and affect crop growth.';
+                delayWarning.classList.remove('d-none');
+            } else {
+                delayWarning.classList.add('d-none');
+            }
+
+            if (Number.isFinite(nextHours)) {
+                if (action === 'irrigate' || nextHours <= 0) {
+                    nextIrrigationCountdown.textContent = '⏳ Next irrigation in: now';
+                } else if (nextHours < 1) {
+                    nextIrrigationCountdown.textContent = '⏳ Next irrigation in: less than 1 hour';
+                } else {
+                    nextIrrigationCountdown.textContent = `⏳ Next irrigation in: ${nextHours.toFixed(1)} hour(s)`;
+                }
+            }
+
             scheduleRecommendation.textContent = irrigationMessage;
         }
 
@@ -490,17 +896,21 @@
             const daily = Number(summary.daily_usage_liters || 0).toFixed(2);
             const weekly = Number(summary.weekly_usage_liters || 0).toFixed(2);
             const total = Number(summary.total_usage_liters || 0).toFixed(2);
+            const totalNumeric = Number(summary.total_usage_liters || 0);
 
             dailyUsage.textContent = `${daily} L`;
             weeklyUsage.textContent = `${weekly} L`;
             totalUsage.textContent = `${total} L`;
 
             const breakdown = Array.isArray(summary.daily_breakdown) ? summary.daily_breakdown : [];
+            const showEmptyState = breakdown.length === 0 && totalNumeric <= 0;
+            usageEmptyState.classList.toggle('d-none', !showEmptyState);
+
             const labels = breakdown.map(item => item.date);
             const values = breakdown.map(item => Number(item.water_amount || 0));
 
             const canvas = document.getElementById('usageChart');
-            if (!canvas) {
+            if (!canvas || typeof Chart === 'undefined') {
                 return;
             }
 
@@ -542,6 +952,37 @@
             usageChart.update('none');
         }
 
+        function renderHistory(records) {
+            const rows = Array.isArray(records) ? records : [];
+            historyTableBody.innerHTML = '';
+
+            if (!rows.length) {
+                historyEmptyState.classList.remove('d-none');
+                return;
+            }
+
+            historyEmptyState.classList.add('d-none');
+
+            rows.slice(0, 12).forEach(row => {
+                const tr = document.createElement('tr');
+
+                const dateTd = document.createElement('td');
+                dateTd.textContent = row.date || '--';
+
+                const waterTd = document.createElement('td');
+                const amount = Number(row.water_amount);
+                waterTd.textContent = Number.isFinite(amount) ? `${amount.toFixed(2)} L` : '--';
+
+                const methodTd = document.createElement('td');
+                methodTd.textContent = formatMethodLabel(row.method);
+
+                tr.appendChild(dateTd);
+                tr.appendChild(waterTd);
+                tr.appendChild(methodTd);
+                historyTableBody.appendChild(tr);
+            });
+        }
+
         function renderSchedule(schedulePayload) {
             const reminder = schedulePayload.reminder || {};
             if (reminder.show) {
@@ -557,12 +998,24 @@
             const cropSchedule = schedules.find(item => Number(item.crop_id) === selectedCropId);
 
             if (cropSchedule) {
+                const countdown = daysUntilLabel(cropSchedule.next_irrigation_date);
+                nextIrrigationCountdown.textContent = `⏳ Next irrigation in: ${countdown}`;
                 nextIrrigationDate.textContent = cropSchedule.next_irrigation_date || '--';
                 frequencyDays.textContent = cropSchedule.frequency_days ? `${cropSchedule.frequency_days} days` : '--';
                 if (cropSchedule.recommendation) {
                     scheduleRecommendation.textContent = cropSchedule.recommendation;
                 }
+            } else {
+                nextIrrigationCountdown.textContent = '⏳ Next irrigation in: --';
+                nextIrrigationDate.textContent = '--';
+                frequencyDays.textContent = '--';
             }
+        }
+
+        function focusLogForm() {
+            logIrrigationCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            logWaterAmount.focus();
+            logWaterAmount.select();
         }
 
         async function loadPlan() {
@@ -584,6 +1037,7 @@
             if (payload.usage_summary) {
                 renderUsage(payload.usage_summary);
             }
+            renderHistory(payload.records || []);
         }
 
         async function loadSchedule() {
@@ -593,14 +1047,122 @@
             renderSchedule(payload);
         }
 
+        async function saveIrrigationEvent() {
+            setError('');
+            setSuccess('');
+
+            const cropId = cropSelect.value;
+            if (!cropId) {
+                setError('Please select a crop before logging irrigation.');
+                return;
+            }
+
+            const amount = Number(logWaterAmount.value);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                setError('Please enter a valid water amount greater than zero.');
+                logWaterAmount.focus();
+                return;
+            }
+
+            const method = String(logMethod.value || 'manual').toLowerCase();
+
+            saveLogBtn.disabled = true;
+            try {
+                const payload = await fetchJson(LOG_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        crop_id: Number(cropId),
+                        water_amount: amount,
+                        method,
+                    }),
+                });
+
+                if (payload.usage_summary) {
+                    renderUsage(payload.usage_summary);
+                }
+
+                await Promise.all([loadHistory(), loadSchedule()]);
+
+                setSuccess('✅ Irrigation event saved. Great job keeping your crop hydrated.');
+            } catch (error) {
+                setError(error.message || 'Unable to save irrigation event.');
+            } finally {
+                saveLogBtn.disabled = false;
+            }
+        }
+
+        async function saveCropAreaSettings() {
+            setError('');
+            setSuccess('');
+
+            const cropId = Number(cropSelect.value);
+            if (!cropId) {
+                setError('Please select a crop before setting area.');
+                return;
+            }
+
+            const areaSizeValue = Number(cropAreaSize.value);
+            if (!Number.isFinite(areaSizeValue) || areaSizeValue <= 0) {
+                setError('Please enter a valid field area greater than zero.');
+                cropAreaSize.focus();
+                return;
+            }
+
+            const areaUnitValue = String(cropAreaUnit.value || 'm2').toLowerCase();
+            if (!['m2', 'acre', 'hectare'].includes(areaUnitValue)) {
+                setError('Please select a valid area unit (m², acre, hectare).');
+                return;
+            }
+
+            saveCropAreaBtn.disabled = true;
+            try {
+                const payload = await fetchJson(CROP_AREA_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        crop_id: cropId,
+                        area_size: areaSizeValue,
+                        area_unit: areaUnitValue,
+                    }),
+                });
+
+                const updatedCrop = payload.crop || {};
+                if (updatedCrop.id) {
+                    const previous = cropMetaById.get(Number(updatedCrop.id)) || {};
+                    cropMetaById.set(Number(updatedCrop.id), { ...previous, ...updatedCrop });
+                    syncAreaInputsWithSelection();
+                }
+
+                setSuccess('✅ Crop area saved. Irrigation recommendation now uses this area.');
+                await loadAllData();
+            } catch (error) {
+                setError(error.message || 'Unable to save crop area.');
+            } finally {
+                saveCropAreaBtn.disabled = false;
+            }
+        }
+
         async function loadAllData() {
             if (!cropSelect.value) {
                 resetPlanView('No active irrigation crops found. Ask admin to configure crop catalog.');
                 setError('No active irrigation crops found. Ask admin to configure crop catalog.');
+                renderUsage({
+                    daily_usage_liters: 0,
+                    weekly_usage_liters: 0,
+                    total_usage_liters: 0,
+                    daily_breakdown: [],
+                });
+                renderHistory([]);
                 return;
             }
 
             setError('');
+            setSuccess('');
             setLoading(true);
             try {
                 await Promise.all([loadPlan(), loadHistory(), loadSchedule()]);
@@ -623,6 +1185,7 @@
                         lat: Number(position.coords.latitude.toFixed(6)),
                         lon: Number(position.coords.longitude.toFixed(6)),
                     };
+                    setSuccess('');
                     loadAllData();
                 },
                 () => {
@@ -636,18 +1199,37 @@
             );
         }
 
-        cropSelect.addEventListener('change', loadAllData);
+        cropSelect.addEventListener('change', () => {
+            syncAreaInputsWithSelection();
+            loadAllData();
+        });
         refreshPlanBtn.addEventListener('click', loadAllData);
         useLocationBtn.addEventListener('click', handleUseMyLocation);
+        saveCropAreaBtn.addEventListener('click', saveCropAreaSettings);
+        irrigateNowBtn.addEventListener('click', () => {
+            if (Number.isFinite(lastRecommendedLiters) && lastRecommendedLiters > 0) {
+                logWaterAmount.value = lastRecommendedLiters.toFixed(1);
+            }
+            focusLogForm();
+        });
+        saveLogBtn.addEventListener('click', saveIrrigationEvent);
 
         async function initializeIrrigationModule() {
             setError('');
+            setSuccess('');
             setLoading(true);
             try {
                 const hasCrops = await loadCrops();
                 if (!hasCrops) {
                     resetPlanView('No active irrigation crops found. Ask admin to configure crop catalog.');
                     setError('No active irrigation crops found. Ask admin to configure crop catalog.');
+                    renderUsage({
+                        daily_usage_liters: 0,
+                        weekly_usage_liters: 0,
+                        total_usage_liters: 0,
+                        daily_breakdown: [],
+                    });
+                    renderHistory([]);
                     return;
                 }
 
