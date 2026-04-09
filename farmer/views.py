@@ -812,8 +812,14 @@ def irrigation_crops_api(request):
             {
                 'id': crop.id,
                 'name': crop.name,
+                'area_size': float(crop.area_size),
+                'area_unit': crop.area_unit,
+                'area_m2': float(crop.area_size_m2),
                 'water_requirement': crop.water_requirement,
                 'base_water_liters': float(crop.base_water_liters),
+                'water_per_m2': float(crop.water_per_m2),
+                'moisture_threshold': int(crop.moisture_threshold),
+                'retention_factor': float(crop.retention_factor),
                 'ideal_moisture': int(crop.ideal_moisture),
                 'irrigation_frequency_days': int(crop.irrigation_frequency_days),
             }
@@ -833,6 +839,54 @@ def _parse_irrigation_crop_id(raw_value):
         raise ValueError('crop_id must be greater than zero.')
 
     return crop_id
+
+
+@login_required(login_url='login')
+@require_http_methods(['POST'])
+def irrigation_crop_area_api(request):
+    """Update area configuration for a specific irrigation crop."""
+    if request.user.role != 'farmer':
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    try:
+        payload = json.loads(request.body)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid JSON payload.'}, status=400)
+
+    try:
+        crop_id = _parse_irrigation_crop_id(payload.get('crop_id'))
+    except ValueError as exc:
+        return JsonResponse({'error': str(exc)}, status=400)
+
+    try:
+        area_size = float(payload.get('area_size', 0))
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'area_size must be a number.'}, status=400)
+
+    if area_size <= 0:
+        return JsonResponse({'error': 'area_size must be greater than zero.'}, status=400)
+
+    area_unit = str(payload.get('area_unit', 'm2') or 'm2').lower().strip()
+    if area_unit not in {'m2', 'acre', 'hectare'}:
+        return JsonResponse({'error': 'area_unit must be m2, acre, or hectare.'}, status=400)
+
+    crop = get_object_or_404(IrrigationCrop, id=crop_id, farmer=request.user)
+    crop.area_size = round(area_size, 2)
+    crop.area_unit = area_unit
+    crop.save(update_fields=['area_size', 'area_unit', 'updated_at'])
+
+    return JsonResponse(
+        {
+            'message': 'Crop area updated successfully.',
+            'crop': {
+                'id': crop.id,
+                'name': crop.name,
+                'area_size': float(crop.area_size),
+                'area_unit': crop.area_unit,
+                'area_m2': float(crop.area_size_m2),
+            },
+        }
+    )
 
 
 @login_required(login_url='login')
@@ -867,16 +921,29 @@ def irrigation_plan_api(request):
         logger.exception('Unexpected irrigation plan failure for crop_id=%s', crop_id)
         return JsonResponse({'error': 'Unexpected error while creating irrigation plan.'}, status=500)
 
-    plan = generate_irrigation_plan(current_weather, crop)
+    plan = generate_irrigation_plan(current_weather, crop, user=request.user)
     upsert_irrigation_schedule(crop, plan)
 
     response = {
         'location': location_label,
         'status': plan['status'],
+        'action': plan['action'],
+        'reason': plan['reason'],
         'irrigation_message': plan['irrigation_message'],
+        'message': plan['message'],
         'soil_moisture': plan['soil_moisture'],
         'soil_moisture_label': plan['soil_moisture_label'],
+        'moisture_threshold': plan['moisture_threshold'],
         'recommended_water_liters': plan['recommended_water_liters'],
+        'water_per_m2': plan['water_per_m2'],
+        'area_m2': plan['area_m2'],
+        'recommendation_formula': plan['recommendation_formula'],
+        'next_irrigation_date': plan['next_irrigation_date'].isoformat(),
+        'next_irrigation_in_hours': plan['next_irrigation_in_hours'],
+        'frequency_days': plan['frequency_days'],
+        'last_irrigation_at': plan['last_irrigation_at'],
+        'memory_factor': plan['memory_factor'],
+        'retention_factor': plan['retention_factor'],
         'decision_factors': plan['decision_factors'],
     }
     return JsonResponse(response)
@@ -911,7 +978,8 @@ def irrigation_log_api(request):
 
     method = str(payload.get('method', 'manual') or 'manual').lower()
     if method not in dict(IrrigationRecord.METHOD_CHOICES):
-        return JsonResponse({'error': 'method must be manual or automatic.'}, status=400)
+        valid_methods = ', '.join(dict(IrrigationRecord.METHOD_CHOICES).keys())
+        return JsonResponse({'error': f'method must be one of: {valid_methods}.'}, status=400)
 
     date_value = payload.get('date')
     if date_value:
@@ -924,6 +992,7 @@ def irrigation_log_api(request):
 
     record = IrrigationRecord.objects.create(
         crop=crop,
+        user=request.user,
         date=irrigation_date,
         water_amount=round(water_amount, 2),
         method=method,

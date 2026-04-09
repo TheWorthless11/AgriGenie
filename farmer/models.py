@@ -25,6 +25,17 @@ class Crop(models.Model):
         default='B',
         help_text="Quality grade of your crop"
     )
+    area_size = models.FloatField(
+        default=1.0,
+        validators=[MinValueValidator(0.01)],
+        help_text='Field size used for irrigation planning',
+    )
+    area_unit = models.CharField(
+        max_length=10,
+        choices=[('m2', 'm²'), ('acre', 'Acre'), ('hectare', 'Hectare')],
+        default='m2',
+        help_text='Unit of the field size (m², acre, hectare)',
+    )
     
     # Optional farmer details
     description = models.TextField(blank=True, null=True, help_text="Additional details about your specific crop listing")
@@ -54,6 +65,12 @@ class Crop(models.Model):
     def crop_type(self):
         """For backward compatibility with existing code"""
         return self.master_crop.crop_type if self.master_crop else 'Unknown'
+
+    @property
+    def area_size_m2(self):
+        """Normalize listing area into square meters."""
+        factor = AREA_TO_M2_FACTOR.get(str(self.area_unit or 'm2').lower(), 1.0)
+        return round(float(self.area_size or 0) * factor, 2)
     
     def deduct_quantity(self, amount):
         """Deduct quantity when order is accepted. Mark out-of-stock if zero."""
@@ -249,6 +266,18 @@ IRRIGATION_WATER_REQUIREMENT_CHOICES = (
     ('high', 'High'),
 )
 
+AREA_UNIT_CHOICES = (
+    ('m2', 'm²'),
+    ('acre', 'Acre'),
+    ('hectare', 'Hectare'),
+)
+
+AREA_TO_M2_FACTOR = {
+    'm2': 1.0,
+    'acre': 4046.86,
+    'hectare': 10000.0,
+}
+
 
 class IrrigationCropCatalog(models.Model):
     """Admin-controlled crop catalog for irrigation settings."""
@@ -260,6 +289,15 @@ class IrrigationCropCatalog(models.Model):
         default='medium',
     )
     base_water_liters = models.FloatField(validators=[MinValueValidator(0)], default=9.0)
+    water_per_m2 = models.FloatField(validators=[MinValueValidator(0)], default=2.0)
+    moisture_threshold = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        default=45,
+    )
+    retention_factor = models.FloatField(
+        validators=[MinValueValidator(0), MaxValueValidator(2)],
+        default=0.5,
+    )
     ideal_moisture = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
     irrigation_frequency_days = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(30)],
@@ -283,8 +321,19 @@ class IrrigationCrop(models.Model):
 
     farmer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='irrigation_crops')
     name = models.CharField(max_length=100)
+    area_size = models.FloatField(default=1.0, validators=[MinValueValidator(0.01)])
+    area_unit = models.CharField(max_length=10, choices=AREA_UNIT_CHOICES, default='m2')
     water_requirement = models.CharField(max_length=10, choices=IRRIGATION_WATER_REQUIREMENT_CHOICES, default='medium')
     base_water_liters = models.FloatField(validators=[MinValueValidator(0)], default=9.0)
+    water_per_m2 = models.FloatField(validators=[MinValueValidator(0)], default=2.0)
+    moisture_threshold = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        default=45,
+    )
+    retention_factor = models.FloatField(
+        validators=[MinValueValidator(0), MaxValueValidator(2)],
+        default=0.5,
+    )
     ideal_moisture = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)])
     irrigation_frequency_days = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(30)],
@@ -300,16 +349,25 @@ class IrrigationCrop(models.Model):
     def __str__(self):
         return f"{self.name.title()} ({self.water_requirement}, {self.base_water_liters}L)"
 
+    @property
+    def area_size_m2(self):
+        """Normalize crop area into square meters."""
+        factor = AREA_TO_M2_FACTOR.get(str(self.area_unit or 'm2').lower(), 1.0)
+        return round(float(self.area_size or 0) * factor, 2)
+
 
 class IrrigationRecord(models.Model):
     """Logged irrigation events for water usage tracking."""
 
     METHOD_CHOICES = (
         ('manual', 'Manual'),
-        ('automatic', 'Automatic'),
+        ('pump', 'Pump'),
+        ('drip', 'Drip'),
+        ('automatic', 'Automatic (Legacy)'),
     )
 
-    crop = models.ForeignKey(IrrigationCrop, on_delete=models.CASCADE, related_name='irrigation_records')
+    crop = models.ForeignKey(IrrigationCrop, on_delete=models.CASCADE, related_name='irrigation_records', null=True, blank=True)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='irrigation_records', null=True, blank=True)
     date = models.DateField(default=timezone.localdate)
     water_amount = models.FloatField(validators=[MinValueValidator(0)])
     method = models.CharField(max_length=10, choices=METHOD_CHOICES, default='manual')
@@ -319,7 +377,8 @@ class IrrigationRecord(models.Model):
         ordering = ['-date', '-created_at']
 
     def __str__(self):
-        return f"{self.crop.name} - {self.water_amount}L on {self.date}"
+        crop_name = self.crop.name if self.crop else 'Unknown Crop'
+        return f"{crop_name} - {self.water_amount}L on {self.date}"
 
 
 class IrrigationSchedule(models.Model):

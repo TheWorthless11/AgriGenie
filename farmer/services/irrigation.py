@@ -3,16 +3,40 @@ from datetime import timedelta
 from django.db.models import Sum
 from django.utils import timezone
 
-from farmer.models import IrrigationCrop, IrrigationCropCatalog, IrrigationSchedule
+from farmer.models import Crop, IrrigationCrop, IrrigationCropCatalog, IrrigationSchedule
+from farmer.services.irrigation_service import get_irrigation_recommendation
 
 
 def _normalize_crop_name(value):
     return str(value or '').strip().lower()
 
 
+def _latest_crop_area_map(user):
+    """Return latest field-size values keyed by normalized crop name."""
+    area_map = {}
+
+    listings = Crop.objects.filter(farmer=user).select_related('master_crop').order_by('-updated_at', '-created_at')
+    for listing in listings:
+        if listing.master_crop_id:
+            listing_name = _normalize_crop_name(getattr(listing.master_crop, 'crop_name', ''))
+        else:
+            listing_name = _normalize_crop_name(getattr(listing, 'crop_name', ''))
+
+        if not listing_name or listing_name in area_map:
+            continue
+
+        area_map[listing_name] = {
+            'area_size': float(getattr(listing, 'area_size', 1.0) or 1.0),
+            'area_unit': str(getattr(listing, 'area_unit', 'm2') or 'm2').lower(),
+        }
+
+    return area_map
+
+
 def ensure_default_irrigation_crops(user):
     """Sync farmer crop profiles from active admin catalog and return active crops."""
     catalog_crops = list(IrrigationCropCatalog.objects.filter(is_active=True).order_by('name'))
+    latest_area_by_name = _latest_crop_area_map(user)
 
     if not catalog_crops:
         return IrrigationCrop.objects.none()
@@ -30,8 +54,13 @@ def ensure_default_irrigation_crops(user):
             farmer=user,
             name=normalized_name,
             defaults={
+                'area_size': latest_area_by_name.get(normalized_name, {}).get('area_size', 1.0),
+                'area_unit': latest_area_by_name.get(normalized_name, {}).get('area_unit', 'm2'),
                 'water_requirement': catalog.water_requirement,
                 'base_water_liters': catalog.base_water_liters,
+                'water_per_m2': catalog.water_per_m2,
+                'moisture_threshold': catalog.moisture_threshold,
+                'retention_factor': catalog.retention_factor,
                 'ideal_moisture': catalog.ideal_moisture,
                 'irrigation_frequency_days': catalog.irrigation_frequency_days,
             },
@@ -46,6 +75,18 @@ def ensure_default_irrigation_crops(user):
         if float(crop_obj.base_water_liters) != float(catalog.base_water_liters):
             crop_obj.base_water_liters = catalog.base_water_liters
             changed_fields.append('base_water_liters')
+
+        if float(crop_obj.water_per_m2) != float(catalog.water_per_m2):
+            crop_obj.water_per_m2 = catalog.water_per_m2
+            changed_fields.append('water_per_m2')
+
+        if int(crop_obj.moisture_threshold) != int(catalog.moisture_threshold):
+            crop_obj.moisture_threshold = catalog.moisture_threshold
+            changed_fields.append('moisture_threshold')
+
+        if float(crop_obj.retention_factor) != float(catalog.retention_factor):
+            crop_obj.retention_factor = catalog.retention_factor
+            changed_fields.append('retention_factor')
 
         if int(crop_obj.ideal_moisture) != int(catalog.ideal_moisture):
             crop_obj.ideal_moisture = catalog.ideal_moisture
@@ -76,10 +117,20 @@ def get_crop_profile(crop):
     if water_need not in {'low', 'medium', 'high'}:
         water_need = 'medium'
 
+    area_size = float(getattr(crop, 'area_size', 1.0) or 1.0)
+    area_unit = str(getattr(crop, 'area_unit', 'm2') or 'm2').lower()
+    area_m2 = float(getattr(crop, 'area_size_m2', area_size))
+
     return {
         'name': crop_name or str(getattr(crop, 'name', 'crop')).strip().lower(),
         'water_need': water_need,
+        'area_size': round(max(area_size, 0.01), 2),
+        'area_unit': area_unit,
+        'area_m2': round(max(area_m2, 0.01), 2),
         'base_water_liters': float(getattr(crop, 'base_water_liters', 9.0) or 9.0),
+        'water_per_m2': round(max(float(getattr(crop, 'water_per_m2', 2.0) or 2.0), 0.0), 3),
+        'moisture_threshold': int(_clamp(int(getattr(crop, 'moisture_threshold', 45) or 45), 0, 100)),
+        'retention_factor': round(max(float(getattr(crop, 'retention_factor', 0.5) or 0.5), 0.0), 3),
         'ideal_moisture': int(_clamp(int(getattr(crop, 'ideal_moisture', 60) or 60), 0, 100)),
         'irrigation_frequency_days': int(
             _clamp(int(getattr(crop, 'irrigation_frequency_days', 3) or 3), 1, 30)
@@ -129,7 +180,7 @@ def determine_irrigation_status(soil_moisture, rain_probability, condition):
 def get_water_amount(crop, soil_moisture):
     """Return recommended irrigation water amount in liters."""
     crop_profile = get_crop_profile(crop)
-    base_liters = float(crop_profile.get('base_water_liters', 9.0))
+    base_liters = float(crop_profile.get('water_per_m2', 2.0)) * float(crop_profile.get('area_m2', 1.0))
 
     if soil_moisture < 40:
         base_liters *= 1.3
@@ -169,32 +220,80 @@ def calculate_frequency_days(weather, crop, status):
     return int(_clamp(frequency_days, 1, 30))
 
 
-def generate_irrigation_plan(weather, crop):
-    """Generate irrigation recommendation from weather, moisture simulation, and crop profile."""
+def _status_from_memory_recommendation(action, effective_moisture, moisture_threshold):
+    if action == 'irrigate':
+        if effective_moisture <= max(0.0, moisture_threshold - 10.0):
+            return 'URGENT'
+        return 'MODERATE'
+    return 'SAFE'
+
+
+def generate_irrigation_plan(weather, crop, user=None):
+    """Generate irrigation recommendation from weather, crop profile, and irrigation memory."""
     temp_c = float(weather.get('temp_c', weather.get('temperature', 0)) or 0)
     humidity = int(weather.get('humidity', 0) or 0)
     rain_probability = int(weather.get('rain_probability', 0) or 0)
     wind_speed = float(weather.get('wind_speed', 0) or 0)
     condition = str(weather.get('condition', '') or '').lower()
+
+    base_soil_moisture = estimate_soil_moisture(temp_c, humidity, rain_probability, wind_speed)
     crop_profile = get_crop_profile(crop)
 
-    soil_moisture = estimate_soil_moisture(temp_c, humidity, rain_probability, wind_speed)
-    soil_moisture_label = get_soil_moisture_label(soil_moisture)
-    status, irrigation_message = determine_irrigation_status(soil_moisture, rain_probability, condition)
-    rain_expected = _is_rain_expected(rain_probability, condition)
-
-    frequency_days = calculate_frequency_days(weather, crop, status)
-    recommended_water_liters = 0.0 if rain_expected else get_water_amount(crop, soil_moisture)
-
-    next_irrigation_date = (
-        timezone.localdate()
-        if (status == 'URGENT' and not rain_expected)
-        else (timezone.localdate() + timedelta(days=frequency_days))
+    recommendation = get_irrigation_recommendation(
+        user=user,
+        crop=crop,
+        weather_data=weather,
+        soil_moisture=base_soil_moisture,
     )
 
+    action = str(recommendation.get('action', 'no_irrigation') or 'no_irrigation').lower()
+    reason = str(recommendation.get('reason', 'optimal') or 'optimal').lower()
+    irrigation_message = str(recommendation.get('message', '') or 'Soil moisture is sufficient')
+
+    moisture_threshold = float(recommendation.get('moisture_threshold', 45.0) or 45.0)
+    effective_soil_moisture = float(recommendation.get('effective_moisture', base_soil_moisture) or base_soil_moisture)
+    soil_moisture = round(_clamp(effective_soil_moisture, 0.0, 100.0), 1)
+    soil_moisture_label = get_soil_moisture_label(soil_moisture)
+    status = _status_from_memory_recommendation(action, soil_moisture, moisture_threshold)
+
+    rain_expected = bool(recommendation.get('rain_expected', _is_rain_expected(rain_probability, condition)))
+    next_irrigation_in_hours = recommendation.get('next_irrigation_in_hours')
+    area_m2 = float(recommendation.get('area_m2', crop_profile.get('area_m2', 1.0)) or crop_profile.get('area_m2', 1.0))
+    water_per_m2 = float(recommendation.get('water_per_m2', crop_profile.get('water_per_m2', 2.0)) or crop_profile.get('water_per_m2', 2.0))
+    recommendation_formula = str(recommendation.get('recommendation_formula', '') or '')
+
+    try:
+        next_irrigation_in_hours = max(0.0, float(next_irrigation_in_hours))
+    except (TypeError, ValueError):
+        next_irrigation_in_hours = None
+
+    frequency_days = calculate_frequency_days(weather, crop, status)
+    recommended_water_liters = float(recommendation.get('recommended_water_liters', 0.0) or 0.0)
+    if action != 'irrigate':
+        recommended_water_liters = 0.0
+
+    if status == 'URGENT' and not rain_expected and (next_irrigation_in_hours is None or next_irrigation_in_hours <= 0):
+        next_irrigation_date = timezone.localdate()
+    elif next_irrigation_in_hours is not None:
+        next_irrigation_date = (timezone.now() + timedelta(hours=next_irrigation_in_hours)).date()
+    else:
+        next_irrigation_date = timezone.localdate() + timedelta(days=frequency_days)
+
     decision_factors = []
+    if recommendation.get('last_irrigation_at'):
+        hours_ago = recommendation.get('last_irrigation_hours_ago')
+        if hours_ago is None:
+            decision_factors.append('🧠 Last irrigation history is available')
+        else:
+            decision_factors.append(f'🧠 Last irrigation was {float(hours_ago):.1f} hour(s) ago')
+    else:
+        decision_factors.append('🧠 No irrigation history yet')
+
     decision_factors.append('🌧️ Rain expected' if rain_expected else '🌤️ No rain expected')
-    decision_factors.append(f'💧 {soil_moisture_label} soil moisture')
+    decision_factors.append(f'💧 Effective soil moisture: {soil_moisture:.1f}%')
+    decision_factors.append(f'🎯 Moisture threshold: {moisture_threshold:.1f}%')
+    decision_factors.append(f'📐 Field size: {area_m2:.2f} m²')
+    decision_factors.append(f'💦 Water rate: {water_per_m2:.2f} L/m²')
 
     if temp_c > 32:
         decision_factors.append('🔥 High temperature conditions')
@@ -204,14 +303,33 @@ def generate_irrigation_plan(weather, crop):
     decision_factors.append(f'🌱 {crop_profile["name"].title()} crop ({crop_profile["water_need"]} water need)')
     decision_factors.append(f'📅 Base frequency: every {crop_profile["irrigation_frequency_days"]} day(s)')
 
+    if reason == 'recent_irrigation':
+        decision_factors.append('⏱️ Recent irrigation memory is active')
+
+    if recommendation_formula:
+        decision_factors.append(f'🧮 {recommendation_formula}')
+
     return {
+        'action': action,
+        'reason': reason,
         'status': status,
         'irrigation_message': irrigation_message,
+        'message': irrigation_message,
         'soil_moisture': soil_moisture,
         'soil_moisture_label': soil_moisture_label,
+        'raw_soil_moisture': round(base_soil_moisture, 1),
+        'effective_soil_moisture': soil_moisture,
+        'moisture_threshold': round(moisture_threshold, 1),
         'recommended_water_liters': recommended_water_liters,
+        'water_per_m2': round(water_per_m2, 3),
+        'area_m2': round(area_m2, 2),
+        'recommendation_formula': recommendation_formula,
         'next_irrigation_date': next_irrigation_date,
+        'next_irrigation_in_hours': next_irrigation_in_hours,
         'frequency_days': frequency_days,
+        'last_irrigation_at': recommendation.get('last_irrigation_at'),
+        'memory_factor': recommendation.get('memory_factor'),
+        'retention_factor': recommendation.get('retention_factor', recommendation.get('memory_factor')),
         'decision_factors': decision_factors,
     }
 
