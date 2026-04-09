@@ -65,6 +65,7 @@ urlpatterns = [
     path('farmer/api/price-history/', farmer_views.price_history_api, name='price_history_api'),
     path('farmer/irrigation-module/', farmer_views.irrigation_module, name='irrigation_module'),
     path('api/crops/', farmer_views.irrigation_crops_api, name='irrigation_crops_api'),
+    path('api/irrigation/crop-area/', farmer_views.irrigation_crop_area_api, name='irrigation_crop_area_api'),
     path('api/irrigation/plan/', farmer_views.irrigation_plan_api, name='irrigation_plan_api'),
     path('api/irrigation/log/', farmer_views.irrigation_log_api, name='irrigation_log_api'),
     path('api/irrigation/history/', farmer_views.irrigation_history_api, name='irrigation_history_api'),

@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 
 # 2. Load Environment Variables
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+# Set DOTENV_OVERRIDE=False in containers so compose env vars (DB_HOST=db, REDIS_HOST=redis) take priority.
+dotenv_override = os.getenv('DOTENV_OVERRIDE', 'True').strip().lower() in {'1', 'true', 'yes', 'on'}
+load_dotenv(os.path.join(BASE_DIR, '.env'), override=dotenv_override)
 
 # 3. Security Settings
 SECRET_KEY = os.getenv('SECRET_KEY')

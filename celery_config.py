@@ -3,7 +3,7 @@ Celery configuration
 """
 
 import os
-from celery_config import Celery
+from celery import Celery
 
 # 1. Point to the Level 2 settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
