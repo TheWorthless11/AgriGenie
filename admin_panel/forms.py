@@ -52,6 +52,9 @@ class IrrigationCropCatalogForm(forms.ModelForm):
             'name',
             'water_requirement',
             'base_water_liters',
+            'water_per_m2',
+            'moisture_threshold',
+            'retention_factor',
             'ideal_moisture',
             'irrigation_frequency_days',
             'is_active',
@@ -69,6 +72,29 @@ class IrrigationCropCatalogForm(forms.ModelForm):
                     'class': 'form-control',
                     'min': '0',
                     'step': '0.1',
+                }
+            ),
+            'water_per_m2': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'min': '0',
+                    'step': '0.01',
+                }
+            ),
+            'moisture_threshold': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'min': '0',
+                    'max': '100',
+                    'step': '1',
+                }
+            ),
+            'retention_factor': forms.NumberInput(
+                attrs={
+                    'class': 'form-control',
+                    'min': '0',
+                    'max': '2',
+                    'step': '0.01',
                 }
             ),
             'ideal_moisture': forms.NumberInput(
