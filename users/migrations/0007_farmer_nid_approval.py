@@ -12,13 +12,13 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='farmerprofile',
             name='nid_number',
-            field=models.CharField(default='', help_text='National ID / Identity Card Number', max_length=50, unique=True),
+            field=models.CharField(blank=True, null=True, help_text='National ID / Identity Card Number', max_length=50, unique=True),
             preserve_default=False,
         ),
         migrations.AddField(
             model_name='farmerprofile',
             name='nid_card_image',
-            field=models.ImageField(default='', help_text='Clear photo of NID/Identity Card', upload_to='nid_cards/'),
+            field=models.ImageField(blank=True, null=True, help_text='Clear photo of NID/Identity Card', upload_to='nid_cards/'),
             preserve_default=False,
         ),
         migrations.AddField(
