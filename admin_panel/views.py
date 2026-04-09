@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db.models import Count, Avg, Q
 from django.db import connection, IntegrityError, transaction
 from django.utils import timezone
+from django.http import JsonResponse
 from datetime import timedelta
 
 from admin_panel.models import UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog, UserReport, MasterCrop
@@ -1102,12 +1103,33 @@ def delete_user(request, user_id):
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def toggle_user_approval(request, user_id):
-    """Approve or revoke approval for a user"""
+    """Approve or revoke approval for a user (both farmers and buyers)"""
     user = get_object_or_404(CustomUser, id=user_id)
     
     if request.method == 'POST':
         if user.role == 'farmer':
-            messages.info(request, 'Farmers do not require approval.')
+            profile = FarmerProfile.objects.filter(user=user).first()
+            if profile:
+                profile.is_approved = not profile.is_approved
+                profile.approval_status = 'approved' if profile.is_approved else 'rejected'
+                profile.save()
+                status = "approved" if profile.is_approved else "revoked"
+                
+                # Update UserApproval record
+                approval, _ = UserApproval.objects.get_or_create(user=user)
+                approval.status = 'approved' if profile.is_approved else 'rejected'
+                approval.reviewed_by = request.user
+                approval.reviewed_at = timezone.now()
+                approval.save()
+                
+                # Notify user
+                Notification.objects.create(
+                    user=user,
+                    notification_type='system',
+                    title=f'Account {status.title()}',
+                    message=f'Your farmer account has been {status} by admin. You can now {"access all features" if profile.is_approved else "no longer access premium features"}.'
+                )
+                messages.success(request, f'Farmer "{user.username}" has been {status}.')
 
         elif user.role == 'buyer':
             profile = BuyerProfile.objects.filter(user=user).first()
@@ -1200,3 +1222,196 @@ def import_crop_variants(request):
         'title': 'Import Crop Variants',
     }
     return render(request, 'admin_panel/import_crop_variants.html', context)
+
+
+
+# ========== NEW USER MANAGEMENT FEATURES ==========
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def user_detail_view(request, user_id):
+    """Enhanced view to show user details with documents and actions"""
+    user = get_object_or_404(CustomUser, id=user_id)
+    
+    # Get user documents based on role
+    approval = UserApproval.objects.filter(user=user).first()
+    documents = []
+    
+    if user.role == 'farmer':
+        profile = FarmerProfile.objects.filter(user=user).first()
+        if approval:
+            if approval.nid_number:
+                documents.append({
+                    'type': 'NID Number',
+                    'value': approval.nid_number
+                })
+            if approval.nid_card_photo:
+                documents.append({
+                    'type': 'NID Card Photo',
+                    'file': approval.nid_card_photo
+                })
+        crops_count = Crop.objects.filter(farmer=user).count()
+        orders_count = Order.objects.filter(farmer=user).count()
+        
+        context = {
+            'user': user,
+            'profile': profile,
+            'approval': approval,
+            'documents': documents,
+            'crops_count': crops_count,
+            'orders_count': orders_count,
+            'title': f'{user.username} - Details'
+        }
+    elif user.role == 'buyer':
+        profile = BuyerProfile.objects.filter(user=user).first()
+        if approval:
+            if approval.documents:
+                documents.append({
+                    'type': 'Business Documents',
+                    'file': approval.documents
+                })
+            if approval.legal_paper_photo:
+                documents.append({
+                    'type': 'Legal Paper Photo',
+                    'file': approval.legal_paper_photo
+                })
+            if approval.company_photo:
+                documents.append({
+                    'type': 'Company Photo',
+                    'file': approval.company_photo
+                })
+        orders_count = Order.objects.filter(buyer=user).count()
+        
+        context = {
+            'user': user,
+            'profile': profile,
+            'approval': approval,
+            'documents': documents,
+            'orders_count': orders_count,
+            'title': f'{user.username} - Details'
+        }
+    else:
+        context = {'user': user, 'title': f'{user.username} - Details'}
+    
+    return render(request, 'admin_panel/user_detail_full.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def block_user(request, user_id):
+    """Block a user from accessing the platform"""
+    user = get_object_or_404(CustomUser, id=user_id)
+    
+    if user == request.user:
+        messages.error(request, 'You cannot block your own account!')
+        return redirect('user_management')
+    
+    if request.method == 'POST':
+        reason = request.POST.get('reason', 'No reason provided').strip()
+        user.is_blocked_by_admin = True
+        user.blocked_reason = reason
+        user.blocked_date = timezone.now()
+        user.is_active = False  # Also deactivate
+        user.save()
+        
+        # Create notification for user
+        Notification.objects.create(
+            user=user,
+            notification_type='system',
+            title='Account Blocked',
+            message=f'Your account has been blocked by an administrator. Reason: {reason}'
+        )
+        
+        messages.success(request, f'User "{user.username}" has been blocked successfully.')
+        return redirect('user_management')
+    
+    context = {
+        'user_to_block': user,
+        'title': f'Block User - {user.username}',
+    }
+    return render(request, 'admin_panel/block_user_confirm.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def unblock_user(request, user_id):
+    """Unblock a user"""
+    user = get_object_or_404(CustomUser, id=user_id)
+    
+    if request.method == 'POST':
+        user.is_blocked_by_admin = False
+        user.blocked_reason = ''
+        user.blocked_date = None
+        user.is_active = True
+        user.save()
+        
+        # Create notification for user
+        Notification.objects.create(
+            user=user,
+            notification_type='system',
+            title='Account Unblocked',
+            message='Your account has been unblocked by an administrator. You can now access the platform again.'
+        )
+        
+        messages.success(request, f'User "{user.username}" has been unblocked successfully.')
+        return redirect('user_management')
+    
+    context = {
+        'user_to_unblock': user,
+        'title': f'Unblock User - {user.username}',
+    }
+    return render(request, 'admin_panel/unblock_user_confirm.html', context)
+
+
+def check_nid_uniqueness(request):
+    """AJAX endpoint to check if NID number is already taken"""
+    if request.method == 'GET':
+        nid = request.GET.get('nid', '').strip()
+        user_id = request.GET.get('user_id', '')  # For edit mode
+        
+        if not nid:
+            return JsonResponse({'available': False, 'message': 'NID number cannot be empty'})
+        
+        # Check if NID exists
+        existing = UserApproval.objects.filter(nid_number=nid).first()
+        
+        if existing:
+            # If we're editing and it's the same user's NID, it's OK
+            if user_id and str(existing.user_id) == str(user_id):
+                return JsonResponse({'available': True, 'message': 'NID is available'})
+            else:
+                return JsonResponse({
+                    'available': False,
+                    'message': f'This NID number is already registered by farmer: {existing.user.username}'
+                })
+        
+        return JsonResponse({'available': True, 'message': 'NID is available'})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+def check_company_name_uniqueness(request):
+    """AJAX endpoint to check if company name is already taken"""
+    if request.method == 'GET':
+        company_name = request.GET.get('company_name', '').strip()
+        user_id = request.GET.get('user_id', '')  # For edit mode
+        
+        if not company_name:
+            return JsonResponse({'available': False, 'message': 'Company name cannot be empty'})
+        
+        # Check if company name exists
+        existing = BuyerProfile.objects.filter(company_name__iexact=company_name).first()
+        
+        if existing:
+            # If we're editing and it's the same buyer's company, it's OK
+            if user_id and str(existing.user_id) == str(user_id):
+                return JsonResponse({'available': True, 'message': 'Company name is available'})
+            else:
+                return JsonResponse({
+                    'available': False,
+                    'message': f'This company name is already registered by: {existing.user.first_name or existing.user.username}'
+                })
+        
+        return JsonResponse({'available': True, 'message': 'Company name is available'})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)

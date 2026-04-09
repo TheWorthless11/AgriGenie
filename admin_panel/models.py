@@ -63,7 +63,7 @@ class UserApproval(models.Model):
     company_photo = models.ImageField(upload_to='approvals/company/', null=True, blank=True)
     
     # Farmer approval fields
-    nid_number = models.CharField(max_length=100, null=True, blank=True)
+    nid_number = models.CharField(max_length=100, null=True, blank=True, unique=True, db_index=True)
     nid_card_photo = models.ImageField(upload_to='approvals/nid/', null=True, blank=True)
     
     reason_for_rejection = models.TextField(blank=True, null=True)

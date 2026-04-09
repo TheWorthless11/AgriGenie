@@ -174,12 +174,10 @@ def delete_chat(request, room_id):
 
 
 @login_required
-@farmer_approval_required('marketplace')
 @require_POST
 def send_message_ajax(request, room_id):
     """
-    AJAX endpoint to send a message (fallback when WebSocket not available).
-    Farmers must be approved to send messages.
+    AJAX endpoint to send a message (works for both farmers and buyers).
     """
     user = request.user
     room = get_object_or_404(ChatRoom, id=room_id)
@@ -218,13 +216,12 @@ def send_message_ajax(request, room_id):
 
 
 @login_required
-@farmer_approval_required('marketplace')
 @require_GET
 def get_messages_ajax(request, room_id):
     """
-    AJAX endpoint to get messages (polling fallback when WebSocket not available).
-    Returns messages after a given message ID or timestamp.
-    Farmers must be approved to view messages.
+    AJAX endpoint to get messages (polling fallback for real-time updates in popups).
+    Returns messages after a given message ID.
+    Available to both farmers and buyers.
     """
     user = request.user
     room = get_object_or_404(ChatRoom, id=room_id)
@@ -258,4 +255,213 @@ def get_messages_ajax(request, room_id):
     return JsonResponse({
         'messages': messages_data,
         'current_user_id': user.id,
+    })
+
+
+@login_required
+@require_GET
+def get_unread_conversations(request):
+    """
+    Get the 3 most recent unread conversations for popup notifications.
+    Returns unread conversations with latest unread message from each person.
+    """
+    user = request.user
+    print(f"\n{'='*80}")
+    print(f"[DEBUG] get_unread_conversations START for user: {user.username}")
+    print(f"[DEBUG] User ID: {user.id}")
+    print(f"[DEBUG] User role: {user.role}")
+    print(f"[DEBUG] User is_authenticated: {user.is_authenticated}")
+    print(f"[DEBUG] User model: {type(user).__name__}")
+    
+    # Get all chat rooms where user is participant and has unread messages
+    # More reliable query that avoids ORM issues with complex filtering
+    recent_conversations = ChatRoom.objects.filter(
+        Q(farmer=user) | Q(buyer=user),
+        is_active=True
+    ).prefetch_related('messages').distinct()
+    
+    print(f"[DEBUG] Query filter: Q(farmer={user.username}) | Q(buyer={user.username}), is_active=True")
+    print(f"[DEBUG] Found {recent_conversations.count()} active chat rooms for user")
+    print(f"[DEBUG] Chat rooms: {list(recent_conversations.values('id', 'farmer_id', 'buyer_id'))}")
+    
+    # Filter for rooms with unread messages from others
+    rooms_with_unread = []
+    for room in recent_conversations:
+        unread_from_others = room.messages.filter(
+            is_read=False
+        ).exclude(
+            sender=user
+        ).order_by('-created_at')
+        
+        print(f"[DEBUG] Room {room.id}: Checking unread messages...")
+        print(f"[DEBUG]   Room farmer: {room.farmer.username if room.farmer else 'None'}")
+        print(f"[DEBUG]   Room buyer: {room.buyer.username if room.buyer else 'None'}")
+        print(f"[DEBUG]   Total messages in room: {room.messages.count()}")
+        print(f"[DEBUG]   Unread messages from others: {unread_from_others.count()}")
+        print(f"[DEBUG]   Unread message senders: {list(unread_from_others.values_list('sender__username', flat=True))}")
+        
+        if unread_from_others.exists():
+            rooms_with_unread.append((room, unread_from_others.first()))
+            print(f"[DEBUG]   -> ADDED to rooms_with_unread")
+    
+    print(f"[DEBUG] Total rooms with unread: {len(rooms_with_unread)}")
+    
+    # Sort by timestamp and get top 3
+    rooms_with_unread.sort(key=lambda x: x[1].created_at, reverse=True)
+    recent_conversations = rooms_with_unread[:3]
+    
+    conversations = []
+    for room, last_unread in recent_conversations:
+        other_user = room.get_other_user(user)
+        unread_count = room.messages.filter(is_read=False).exclude(sender=user).count()
+        
+        if last_unread:
+            crop_name = None
+            if room.crop:
+                try:
+                    crop_name = room.crop.master_crop.crop_name if room.crop.master_crop else None
+                except:
+                    crop_name = None
+            
+            conversations.append({
+                'room_id': room.id,
+                'room_name': f"{other_user.get_full_name() or other_user.username}",
+                'other_user_id': other_user.id,
+                'other_user_username': other_user.username,
+                'other_user_avatar': other_user.profile_picture.url if other_user.profile_picture else None,
+                'other_user_role': other_user.role,
+                'last_message': last_unread.content[:100],
+                'last_message_id': last_unread.id,
+                'sender_username': last_unread.sender.username,
+                'unread_count': unread_count,
+                'timestamp': last_unread.created_at.isoformat(),
+                'crop_name': crop_name,
+            })
+    
+    print(f"[DEBUG] Returning {len(conversations)} conversations")
+    print(f"[DEBUG] Conversation list: {[c['room_id'] for c in conversations]}")
+    print(f"{'='*80}\n")
+    
+    return JsonResponse({
+        'success': True,
+        'conversations': conversations,
+        'current_user_id': user.id,
+    })
+
+
+@login_required
+@require_POST
+def mark_conversation_read(request, room_id):
+    """
+    Mark all unread messages in a conversation as read.
+    Used when a pop notification is displayed so it won't reappear.
+    """
+    user = request.user
+    room = get_object_or_404(ChatRoom, id=room_id)
+    
+    # Verify user is a participant
+    if user != room.farmer and user != room.buyer:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    # Mark all unread messages from other user as read
+    updated_count = room.messages.filter(
+        is_read=False
+    ).exclude(
+        sender=user
+    ).update(is_read=True)
+    
+    return JsonResponse({
+        'success': True,
+        'updated_count': updated_count,
+    })
+
+
+@login_required
+@require_GET
+def get_conversation_history(request, room_id):
+    """
+    Get full conversation history for a room (for popup display).
+    Returns all messages in chronological order with sender info.
+    """
+    user = request.user
+    room = get_object_or_404(ChatRoom, id=room_id)
+    
+    # Verify user is a participant
+    if user != room.farmer and user != room.buyer:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    # Get all messages
+    messages = room.messages.select_related('sender').order_by('created_at')
+    
+    # Build messages list
+    messages_data = []
+    for msg in messages:
+        messages_data.append({
+            'id': msg.id,
+            'content': msg.content,
+            'sender_id': msg.sender.id,
+            'sender_username': msg.sender.username,
+            'sender_name': msg.sender.get_full_name() or msg.sender.username,
+            'timestamp': msg.created_at.isoformat(),
+            'is_read': msg.is_read,
+            'is_own': msg.sender.id == user.id,
+        })
+    
+    # Get other user info
+    other_user = room.get_other_user(user)
+    
+    return JsonResponse({
+        'success': True,
+        'room_id': room.id,
+        'messages': messages_data,
+        'other_user': {
+            'id': other_user.id,
+            'username': other_user.username,
+            'name': other_user.get_full_name() or other_user.username,
+            'avatar': other_user.profile_picture.url if other_user.profile_picture else None,
+            'role': other_user.role,
+        },
+        'current_user_id': user.id,
+    })
+
+
+@login_required
+@require_GET
+def debug_user_info(request):
+    """
+    Debug endpoint to help diagnose popup issues.
+    Returns info about the user and their chat rooms.
+    """
+    user = request.user
+    
+    # Get all chat rooms
+    all_rooms = ChatRoom.objects.filter(
+        Q(farmer=user) | Q(buyer=user),
+        is_active=True
+    ).prefetch_related('messages')
+    
+    rooms_info = []
+    for room in all_rooms:
+        other_user = room.get_other_user(user)
+        unread_count = room.messages.filter(is_read=False).exclude(sender=user).count()
+        total_messages = room.messages.count()
+        
+        rooms_info.append({
+            'room_id': room.id,
+            'other_user': f"{other_user.username} ({other_user.role})",
+            'total_messages': total_messages,
+            'unread_from_others': unread_count,
+            'last_message': room.messages.last().content[:50] if room.messages.exists() else None,
+            'last_message_time': room.messages.last().created_at.isoformat() if room.messages.exists() else None,
+        })
+    
+    return JsonResponse({
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'role': user.role,
+            'is_authenticated': user.is_authenticated,
+        },
+        'total_chat_rooms': len(all_rooms),
+        'rooms': rooms_info,
     })

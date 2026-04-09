@@ -45,6 +45,9 @@ class CustomUser(AbstractUser):
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     is_verified = models.BooleanField(default=False)
+    is_blocked_by_admin = models.BooleanField(default=False, help_text='User blocked by admin')
+    blocked_reason = models.TextField(blank=True, null=True, help_text='Reason for blocking')
+    blocked_date = models.DateTimeField(null=True, blank=True, help_text='When user was blocked')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -107,7 +110,7 @@ class FarmerProfile(models.Model):
 
 class BuyerProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='buyer_profile')
-    company_name = models.CharField(max_length=255, blank=True, null=True)
+    company_name = models.CharField(max_length=255, blank=True, null=True, unique=True, db_index=True)
     business_type = models.CharField(max_length=100, blank=True, null=True)
     registration_number = models.CharField(max_length=100, blank=True, null=True)
     is_approved = models.BooleanField(default=False)

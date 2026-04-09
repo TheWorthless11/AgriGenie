@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Unblock User - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    <!-- Success Icon -->
+                    <div class="text-center mb-4">
+                        <div class="display-1 text-success mb-2">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark">Unblock User Account</h3>
+                    </div>
+
+                    <!-- User Info -->
+                    <div class="alert alert-light border-2 border-success mb-4">
+                        <p class="mb-2">
+                            <strong>Username:</strong> 
+                            <span class="badge bg-secondary">{{ user.username }}</span>
+                        </p>
+                        <p class="mb-2">
+                            <strong>Email:</strong> 
+                            <span>{{ user.email }}</span>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Role:</strong>
+                            {% if user.role == 'farmer' %}
+                                <span class="badge bg-primary">Farmer</span>
+                            {% elif user.role == 'buyer' %}
+                                <span class="badge bg-info">Buyer</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Current Block Information -->
+                    {% if user.is_blocked_by_admin %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <h6 class="alert-heading fw-bold">
+                            <i class="fas fa-ban"></i> Currently Blocked
+                        </h6>
+                        <p class="mb-2">
+                            <strong>Reason:</strong><br>
+                            <span class="text-monospace">{{ user.blocked_reason|default:"No reason provided" }}</span>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Blocked On:</strong><br>
+                            {{ user.blocked_date|date:"F d, Y \a\t g:i A" }}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Confirmation Message -->
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Important:</strong> After unblocking, this user will be able to log in and access the platform again. You may want to notify them about the unblock action.
+                    </div>
+
+                    <!-- Form -->
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="submit" class="btn btn-success btn-lg" name="confirm" value="yes">
+                                <i class="fas fa-check"></i> Confirm Unblock User
+                            </button>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'user_detail' user.id %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Summary -->
+                    <div class="mt-4 pt-3 border-top">
+                        <p class="small text-muted mb-2">
+                            <i class="fas fa-info-circle"></i> <strong>After Unblocking:</strong>
+                        </p>
+                        <ul class="small text-muted ps-3 mb-0">
+                            <li>User account will become active again</li>
+                            <li>User can log in with their credentials</li>
+                            <li>Previous block history will be retained for audit purposes</li>
+                            <li>No data will be lost or restored during unblock</li>
+                            <li>Consider sending notification to user about unblock</li>
+                        </ul>
+                    </div>
+
+                    <!-- Block History (if available) -->
+                    {% if block_history %}
+                    <div class="mt-4 pt-3 border-top">
+                        <p class="small text-muted mb-2 fw-bold">
+                            <i class="fas fa-history"></i> Block History
+                        </p>
+                        <div class="small text-muted">
+                            {% for history in block_history %}
+                            <div class="mb-2">
+                                <strong>{{ history.blocked_date|date:"M d, Y" }}</strong> - {{ history.blocked_reason }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Back Link -->
+            <div class="text-center mt-3">
+                <a href="{% url 'user_management' %}" class="text-muted small">
+                    <i class="fas fa-arrow-left"></i> Back to User Management
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    .text-monospace {
+        font-family: 'Monaco', 'Menlo', monospace;
+        background-color: #f5f5f5;
+        padding: 0.25rem 0.5rem;
+        border-radius: 3px;
+        display: inline-block;
+    }
+</style>
+{% endblock %}

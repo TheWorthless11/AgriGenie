@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Block User - Admin{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-5">
+                    <!-- Warning Icon -->
+                    <div class="text-center mb-4">
+                        <div class="display-1 text-warning mb-2">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <h3 class="fw-bold text-dark">Block User Account</h3>
+                    </div>
+
+                    <!-- User Info -->
+                    <div class="alert alert-light border-2 border-warning mb-4">
+                        <p class="mb-2">
+                            <strong>Username:</strong> 
+                            <span class="badge bg-secondary">{{ user.username }}</span>
+                        </p>
+                        <p class="mb-2">
+                            <strong>Email:</strong> 
+                            <span>{{ user.email }}</span>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Role:</strong>
+                            {% if user.role == 'farmer' %}
+                                <span class="badge bg-primary">Farmer</span>
+                            {% elif user.role == 'buyer' %}
+                                <span class="badge bg-info">Buyer</span>
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <!-- Warning Message -->
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This user will not be able to login or access the platform until unblocked. Make sure to provide a valid reason.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Form -->
+                    <form method="POST" class="needs-validation">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="blocked_reason" class="form-label fw-bold">
+                                <i class="fas fa-file-alt"></i> Reason for Blocking <span class="text-danger">*</span>
+                            </label>
+                            <textarea 
+                                class="form-control form-control-lg" 
+                                id="blocked_reason" 
+                                name="blocked_reason" 
+                                rows="4" 
+                                required 
+                                placeholder="Enter the reason for blocking this user (e.g., Violation of terms, Suspicious activity, etc.)"
+                                style="resize: vertical;">{{ form.blocked_reason.value|default:"" }}</textarea>
+                            <small class="form-text text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> This reason will be logged for audit purposes.
+                            </small>
+                            {% if form.blocked_reason.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.blocked_reason.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 mb-3">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-ban"></i> Confirm Block User
+                            </button>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'user_detail_view' user.id %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+
+                    <!-- Additional Info -->
+                    <div class="mt-4 pt-3 border-top">
+                        <p class="small text-muted mb-2">
+                            <i class="fas fa-lightbulb"></i> <strong>What happens when a user is blocked?</strong>
+                        </p>
+                        <ul class="small text-muted ps-3 mb-0">
+                            <li>User cannot log in to their account</li>
+                            <li>All active sessions will be terminated</li>
+                            <li>Block timestamp and reason are recorded for audit trail</li>
+                            <li>Admin can unblock the user at any time</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back Link -->
+            <div class="text-center mt-3">
+                <a href="{% url 'user_management' %}" class="text-muted small">
+                    <i class="fas fa-arrow-left"></i> Back to User Management
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+    .form-control-lg {
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}

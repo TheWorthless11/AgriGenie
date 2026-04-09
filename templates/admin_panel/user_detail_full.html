@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ user.username }} Details - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-user-circle text-success"></i> {{ user.get_full_name|default:user.username }}</h2>
+            <p class="text-muted mb-0">{{ user.get_role_display }} Account - <small id="statusBadge">{% if user.is_blocked_by_admin %}<span class="badge bg-danger">BLOCKED</span>{% elif not user.is_active %}<span class="badge bg-secondary">INACTIVE</span>{% else %}<span class="badge bg-success">ACTIVE</span>{% endif %}</small></p>
+        </div>
+        <a href="{% url 'user_management' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Users
+        </a>
+    </div>
+
+    <!-- User Profile Card -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" />
+                    {% else %}
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px;">
+                            <i class="fas fa-user fa-4x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <h5 class="mt-3 fw-bold">{{ user.username }}</h5>
+                    <p class="text-muted mb-2">{{ user.email }}</p>
+                    <p class="text-muted small">Joined: {{ user.date_joined|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> User Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted">Email</small>
+                            <p class="fw-bold">{{ user.email }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted">Phone</small>
+                            <p class="fw-bold">{{ user.phone_number|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted">Role</small>
+                            <p class="fw-bold">
+                                {% if user.role == 'farmer' %}
+                                    <span class="badge bg-primary">Farmer</span>
+                                {% elif user.role == 'buyer' %}
+                                    <span class="badge bg-info">Buyer</span>
+                                {% elif user.role == 'admin' %}
+                                    <span class="badge bg-danger">Admin</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <small class="text-muted">Status</small>
+                            <p class="fw-bold">
+                                {% if user.is_blocked_by_admin %}
+                                    <span class="badge bg-danger"><i class="fas fa-ban"></i> BLOCKED</span>
+                                {% elif user.is_active %}
+                                    <span class="badge bg-success"><i class="fas fa-check"></i> Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary"><i class="fas fa-pause"></i> Inactive</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">Location</small>
+                            <p class="fw-bold">{{ user.get_full_location|default:"Not provided" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="row">
+                {% if user.role == 'farmer' and crops_count is not None %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <h4 class="text-primary fw-bold">{{ crops_count }}</h4>
+                            <small class="text-muted">Crops Listed</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm text-center">
+                        <div class="card-body">
+                            <h4 class="text-info fw-bold">{{ orders_count }}</h4>
+                            <small class="text-muted">Orders</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Specific Info -->
+    {% if user.role == 'farmer' and profile %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-tractor"></i> Farmer Profile</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Farm Name</small>
+                    <p class="fw-bold">{{ profile.farm_name }}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Farm Size</small>
+                    <p class="fw-bold">{{ profile.farm_size }} acres</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Experience</small>
+                    <p class="fw-bold">{{ profile.experience_years }} years</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Approval Status</small>
+                    <p class="fw-bold">
+                        {% if profile.approval_status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif profile.approval_status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% elif profile.approval_status == 'rejected' %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Not Submitted</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif user.role == 'buyer' and profile %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Buyer Profile</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Company Name</small>
+                    <p class="fw-bold">{{ profile.company_name|default:"Not provided" }}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Business Type</small>
+                    <p class="fw-bold">{{ profile.business_type|default:"Not provided" }}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Total Spent</small>
+                    <p class="fw-bold">৳{{ profile.total_spent|floatformat:2 }}</p>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Approval Status</small>
+                    <p class="fw-bold">
+                        {% if profile.is_approved %}
+                            <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
+                        {% else %}
+                            <span class="badge bg-warning"><i class="fas fa-clock"></i> Pending</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Documents Section -->
+    {% if documents %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-file-upload"></i> Submitted Documents</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Document Type</th>
+                            <th>Details</th>
+                            <th>View</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                        <tr>
+                            <td>
+                                <strong>{{ doc.type }}</strong>
+                            </td>
+                            <td>
+                                {% if doc.value %}
+                                    <code>{{ doc.value }}</code>
+                                {% else %}
+                                    <small class="text-muted">Attached file</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if doc.file %}
+                                    <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-cogs"></i> Admin Actions</h5>
+        </div>
+        <div class="card-body">
+            <div class="btn-group d-flex flex-wrap gap-2" role="group">
+                <!-- Approval Buttons for Farmers -->
+                {% if user.role == 'farmer' and profile %}
+                    <form method="POST" action="{% url 'toggle_user_approval' user.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        {% if profile.is_approved %}
+                            <button type="submit" class="btn btn-sm btn-outline-warning">
+                                <i class="fas fa-times-circle"></i> Revoke Approval
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i class="fas fa-check-circle"></i> Approve Farmer
+                            </button>
+                        {% endif %}
+                    </form>
+                {% endif %}
+
+                <!-- Approval Buttons for Buyers -->
+                {% if user.role == 'buyer' and profile %}
+                    <form method="POST" action="{% url 'toggle_user_approval' user.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        {% if profile.is_approved %}
+                            <button type="submit" class="btn btn-sm btn-outline-warning">
+                                <i class="fas fa-times-circle"></i> Revoke Approval
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i class="fas fa-check-circle"></i> Approve Buyer
+                            </button>
+                        {% endif %}
+                    </form>
+                {% endif %}
+
+                {% if not user.is_blocked_by_admin %}
+                    <a href="{% url 'block_user' user.id %}" class="btn btn-warning">
+                        <i class="fas fa-ban"></i> Block User
+                    </a>
+                {% else %}
+                    <a href="{% url 'unblock_user' user.id %}" class="btn btn-info">
+                        <i class="fas fa-lock-open"></i> Unblock User
+                    </a>
+                {% endif %}
+                
+                {% if user != request.user %}
+                    <a href="{% url 'delete_user' user.id %}" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete User
+                    </a>
+                {% endif %}
+            </div>
+            
+            {% if user.is_blocked_by_admin %}
+            <div class="alert alert-danger mt-3 mb-0">
+                <strong><i class="fas fa-exclamation-triangle"></i> User Blocked</strong><br>
+                <small><strong>Reason:</strong> {{ user.blocked_reason }}</small><br>
+                <small><strong>Blocked Date:</strong> {{ user.blocked_date|date:"M d, Y H:i" }}</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+# Testing and Development Requirements for AgriGenie
+
+# Testing frameworks
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+pytest-xdist==3.5.0  # For parallel test execution
+pytest-timeout==2.1.0  # For test timeouts
+
+# Test utilities
+model-bakery==1.12.0  # For creating test fixtures
+faker==20.1.0  # For generating fake data
+factory-boy==3.3.0  # Alternative fixture library
+
+# Code quality and coverage
+coverage==7.3.2
+black==23.12.0  # Code formatter
+flake8==6.1.0  # Linter
+isort==5.13.2  # Import sorting
+pylint==3.0.3  # Code analyzer
+
+# Database and debugging
+django-debug-toolbar==4.2.0
+django-extensions==3.2.3
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Development
+ipython==8.18.1
+ipdb==0.13.13

@@ -61,7 +61,7 @@
 
             {% if approval.user.role == 'buyer' and approval.user.buyer_profile %}
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-info text-white">
+                <div class="card-header agri-card-header">
                     <h5 class="mb-0"><i class="fas fa-building"></i> Business Details</h5>
                 </div>
                 <div class="card-body">
@@ -85,7 +85,7 @@
 
             {% if approval.user.role == 'farmer' and approval.user.farmer_profile %}
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header agri-card-header">
                     <h5 class="mb-0"><i class="fas fa-id-card"></i> NID Verification</h5>
                 </div>
                 <div class="card-body">
@@ -122,7 +122,7 @@
 
         <div class="col-md-6">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header agri-card-header">
                     <h5 class="mb-0"><i class="fas fa-gavel"></i> Approval Status</h5>
                 </div>
                 <div class="card-body">
@@ -211,7 +211,7 @@
 
             {% if approval.nid_card_photo or approval.legal_paper_photo or approval.company_photo or approval.documents %}
             <div class="card border-0 shadow-sm mt-4">
-                <div class="card-header bg-secondary text-white">
+                <div class="card-header agri-card-header">
                     <h5 class="mb-0"><i class="fas fa-file"></i> Verification Documents</h5>
                 </div>
                 <div class="card-body">

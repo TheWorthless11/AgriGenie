@@ -18,38 +18,54 @@
     <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-users fa-2x text-success mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_users }}</h4>
-                    <small class="text-muted">Total Users</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Total Users</p>
+                            <h3 class="fw-bold text-success">{{ total_users }}</h3>
+                        </div>
+                        <i class="fas fa-users fa-2x text-success opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-tractor fa-2x text-primary mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_farmers }}</h4>
-                    <small class="text-muted">Farmers</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Farmers</p>
+                            <h3 class="fw-bold text-primary">{{ total_farmers }}</h3>
+                        </div>
+                        <i class="fas fa-tractor fa-2x text-primary opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-shopping-cart fa-2x text-info mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_buyers }}</h4>
-                    <small class="text-muted">Buyers</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Buyers</p>
+                            <h3 class="fw-bold text-info">{{ total_buyers }}</h3>
+                        </div>
+                        <i class="fas fa-shopping-cart fa-2x text-info opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <i class="fas fa-user-shield fa-2x text-danger mb-2"></i>
-                    <h4 class="fw-bold mb-0">{{ total_admins }}</h4>
-                    <small class="text-muted">Admins</small>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Admins</p>
+                            <h3 class="fw-bold text-danger">{{ total_admins }}</h3>
+                        </div>
+                        <i class="fas fa-user-shield fa-2x text-danger opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
@@ -128,7 +144,11 @@
                             </td>
                             <td>{{ u.date_joined|date:"M d, Y" }}</td>
                             <td>
-                                {% if u.is_active %}
+                                {% if u.is_blocked_by_admin %}
+                                    <span class="badge bg-danger" title="{{ u.blocked_reason }}">
+                                        <i class="fas fa-ban"></i> Blocked
+                                    </span>
+                                {% elif u.is_active %}
                                     <span class="badge bg-success">Active</span>
                                 {% else %}
                                     <span class="badge bg-secondary">Inactive</span>
@@ -136,7 +156,11 @@
                             </td>
                             <td>
                                 {% if u.role == 'farmer' %}
-                                    <span class="badge bg-success"><i class="fas fa-check"></i> Full Access</span>
+                                    {% if u.farmer_profile.is_approved %}
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pending</span>
+                                    {% endif %}
                                 {% elif u.role == 'buyer' %}
                                     {% if u.buyer_profile.is_approved %}
                                         <span class="badge bg-success"><i class="fas fa-check"></i> Approved</span>
@@ -150,18 +174,33 @@
                                 {% endif %}
                             </td>
                             <td>
+                                <a href="{% url 'user_detail_view' u.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i> Details
+                                </a>
                                 {% if u != request.user %}
-                                    {% if u.role == 'buyer' %}
+                                    {% if u.role in 'farmer,buyer' %}
                                     <form method="POST" action="{% url 'toggle_user_approval' u.id %}" class="d-inline">
                                         {% csrf_token %}
-                                        {% if u.buyer_profile.is_approved %}
-                                            <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
-                                                <i class="fas fa-ban"></i>
-                                            </button>
-                                        {% else %}
-                                            <button type="submit" class="btn btn-sm btn-success" title="Approve User">
-                                                <i class="fas fa-check"></i>
-                                            </button>
+                                        {% if u.role == 'farmer' %}
+                                            {% if u.farmer_profile.is_approved %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve User">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            {% endif %}
+                                        {% elif u.role == 'buyer' %}
+                                            {% if u.buyer_profile.is_approved %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Revoke Approval">
+                                                    <i class="fas fa-ban"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve User">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            {% endif %}
                                         {% endif %}
                                     </form>
                                     {% endif %}

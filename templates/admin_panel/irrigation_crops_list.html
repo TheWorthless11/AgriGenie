@@ -140,29 +140,41 @@
 
     <div class="row mt-4 g-3">
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-database fa-2x mb-2"></i>
-                    <h4>{{ total_count }}</h4>
-                    <small>Total Entries</small>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Total Entries</p>
+                            <h3 class="fw-bold text-primary">{{ total_count }}</h3>
+                        </div>
+                        <i class="fas fa-database fa-2x text-primary opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-check-circle fa-2x mb-2"></i>
-                    <h4>{{ active_count }}</h4>
-                    <small>Active Entries</small>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Active Entries</p>
+                            <h3 class="fw-bold text-success">{{ active_count }}</h3>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x text-success opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card border-0 shadow-sm bg-secondary text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-pause-circle fa-2x mb-2"></i>
-                    <h4>{{ inactive_count }}</h4>
-                    <small>Inactive Entries</small>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small mb-1">Inactive Entries</p>
+                            <h3 class="fw-bold text-secondary">{{ inactive_count }}</h3>
+                        </div>
+                        <i class="fas fa-pause-circle fa-2x text-secondary opacity-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
