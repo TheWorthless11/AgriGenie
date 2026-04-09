@@ -1,0 +1,120 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: agrigenie-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: agrigenie_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agrigenie_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: agrigenie-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: agrigenie-web:latest
+    pull_policy: never
+    container_name: agrigenie-web
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             daphne -b 0.0.0.0 -p 8000 asgi:application"
+    env_file:
+      - .env
+    environment:
+      DOTENV_OVERRIDE: "False"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CACHE_URL: redis://redis:6379/1
+      ALLOWED_HOSTS: localhost,127.0.0.1,web
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+
+  celery_worker:
+    image: agrigenie-celery_worker:latest
+    pull_policy: never
+    container_name: agrigenie-celery-worker
+    restart: unless-stopped
+    command: celery -A celery_config worker -l info
+    env_file:
+      - .env
+    environment:
+      DOTENV_OVERRIDE: "False"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CACHE_URL: redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - media_data:/app/media
+
+  celery_beat:
+    image: agrigenie-celery_beat:latest
+    pull_policy: never
+    container_name: agrigenie-celery-beat
+    restart: unless-stopped
+    command: celery -A celery_config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - .env
+    environment:
+      DOTENV_OVERRIDE: "False"
+      DB_ENGINE: django.db.backends.postgresql
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CACHE_URL: redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - media_data:/app/media
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_data:
+  media_data:
