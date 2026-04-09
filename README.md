@@ -329,3 +329,61 @@ For issues and questions:
 ---
 
 **AgriGenie** - Empowering farmers with technology 🌾
+
+## Docker Setup (PostgreSQL + Redis + Celery)
+
+This repository now includes a full Docker stack for:
+- Django ASGI app (Daphne)
+- PostgreSQL database
+- Redis
+- Celery worker
+- Celery beat
+
+### Files Added
+- `Dockerfile`
+- `docker-compose.yml`
+- `.dockerignore`
+
+### Quick Start
+
+1. Ensure Docker Desktop is running.
+2. Keep your `.env` values set for PostgreSQL (`DB_ENGINE=django.db.backends.postgresql`, `DB_PORT=5432`, etc.).
+3. Build and start all services:
+   ```bash
+   docker compose up --build -d
+   ```
+4. Watch web logs:
+   ```bash
+   docker compose logs -f web
+   ```
+5. Create admin user:
+   ```bash
+   docker compose exec web python manage.py createsuperuser
+   ```
+
+Open the app at: `http://localhost:8000`
+
+### Optional Data Load
+
+If you want to load your fixture into PostgreSQL inside Docker:
+
+```bash
+docker compose exec web python manage.py loaddata data.json --exclude contenttypes --exclude auth.permission
+```
+
+### Useful Commands
+
+Restart services:
+```bash
+docker compose restart
+```
+
+Stop and remove containers:
+```bash
+docker compose down
+```
+
+Stop and remove containers + volumes (wipes DB data):
+```bash
+docker compose down -v
+```
