@@ -2,11 +2,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-try:
-    import dj_database_url
-except ImportError:
-    dj_database_url = None
-
 # 1. Path Configuration (Flattened Level 2 Structure)
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -16,13 +11,9 @@ dotenv_override = os.getenv('DOTENV_OVERRIDE', 'True').strip().lower() in {'1', 
 load_dotenv(os.path.join(BASE_DIR, '.env'), override=dotenv_override)
 
 # 3. Security Settings
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-change-me-in-production')
+SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
-
-# Railway-specific hosts
-if not DEBUG:
-    ALLOWED_HOSTS += ['.railway.app', '.railway.internal']
 
 # 4. Application Definition
 INSTALLED_APPS = [
@@ -68,7 +59,6 @@ AUTHENTICATION_BACKENDS = [
 MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Static files handling for production
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -99,51 +89,26 @@ TEMPLATES = [
 ]
 
 # 6. Database Configuration
-# Support Railway's DATABASE_URL as priority
-if os.getenv('DATABASE_URL') and dj_database_url:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.getenv('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+DATABASES = {
+    'default': {
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.getenv('DB_NAME', os.path.join(BASE_DIR, 'db.sqlite3')),
     }
-else:
-    # Fallback to manual PostgreSQL/MySQL configuration
-    DATABASES = {
-        'default': {
-            'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
-            'NAME': os.getenv('DB_NAME', os.path.join(BASE_DIR, 'db.sqlite3')),
-        }
-    }
+}
 
-    # Add PostgreSQL-specific settings
-    if 'postgresql' in DATABASES['default']['ENGINE'].lower():
-        DATABASES['default'].update({
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
-            'CONN_MAX_AGE': 600,
-            'CONN_HEALTH_CHECKS': True,
-            'OPTIONS': {
-                'connect_timeout': 10,
-            },
-        })
-    
-    # Add MySQL-specific settings only if using MySQL
-    if 'mysql' in DATABASES['default']['ENGINE'].lower():
-        DATABASES['default'].update({
-            'USER': os.getenv('DB_USER'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST'),
-            'PORT': os.getenv('DB_PORT'),
-            'CONN_MAX_AGE': 60,
-            'CONN_HEALTH_CHECKS': True,
-            'OPTIONS': {
-                'connect_timeout': 10,
-            },
-        })
+# Add MySQL-specific settings only if using MySQL
+if 'mysql' in DATABASES['default']['ENGINE'].lower():
+    DATABASES['default'].update({
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
+        'CONN_MAX_AGE': 60,
+        'CONN_HEALTH_CHECKS': True,
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
+    })
 
 # 7. Password Validation & Internationalization
 AUTH_PASSWORD_VALIDATORS = [
@@ -249,30 +214,19 @@ CELERY_BEAT_SCHEDULE = {
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.getenv('CACHE_URL', os.getenv('REDIS_URL')),
-    } if os.getenv('CACHE_URL') or os.getenv('REDIS_URL') else {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'agrigenie-cache',
+        'LOCATION': os.getenv('CACHE_URL'),
     }
 }
 
 # 12. Channels / WebSockets Configuration
-if os.getenv('REDIS_URL') or os.getenv('REDIS_HOST'):
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [(os.getenv('REDIS_HOST', '127.0.0.1'), int(os.getenv('REDIS_PORT', 6379)))],
-            },
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [(os.getenv('REDIS_HOST', '127.0.0.1'), int(os.getenv('REDIS_PORT', 6379)))],
         },
-    }
-else:
-    # Fallback to in-memory channel layer (useful for Railway free tier)
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer'
-        }
-    }
+    },
+}
 
 # 13. Other APIs & CORS
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY') or os.getenv('WEATHER_API_KEY')

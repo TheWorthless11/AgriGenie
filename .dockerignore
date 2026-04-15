@@ -1,60 +1,17 @@
 .git
 .gitignore
 .vscode
-.idea
-.pytest_cache
-.coverage
-.mypy_cache
-.env
-.env.*
-!.env.example
+.venv
 __pycache__/
 **/__pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
-venv/
-.venv
-*.egg-info/
-dist/
-build/
-*.sqlite3
-db.sqlite3
+.pytest_cache/
+.mypy_cache/
+.env
+.env.*
+!.env.example
 media/
 staticfiles/
-*.log
-logs/
-*.cache
-.cache/
-tmp/
-temp/
-*.tmp
-.DS_Store
-Thumbs.db
-# Python dev/test files
-pytest.ini
-tox.ini
-setup.cfg
-.travis.yml
-.gitlab-ci.yml
-# Documentation
-docs/
-README.md
-*.md
-LICENSE
-# IDE
-.idea/
-*.swp
-*.swo
-*~
-# Node (if any frontend)
-node_modules/
-package-lock.json
-# Large files (keep out of Docker)
-*.tar.gz
-*.zip
-# Git
-.git/
-.gitignore
+*.sqlite3
