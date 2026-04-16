@@ -22,6 +22,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <style>
         .input-focus:focus { border-color: #28a745 !important; box-shadow: 0 0 0 3px rgba(40,167,69,0.1); }
         .fade-enter { animation: fadeIn 0.4s ease-out; }
@@ -151,7 +152,7 @@
                                     <div id="mapPlaceholder" class="text-center text-gray-400">
                                         <i data-lucide="map-pin" class="w-8 h-8 mx-auto mb-2 text-green-400"></i>
                                         <p class="text-xs">Drag the pin to set your location</p>
-                                        <p class="text-[10px] text-gray-300 mt-1">Map loads when API key is configured</p>
+                                        <p class="text-[10px] text-gray-300 mt-1">Click map or drag the marker to set location</p>
                                     </div>
                                 </div>
                             </div>
@@ -241,54 +242,8 @@
 
     <!-- Location cascading dropdown data -->
     <script src="{% static 'js/location_data.js' %}"></script>
-
-    <!-- Google Maps API -->
-    <script>
-        let map, marker;
-        function initMap() {
-            const defaultPos = { lat: 23.8103, lng: 90.4125 };
-            map = new google.maps.Map(document.getElementById('mapWidget'), {
-                center: defaultPos, zoom: 12,
-                disableDefaultUI: true, zoomControl: true,
-                styles: [{ featureType:'poi', stylers:[{visibility:'off'}] }]
-            });
-            document.getElementById('mapPlaceholder').style.display = 'none';
-            marker = new google.maps.Marker({ position: defaultPos, map, draggable: true });
-            marker.addListener('dragend', function() {
-                const pos = marker.getPosition();
-                reverseGeocode(pos.lat(), pos.lng());
-            });
-            map.addListener('click', function(e) {
-                marker.setPosition(e.latLng);
-                reverseGeocode(e.latLng.lat(), e.latLng.lng());
-            });
-        }
-        function reverseGeocode(lat, lng) {
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ location: { lat, lng } }, function(results, status) {
-                if (status === 'OK' && results[0]) {
-                    const c = results[0].address_components;
-                    const get = (type) => { const f = c.find(x => x.types.includes(type)); return f ? f.long_name : ''; };
-                    document.getElementById('streetAddress').value = get('route') || get('street_address') || get('premise');
-                    document.getElementById('postalCode').value = get('postal_code');
-                    const countryName = get('country');
-                    const stateName = get('administrative_area_level_1');
-                    const cityName = get('locality') || get('sublocality') || get('administrative_area_level_2');
-                    const countryEl = document.getElementById('countryField');
-                    const stateEl = document.getElementById('districtState');
-                    const cityEl = document.getElementById('cityUpazila');
-                    if (countryName) { countryEl.value = countryName; countryEl.dispatchEvent(new Event('change')); }
-                    setTimeout(() => {
-                        if (stateName) { stateEl.value = stateName; stateEl.dispatchEvent(new Event('change')); }
-                        setTimeout(() => { if (cityName) cityEl.value = cityName; }, 50);
-                    }, 50);
-                }
-            });
-        }
-    </script>
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key|default:'' }}&callback=initMap">
-    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="{% static 'js/map_picker.js' %}"></script>
 
     <script>
         lucide.createIcons();
@@ -309,6 +264,20 @@
 
             // Initialize cascading location dropdowns (country → state → city)
             initLocationDropdowns('countryField', 'districtState', 'cityUpazila');
+
+            initLocationMapPicker({
+                mapElementId: 'mapWidget',
+                placeholderId: 'mapPlaceholder',
+                defaultLat: 23.8103,
+                defaultLng: 90.4125,
+                zoom: 12,
+                streetFieldId: 'streetAddress',
+                postalFieldId: 'postalCode',
+                countryFieldId: 'countryField',
+                stateFieldId: 'districtState',
+                cityFieldId: 'cityUpazila',
+                resolveDefaultAddress: false
+            });
 
             // Photo preview
             document.getElementById('photoInput').addEventListener('change', function(e) {

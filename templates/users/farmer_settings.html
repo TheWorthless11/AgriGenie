@@ -1,0 +1,817 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Farmer Settings - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --settings-bg: #f1f7f3;
+        --panel-bg: #ffffff;
+        --text-main: #173f31;
+        --text-muted: #5c7a6d;
+        --line-soft: #e3ece6;
+        --green-soft: #e2f4e8;
+        --green-mid: #89c69f;
+        --green-strong: #1f8a52;
+    }
+
+    .farmer-settings-shell {
+        max-width: 1320px;
+    }
+
+    .settings-sidebar,
+    .settings-card {
+        border: 1px solid var(--line-soft);
+        border-radius: 18px;
+        background: var(--panel-bg);
+        box-shadow: 0 10px 28px rgba(15, 50, 37, 0.06);
+    }
+
+    .settings-sidebar {
+        position: sticky;
+        top: 1rem;
+    }
+
+    .settings-sidebar-title {
+        color: var(--text-main);
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .settings-sidebar-subtitle {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+    }
+
+    .settings-nav .nav-link {
+        border: 0;
+        border-radius: 12px;
+        color: #3f5e52;
+        font-weight: 600;
+        text-align: left;
+        padding: 0.7rem 0.8rem;
+        margin-bottom: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        transition: all 0.25s ease;
+    }
+
+    .settings-nav .nav-link i {
+        width: 1rem;
+        text-align: center;
+    }
+
+    .settings-nav .nav-link:hover {
+        background: #f3faf6;
+        color: var(--text-main);
+        transform: translateX(2px);
+    }
+
+    .settings-nav .nav-link.active {
+        background: var(--green-soft);
+        color: var(--green-strong);
+        box-shadow: inset 0 0 0 1px rgba(31, 138, 82, 0.15);
+    }
+
+    .tab-pane {
+        transition: opacity 0.24s ease, transform 0.24s ease;
+    }
+
+    .tab-pane.fade:not(.show) {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    .section-title {
+        color: var(--text-main);
+        font-size: 1.07rem;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+    }
+
+    .section-subtitle {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+    }
+
+    .field-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .field-grid.one-col {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-card .form-label {
+        color: #416355;
+        font-weight: 600;
+        font-size: 0.86rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .settings-card .form-control,
+    .settings-card .form-select {
+        border-radius: 10px;
+        border-color: #d8e7dd;
+        min-height: 43px;
+    }
+
+    .settings-card .form-control:focus,
+    .settings-card .form-select:focus {
+        box-shadow: 0 0 0 0.2rem rgba(31, 138, 82, 0.12);
+        border-color: var(--green-mid);
+    }
+
+    .avatar-preview {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        border: 3px solid var(--green-soft);
+        overflow: hidden;
+        background: #ecf8f0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--green-strong);
+        font-size: 2rem;
+    }
+
+    .avatar-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .toggle-row {
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        padding: 0.75rem 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        background: #fcfffd;
+        margin-bottom: 0.65rem;
+    }
+
+    .toggle-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .toggle-label {
+        color: var(--text-main);
+        font-weight: 600;
+        margin-bottom: 0.12rem;
+    }
+
+    .toggle-hint {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        margin-bottom: 0;
+    }
+
+    .form-check-input {
+        width: 2.55rem;
+        height: 1.35rem;
+        border-radius: 999px;
+    }
+
+    .form-check-input:checked {
+        background-color: var(--green-strong);
+        border-color: var(--green-strong);
+    }
+
+    .btn-save {
+        background: var(--green-strong);
+        color: #fff;
+        border: 0;
+        border-radius: 10px;
+        padding: 0.55rem 1rem;
+    }
+
+    .btn-save:hover {
+        background: #176f42;
+        color: #fff;
+    }
+
+    .btn-soft {
+        border: 1px solid #d3e5da;
+        background: #f4faf6;
+        color: var(--text-main);
+        border-radius: 10px;
+    }
+
+    .btn-soft:hover {
+        background: #eaf4ee;
+        color: var(--text-main);
+    }
+
+    .security-log-item {
+        border-bottom: 1px dashed #e4ede7;
+        padding: 0.55rem 0;
+    }
+
+    .security-log-item:last-child {
+        border-bottom: 0;
+    }
+
+    .security-log-label {
+        color: var(--text-main);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .security-log-time {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+    }
+
+    .payment-method-item {
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        padding: 0.75rem 0.85rem;
+        background: #fcfffd;
+        margin-bottom: 0.65rem;
+    }
+
+    .payment-method-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .payment-method-title {
+        color: var(--text-main);
+        font-weight: 700;
+        margin-bottom: 0.1rem;
+    }
+
+    .payment-method-meta {
+        color: var(--text-muted);
+        font-size: 0.84rem;
+        margin-bottom: 0;
+    }
+
+    .transaction-table thead th {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        color: #4b6559;
+        letter-spacing: 0.04em;
+    }
+
+    .danger-zone {
+        border: 1px solid #f5d4d8;
+        background: #fff8f8;
+        border-radius: 12px;
+        padding: 0.9rem;
+    }
+
+    .danger-zone h6 {
+        color: #9a1e2d;
+        font-weight: 700;
+    }
+
+    @media (max-width: 991.98px) {
+        .settings-sidebar {
+            position: static;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .field-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 farmer-settings-shell">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h2 class="fw-bold" style="color: var(--text-main);">
+                <i class="fas fa-sliders me-2 text-success"></i>Farmer Settings
+            </h2>
+            <p class="mb-0" style="color: var(--text-muted);">Manage your account, farm preferences, security, and payment details.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="settings-sidebar p-3">
+                <h6 class="settings-sidebar-title">Settings Menu</h6>
+                <p class="settings-sidebar-subtitle">Choose a section to update</p>
+
+                <div class="nav flex-column nav-pills settings-nav" id="farmerSettingsTab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link {% if active_tab == 'account' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-account" type="button" role="tab" aria-selected="{% if active_tab == 'account' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-user"></i> Account Settings
+                    </button>
+                    <button class="nav-link {% if active_tab == 'security' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-security" type="button" role="tab" aria-selected="{% if active_tab == 'security' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-shield-halved"></i> Security
+                    </button>
+                    <button class="nav-link {% if active_tab == 'preferences' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-preferences" type="button" role="tab" aria-selected="{% if active_tab == 'preferences' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-seedling"></i> Farm Preferences
+                    </button>
+                    <button class="nav-link {% if active_tab == 'notifications' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-notifications" type="button" role="tab" aria-selected="{% if active_tab == 'notifications' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-bell"></i> Notifications
+                    </button>
+                    <button class="nav-link {% if active_tab == 'ai' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-ai" type="button" role="tab" aria-selected="{% if active_tab == 'ai' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-robot"></i> AI Settings
+                    </button>
+                    <button class="nav-link {% if active_tab == 'payment' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-payment" type="button" role="tab" aria-selected="{% if active_tab == 'payment' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-wallet"></i> Payment Settings
+                    </button>
+                    <button class="nav-link {% if active_tab == 'privacy' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-privacy" type="button" role="tab" aria-selected="{% if active_tab == 'privacy' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-user-lock"></i> Data & Privacy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="tab-content" id="farmerSettingsTabContent">
+                <div class="tab-pane fade {% if active_tab == 'account' %}show active{% endif %}" id="tab-account" role="tabpanel">
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-user me-2"></i>Account Settings</h5>
+                        <p class="section-subtitle">Update your profile identity and contact details.</p>
+
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_account">
+
+                            <div class="mb-3 d-flex align-items-center gap-3 flex-wrap">
+                                <div class="avatar-preview">
+                                    {% if request.user.profile_picture %}
+                                        <img src="{{ request.user.profile_picture.url }}" alt="Profile photo">
+                                    {% else %}
+                                        <i class="fas fa-user"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Profile Photo</label>
+                                    {{ account_form.profile_picture }}
+                                    {% if account_form.profile_picture.errors %}
+                                        <div class="text-danger small mt-1">{{ account_form.profile_picture.errors|join:', ' }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="field-grid">
+                                <div>
+                                    <label class="form-label">First Name</label>
+                                    {{ account_form.first_name }}
+                                    {% if account_form.first_name.errors %}<div class="text-danger small mt-1">{{ account_form.first_name.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Last Name</label>
+                                    {{ account_form.last_name }}
+                                    {% if account_form.last_name.errors %}<div class="text-danger small mt-1">{{ account_form.last_name.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Email</label>
+                                    {{ account_form.email }}
+                                    {% if account_form.email.errors %}<div class="text-danger small mt-1">{{ account_form.email.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Phone</label>
+                                    {{ account_form.phone_number }}
+                                    {% if account_form.phone_number.errors %}<div class="text-danger small mt-1">{{ account_form.phone_number.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-save"><i class="fas fa-floppy-disk me-1"></i> Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'security' %}show active{% endif %}" id="tab-security" role="tabpanel">
+                    <div class="settings-card p-4 mb-3">
+                        <h5 class="section-title"><i class="fas fa-key me-2"></i>Change Password</h5>
+                        <p class="section-subtitle">Keep your account secure with a strong password.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="change_password">
+                            <div class="field-grid one-col">
+                                <div>
+                                    <label class="form-label">Current Password</label>
+                                    {{ password_form.old_password }}
+                                    {% if password_form.old_password.errors %}<div class="text-danger small mt-1">{{ password_form.old_password.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">New Password</label>
+                                    {{ password_form.new_password1 }}
+                                    {% if password_form.new_password1.errors %}<div class="text-danger small mt-1">{{ password_form.new_password1.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Confirm New Password</label>
+                                    {{ password_form.new_password2 }}
+                                    {% if password_form.new_password2.errors %}<div class="text-danger small mt-1">{{ password_form.new_password2.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-save"><i class="fas fa-lock me-1"></i> Update Password</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-shield-halved me-2"></i>Security Controls</h5>
+                        <p class="section-subtitle">Manage 2FA and review login activities.</p>
+
+                        <form method="post" class="mb-3">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_security">
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">Two-Factor Authentication</div>
+                                    <p class="toggle-hint">Add an extra login verification layer for better account safety.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" name="two_factor_enabled" {% if request.user.two_factor_enabled %}checked{% endif %}>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-save mt-3"><i class="fas fa-check me-1"></i> Save Security Settings</button>
+                        </form>
+
+                        <h6 class="mt-1" style="color: var(--text-main); font-weight: 700;">Last Login Activity</h6>
+                        {% if last_login_activity %}
+                            {% for log in last_login_activity %}
+                                <div class="security-log-item">
+                                    <div class="security-log-label">{{ log.description|default:'Successful login' }}</div>
+                                    <div class="security-log-time">{{ log.timestamp|date:"M d, Y h:i A" }}</div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="security-log-item">
+                                <div class="security-log-label">No recent activity log available.</div>
+                                <div class="security-log-time">Last login: {% if request.user.last_login %}{{ request.user.last_login|date:"M d, Y h:i A" }}{% else %}Never{% endif %}</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'preferences' %}show active{% endif %}" id="tab-preferences" role="tabpanel">
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-seedling me-2"></i>Farm Preferences</h5>
+                        <p class="section-subtitle">Configure default units and preferences for farming workflows.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_preferences">
+                            <div class="field-grid">
+                                <div>
+                                    <label class="form-label">Unit Selection</label>
+                                    {{ preference_form.quantity_unit }}
+                                    {% if preference_form.quantity_unit.errors %}<div class="text-danger small mt-1">{{ preference_form.quantity_unit.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Farm Size Unit</label>
+                                    {{ preference_form.farm_size_unit }}
+                                    {% if preference_form.farm_size_unit.errors %}<div class="text-danger small mt-1">{{ preference_form.farm_size_unit.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Default Crop Type</label>
+                                    {{ preference_form.default_crop_type }}
+                                    {% if preference_form.default_crop_type.errors %}<div class="text-danger small mt-1">{{ preference_form.default_crop_type.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Language</label>
+                                    {{ preference_form.language }}
+                                    {% if preference_form.language.errors %}<div class="text-danger small mt-1">{{ preference_form.language.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-save"><i class="fas fa-floppy-disk me-1"></i> Save Preferences</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'notifications' %}show active{% endif %}" id="tab-notifications" role="tabpanel">
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-bell me-2"></i>Notifications</h5>
+                        <p class="section-subtitle">Choose which alerts you want to receive.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_notifications">
+
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">Email Notifications</div>
+                                    <p class="toggle-hint">Receive updates in your email inbox.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">{{ notification_form.email_notifications }}</div>
+                            </div>
+
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">SMS Alerts</div>
+                                    <p class="toggle-hint">Get urgent farming alerts by SMS.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">{{ notification_form.sms_alerts }}</div>
+                            </div>
+
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">Order Updates</div>
+                                    <p class="toggle-hint">Receive order status updates in real time.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">{{ notification_form.order_updates }}</div>
+                            </div>
+
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">AI Alerts</div>
+                                    <p class="toggle-hint">Get AI-generated recommendations and warning alerts.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">{{ notification_form.ai_alerts }}</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-save mt-3"><i class="fas fa-check me-1"></i> Save Notification Settings</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'ai' %}show active{% endif %}" id="tab-ai" role="tabpanel">
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-robot me-2"></i>AI Settings</h5>
+                        <p class="section-subtitle">Control AI-powered assistance and risk behavior.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_ai">
+
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">Disease Detection</div>
+                                    <p class="toggle-hint">Enable AI disease detection for uploaded crop images.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">{{ ai_form.disease_detection_enabled }}</div>
+                            </div>
+
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">Auto Recommendations</div>
+                                    <p class="toggle-hint">Allow AI to suggest actions automatically.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">{{ ai_form.auto_recommendations }}</div>
+                            </div>
+
+                            <div class="mt-3" style="max-width: 320px;">
+                                <label class="form-label">Risk Sensitivity</label>
+                                {{ ai_form.risk_sensitivity }}
+                                {% if ai_form.risk_sensitivity.errors %}<div class="text-danger small mt-1">{{ ai_form.risk_sensitivity.errors|join:', ' }}</div>{% endif %}
+                            </div>
+
+                            <button type="submit" class="btn btn-save mt-3"><i class="fas fa-floppy-disk me-1"></i> Save AI Settings</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'payment' %}show active{% endif %}" id="tab-payment" role="tabpanel">
+                    <div class="settings-card p-4 mb-3">
+                        <h5 class="section-title"><i class="fas fa-wallet me-2"></i>Payment Methods</h5>
+                        <p class="section-subtitle">Add or edit payout methods like bKash, Nagad, and bank account.</p>
+
+                        <form method="post" id="paymentMethodForm">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_payment_method">
+                            <input type="hidden" name="method_id" id="paymentMethodId">
+
+                            <div class="field-grid">
+                                <div>
+                                    <label class="form-label">Method</label>
+                                    {{ payment_form.method_type }}
+                                    {% if payment_form.method_type.errors %}<div class="text-danger small mt-1">{{ payment_form.method_type.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Account Name</label>
+                                    {{ payment_form.account_name }}
+                                    {% if payment_form.account_name.errors %}<div class="text-danger small mt-1">{{ payment_form.account_name.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Account Number</label>
+                                    {{ payment_form.account_number }}
+                                    {% if payment_form.account_number.errors %}<div class="text-danger small mt-1">{{ payment_form.account_number.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div id="bankNameField">
+                                    <label class="form-label">Bank Name</label>
+                                    {{ payment_form.bank_name }}
+                                    {% if payment_form.bank_name.errors %}<div class="text-danger small mt-1">{{ payment_form.bank_name.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mt-3 d-flex gap-2">
+                                <button type="submit" class="btn btn-save" id="paymentSaveButton"><i class="fas fa-plus me-1"></i> Save Method</button>
+                                <button type="button" class="btn btn-soft d-none" id="paymentCancelEditButton"><i class="fas fa-xmark me-1"></i> Cancel Edit</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card p-4 mb-3">
+                        <h6 class="section-title"><i class="fas fa-credit-card me-2"></i>Saved Methods</h6>
+                        {% if payment_methods %}
+                            {% for method in payment_methods %}
+                                <div class="payment-method-item">
+                                    <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                                        <div>
+                                            <div class="payment-method-title">{{ method.get_method_type_display }} - {{ method.account_name }}</div>
+                                            <p class="payment-method-meta">
+                                                {{ method.account_number }}
+                                                {% if method.bank_name %} | {{ method.bank_name }}{% endif %}
+                                            </p>
+                                        </div>
+                                        <div class="d-flex gap-1">
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm btn-soft edit-payment-method"
+                                                data-id="{{ method.id }}"
+                                                data-method="{{ method.method_type }}"
+                                                data-account-name="{{ method.account_name }}"
+                                                data-account-number="{{ method.account_number }}"
+                                                data-bank-name="{{ method.bank_name|default:'' }}"
+                                            >
+                                                <i class="fas fa-pen"></i>
+                                            </button>
+
+                                            <form method="post" onsubmit="return confirm('Remove this payment method?');">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="action" value="delete_payment_method">
+                                                <input type="hidden" name="method_id" value="{{ method.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted mb-0">No payment methods saved yet.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="settings-card p-4">
+                        <h6 class="section-title"><i class="fas fa-receipt me-2"></i>Transaction History</h6>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-sm transaction-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Crop</th>
+                                        <th>Buyer</th>
+                                        <th>Status</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if transactions %}
+                                        {% for tx in transactions %}
+                                            <tr>
+                                                <td>#{{ tx.id }}</td>
+                                                <td>{{ tx.crop.crop_name }}</td>
+                                                <td>{{ tx.buyer.username }}</td>
+                                                <td><span class="badge bg-light text-dark text-capitalize">{{ tx.status }}</span></td>
+                                                <td>Tk {{ tx.total_price|floatformat:2 }}</td>
+                                                <td>{{ tx.order_date|date:"M d, Y" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted py-3">No transaction history available yet.</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'privacy' %}show active{% endif %}" id="tab-privacy" role="tabpanel">
+                    <div class="settings-card p-4 mb-3">
+                        <h5 class="section-title"><i class="fas fa-download me-2"></i>Download Data</h5>
+                        <p class="section-subtitle">Export your account, farm preferences, payment methods, and transaction history.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="download_data">
+                            <button type="submit" class="btn btn-save"><i class="fas fa-file-arrow-down me-1"></i> Download User Data</button>
+                        </form>
+                    </div>
+
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-triangle-exclamation me-2 text-danger"></i>Delete Account</h5>
+                        <p class="section-subtitle">This action is permanent and cannot be undone.</p>
+
+                        <div class="danger-zone">
+                            <h6>Warning</h6>
+                            <p class="text-muted mb-3">Deleting your account will remove profile, settings, payment methods, and related data permanently.</p>
+
+                            <form method="post" onsubmit="return confirm('Are you sure? This action cannot be undone.');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_account">
+
+                                <div class="field-grid">
+                                    <div>
+                                        <label class="form-label">Confirm with Password</label>
+                                        <input type="password" name="delete_password" class="form-control" required>
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Type DELETE_ACCOUNT</label>
+                                        <input type="text" name="delete_confirmation" class="form-control" placeholder="DELETE_ACCOUNT" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-outline-danger mt-3"><i class="fas fa-trash me-1"></i> Delete Account</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var tabButtons = document.querySelectorAll('#farmerSettingsTab button[data-bs-toggle="pill"]');
+        tabButtons.forEach(function (button) {
+            button.addEventListener('shown.bs.tab', function (event) {
+                var target = event.target.getAttribute('data-bs-target') || '';
+                var tabName = target.replace('#tab-', '');
+                if (tabName) {
+                    var next = new URL(window.location.href);
+                    next.searchParams.set('tab', tabName);
+                    window.history.replaceState({}, '', next.toString());
+                }
+            });
+        });
+
+        var methodType = document.getElementById('paymentMethodType');
+        var bankField = document.getElementById('bankNameField');
+        var methodIdInput = document.getElementById('paymentMethodId');
+        var saveButton = document.getElementById('paymentSaveButton');
+        var cancelButton = document.getElementById('paymentCancelEditButton');
+
+        function toggleBankField() {
+            if (!methodType || !bankField) return;
+            bankField.style.display = methodType.value === 'bank' ? '' : 'none';
+        }
+
+        function resetPaymentForm() {
+            var form = document.getElementById('paymentMethodForm');
+            if (!form) return;
+            form.reset();
+            methodIdInput.value = '';
+            if (saveButton) {
+                saveButton.innerHTML = '<i class="fas fa-plus me-1"></i> Save Method';
+            }
+            if (cancelButton) {
+                cancelButton.classList.add('d-none');
+            }
+            toggleBankField();
+        }
+
+        if (methodType) {
+            methodType.addEventListener('change', toggleBankField);
+            toggleBankField();
+        }
+
+        var editButtons = document.querySelectorAll('.edit-payment-method');
+        editButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                if (!methodType) return;
+
+                methodIdInput.value = button.getAttribute('data-id') || '';
+                methodType.value = button.getAttribute('data-method') || '';
+                document.getElementById('id_account_name').value = button.getAttribute('data-account-name') || '';
+                document.getElementById('id_account_number').value = button.getAttribute('data-account-number') || '';
+                document.getElementById('id_bank_name').value = button.getAttribute('data-bank-name') || '';
+
+                if (saveButton) {
+                    saveButton.innerHTML = '<i class="fas fa-floppy-disk me-1"></i> Update Method';
+                }
+                if (cancelButton) {
+                    cancelButton.classList.remove('d-none');
+                }
+                toggleBankField();
+            });
+        });
+
+        if (cancelButton) {
+            cancelButton.addEventListener('click', function () {
+                resetPaymentForm();
+            });
+        }
+    })();
+</script>
+{% endblock %}

@@ -118,6 +118,86 @@ class BuyerProfile(models.Model):
         return self.company_name or self.user.username
 
 
+class FarmerSettings(models.Model):
+    """Farmer-specific configurable preferences used by the settings page."""
+
+    QUANTITY_UNIT_CHOICES = (
+        ('kg', 'Kilogram (kg)'),
+        ('ton', 'Ton'),
+        ('quintal', 'Quintal'),
+        ('piece', 'Piece'),
+    )
+
+    FARM_SIZE_UNIT_CHOICES = (
+        ('acre', 'Acre'),
+        ('hectare', 'Hectare'),
+    )
+
+    LANGUAGE_CHOICES = (
+        ('en', 'English'),
+        ('bn', 'Bangla'),
+    )
+
+    RISK_SENSITIVITY_CHOICES = (
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    )
+
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='farmer_settings')
+
+    # Farm preferences
+    quantity_unit = models.CharField(max_length=20, choices=QUANTITY_UNIT_CHOICES, default='kg')
+    farm_size_unit = models.CharField(max_length=20, choices=FARM_SIZE_UNIT_CHOICES, default='acre')
+    default_crop_type = models.CharField(max_length=100, blank=True, null=True)
+    language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, default='en')
+
+    # Notifications
+    email_notifications = models.BooleanField(default=True)
+    sms_alerts = models.BooleanField(default=False)
+    order_updates = models.BooleanField(default=True)
+    ai_alerts = models.BooleanField(default=True)
+
+    # AI settings
+    disease_detection_enabled = models.BooleanField(default=True)
+    auto_recommendations = models.BooleanField(default=True)
+    risk_sensitivity = models.CharField(max_length=10, choices=RISK_SENSITIVITY_CHOICES, default='medium')
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Farmer Settings'
+        verbose_name_plural = 'Farmer Settings'
+
+    def __str__(self):
+        return f"Settings - {self.user.username}"
+
+
+class FarmerPaymentMethod(models.Model):
+    """Saved farmer payout/payment accounts."""
+
+    METHOD_CHOICES = (
+        ('bkash', 'bKash'),
+        ('nagad', 'Nagad'),
+        ('bank', 'Bank Account'),
+    )
+
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='farmer_payment_methods')
+    method_type = models.CharField(max_length=20, choices=METHOD_CHOICES)
+    account_name = models.CharField(max_length=120)
+    account_number = models.CharField(max_length=60)
+    bank_name = models.CharField(max_length=120, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_method_type_display()} - {self.account_name}"
+
+
 class Notification(models.Model):
     NOTIFICATION_TYPES = (
         ('message', 'New Message'),

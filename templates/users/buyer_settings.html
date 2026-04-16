@@ -1,0 +1,482 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buyer Settings - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --settings-bg: #f1f7f3;
+        --panel-bg: #ffffff;
+        --text-main: #173f31;
+        --text-muted: #5c7a6d;
+        --line-soft: #e3ece6;
+        --green-soft: #e2f4e8;
+        --green-mid: #89c69f;
+        --green-strong: #1f8a52;
+    }
+
+    .buyer-settings-shell {
+        max-width: 1200px;
+    }
+
+    .settings-sidebar,
+    .settings-card {
+        border: 1px solid var(--line-soft);
+        border-radius: 18px;
+        background: var(--panel-bg);
+        box-shadow: 0 10px 28px rgba(15, 50, 37, 0.06);
+    }
+
+    .settings-sidebar {
+        position: sticky;
+        top: 1rem;
+    }
+
+    .settings-sidebar-title {
+        color: var(--text-main);
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .settings-sidebar-subtitle {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+    }
+
+    .settings-nav .nav-link {
+        border: 0;
+        border-radius: 12px;
+        color: #3f5e52;
+        font-weight: 600;
+        text-align: left;
+        padding: 0.7rem 0.8rem;
+        margin-bottom: 0.35rem;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        transition: all 0.25s ease;
+    }
+
+    .settings-nav .nav-link:hover {
+        background: #f3faf6;
+        color: var(--text-main);
+        transform: translateX(2px);
+    }
+
+    .settings-nav .nav-link.active {
+        background: var(--green-soft);
+        color: var(--green-strong);
+        box-shadow: inset 0 0 0 1px rgba(31, 138, 82, 0.15);
+    }
+
+    .section-title {
+        color: var(--text-main);
+        font-size: 1.07rem;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+    }
+
+    .section-subtitle {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+    }
+
+    .field-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.85rem;
+    }
+
+    .field-grid.one-col {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-card .form-label {
+        color: #416355;
+        font-weight: 600;
+        font-size: 0.86rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .settings-card .form-control,
+    .settings-card .form-select {
+        border-radius: 10px;
+        border-color: #d8e7dd;
+        min-height: 43px;
+    }
+
+    .settings-card .form-control:focus,
+    .settings-card .form-select:focus {
+        box-shadow: 0 0 0 0.2rem rgba(31, 138, 82, 0.12);
+        border-color: var(--green-mid);
+    }
+
+    .avatar-preview {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        border: 3px solid var(--green-soft);
+        overflow: hidden;
+        background: #ecf8f0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--green-strong);
+        font-size: 2rem;
+    }
+
+    .avatar-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .toggle-row {
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        padding: 0.75rem 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        background: #fcfffd;
+        margin-bottom: 0.65rem;
+    }
+
+    .toggle-label {
+        color: var(--text-main);
+        font-weight: 600;
+        margin-bottom: 0.12rem;
+    }
+
+    .toggle-hint {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        margin-bottom: 0;
+    }
+
+    .form-check-input {
+        width: 2.55rem;
+        height: 1.35rem;
+        border-radius: 999px;
+    }
+
+    .form-check-input:checked {
+        background-color: var(--green-strong);
+        border-color: var(--green-strong);
+    }
+
+    .btn-save {
+        background: var(--green-strong);
+        color: #fff;
+        border: 0;
+        border-radius: 10px;
+        padding: 0.55rem 1rem;
+    }
+
+    .btn-save:hover {
+        background: #176f42;
+        color: #fff;
+    }
+
+    .security-log-item {
+        border-bottom: 1px dashed #e4ede7;
+        padding: 0.55rem 0;
+    }
+
+    .security-log-item:last-child {
+        border-bottom: 0;
+    }
+
+    .security-log-label {
+        color: var(--text-main);
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .security-log-time {
+        color: var(--text-muted);
+        font-size: 0.82rem;
+    }
+
+    .danger-zone {
+        border: 1px solid #f5d4d8;
+        background: #fff8f8;
+        border-radius: 12px;
+        padding: 0.9rem;
+    }
+
+    .danger-zone h6 {
+        color: #9a1e2d;
+        font-weight: 700;
+    }
+
+    @media (max-width: 991.98px) {
+        .settings-sidebar {
+            position: static;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .field-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 buyer-settings-shell">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h2 class="fw-bold" style="color: var(--text-main);">
+                <i class="fas fa-sliders me-2 text-success"></i>Buyer Settings
+            </h2>
+            <p class="mb-0" style="color: var(--text-muted);">Manage your account, security, business details, and privacy options.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-3">
+            <div class="settings-sidebar p-3">
+                <h6 class="settings-sidebar-title">Settings Menu</h6>
+                <p class="settings-sidebar-subtitle">Choose a section to update</p>
+
+                <div class="nav flex-column nav-pills settings-nav" id="buyerSettingsTab" role="tablist" aria-orientation="vertical">
+                    <button class="nav-link {% if active_tab == 'account' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-account" type="button" role="tab" aria-selected="{% if active_tab == 'account' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-user"></i> Account Settings
+                    </button>
+                    <button class="nav-link {% if active_tab == 'security' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-security" type="button" role="tab" aria-selected="{% if active_tab == 'security' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-shield-halved"></i> Security
+                    </button>
+                    <button class="nav-link {% if active_tab == 'business' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-business" type="button" role="tab" aria-selected="{% if active_tab == 'business' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-building"></i> Business Details
+                    </button>
+                    <button class="nav-link {% if active_tab == 'privacy' %}active{% endif %}" data-bs-toggle="pill" data-bs-target="#tab-privacy" type="button" role="tab" aria-selected="{% if active_tab == 'privacy' %}true{% else %}false{% endif %}">
+                        <i class="fas fa-user-lock"></i> Data & Privacy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div class="tab-content" id="buyerSettingsTabContent">
+                <div class="tab-pane fade {% if active_tab == 'account' %}show active{% endif %}" id="tab-account" role="tabpanel">
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-user me-2"></i>Account Settings</h5>
+                        <p class="section-subtitle">Update your profile identity and contact details.</p>
+
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_account">
+
+                            <div class="mb-3 d-flex align-items-center gap-3 flex-wrap">
+                                <div class="avatar-preview">
+                                    {% if request.user.profile_picture %}
+                                        <img src="{{ request.user.profile_picture.url }}" alt="Profile photo">
+                                    {% else %}
+                                        <i class="fas fa-user"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Profile Photo</label>
+                                    {{ account_form.profile_picture }}
+                                    {% if account_form.profile_picture.errors %}
+                                        <div class="text-danger small mt-1">{{ account_form.profile_picture.errors|join:', ' }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="field-grid">
+                                <div>
+                                    <label class="form-label">First Name</label>
+                                    {{ account_form.first_name }}
+                                </div>
+                                <div>
+                                    <label class="form-label">Last Name</label>
+                                    {{ account_form.last_name }}
+                                </div>
+                                <div>
+                                    <label class="form-label">Email</label>
+                                    {{ account_form.email }}
+                                </div>
+                                <div>
+                                    <label class="form-label">Phone</label>
+                                    {{ account_form.phone_number }}
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-save"><i class="fas fa-floppy-disk me-1"></i> Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'security' %}show active{% endif %}" id="tab-security" role="tabpanel">
+                    <div class="settings-card p-4 mb-3">
+                        <h5 class="section-title"><i class="fas fa-key me-2"></i>Change Password</h5>
+                        <p class="section-subtitle">Keep your account secure with a strong password.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="change_password">
+                            <div class="field-grid one-col">
+                                <div>
+                                    <label class="form-label">Current Password</label>
+                                    {{ password_form.old_password }}
+                                    {% if password_form.old_password.errors %}<div class="text-danger small mt-1">{{ password_form.old_password.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">New Password</label>
+                                    {{ password_form.new_password1 }}
+                                    {% if password_form.new_password1.errors %}<div class="text-danger small mt-1">{{ password_form.new_password1.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Confirm New Password</label>
+                                    {{ password_form.new_password2 }}
+                                    {% if password_form.new_password2.errors %}<div class="text-danger small mt-1">{{ password_form.new_password2.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-save"><i class="fas fa-lock me-1"></i> Update Password</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-shield-halved me-2"></i>Security Controls</h5>
+                        <p class="section-subtitle">Manage 2FA and review login activities.</p>
+
+                        <form method="post" class="mb-3">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_security">
+                            <div class="toggle-row">
+                                <div>
+                                    <div class="toggle-label">Two-Factor Authentication</div>
+                                    <p class="toggle-hint">Add an extra login verification layer for better account safety.</p>
+                                </div>
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" name="two_factor_enabled" {% if request.user.two_factor_enabled %}checked{% endif %}>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-save mt-3"><i class="fas fa-check me-1"></i> Save Security Settings</button>
+                        </form>
+
+                        <h6 class="mt-1" style="color: var(--text-main); font-weight: 700;">Last Login Activity</h6>
+                        {% if last_login_activity %}
+                            {% for log in last_login_activity %}
+                                <div class="security-log-item">
+                                    <div class="security-log-label">{{ log.description|default:'Successful login' }}</div>
+                                    <div class="security-log-time">{{ log.timestamp|date:"M d, Y h:i A" }}</div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted mb-0">No recent activity available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'business' %}show active{% endif %}" id="tab-business" role="tabpanel">
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-building me-2"></i>Business Details</h5>
+                        <p class="section-subtitle">Manage your company information used for verification and purchasing workflows.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save_business">
+
+                            <div class="field-grid">
+                                <div>
+                                    <label class="form-label">Company Name</label>
+                                    {{ business_form.company_name }}
+                                    {% if business_form.company_name.errors %}<div class="text-danger small mt-1">{{ business_form.company_name.errors|join:', ' }}</div>{% endif %}
+                                </div>
+                                <div>
+                                    <label class="form-label">Business Type</label>
+                                    {{ business_form.business_type }}
+                                </div>
+                                <div>
+                                    <label class="form-label">Registration Number</label>
+                                    {{ business_form.registration_number }}
+                                </div>
+                                <div>
+                                    <label class="form-label">Approval Status</label>
+                                    <input type="text" class="form-control" value="{% if buyer_profile.is_approved %}Approved{% else %}Pending{% endif %}" disabled>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-save"><i class="fas fa-floppy-disk me-1"></i> Save Business Details</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade {% if active_tab == 'privacy' %}show active{% endif %}" id="tab-privacy" role="tabpanel">
+                    <div class="settings-card p-4 mb-3">
+                        <h5 class="section-title"><i class="fas fa-download me-2"></i>Download Data</h5>
+                        <p class="section-subtitle">Export your account, business details, and purchase history.</p>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="download_data">
+                            <button type="submit" class="btn btn-save"><i class="fas fa-file-arrow-down me-1"></i> Download User Data</button>
+                        </form>
+                    </div>
+
+                    <div class="settings-card p-4">
+                        <h5 class="section-title"><i class="fas fa-triangle-exclamation me-2 text-danger"></i>Delete Account</h5>
+                        <p class="section-subtitle">This action is permanent and cannot be undone.</p>
+
+                        <div class="danger-zone">
+                            <h6>Warning</h6>
+                            <p class="text-muted mb-3">Deleting your account will remove your profile and related buyer data permanently.</p>
+
+                            <form method="post" onsubmit="return confirm('Are you sure? This action cannot be undone.');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete_account">
+
+                                <div class="field-grid">
+                                    <div>
+                                        <label class="form-label">Confirm with Password</label>
+                                        <input type="password" name="delete_password" class="form-control" required>
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Type DELETE_ACCOUNT</label>
+                                        <input type="text" name="delete_confirmation" class="form-control" placeholder="DELETE_ACCOUNT" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-outline-danger mt-3"><i class="fas fa-trash me-1"></i> Delete Account</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var tabButtons = document.querySelectorAll('#buyerSettingsTab button[data-bs-toggle="pill"]');
+        tabButtons.forEach(function (button) {
+            button.addEventListener('shown.bs.tab', function (event) {
+                var target = event.target.getAttribute('data-bs-target') || '';
+                var tabName = target.replace('#tab-', '');
+                if (tabName) {
+                    var next = new URL(window.location.href);
+                    next.searchParams.set('tab', tabName);
+                    window.history.replaceState({}, '', next.toString());
+                }
+            });
+        });
+    })();
+</script>
+{% endblock %}

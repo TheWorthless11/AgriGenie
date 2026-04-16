@@ -2,7 +2,13 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
 from django.contrib.auth.hashers import make_password
 from django.core.validators import RegexValidator
-from users.models import CustomUser, FarmerProfile, BuyerProfile
+from users.models import (
+    CustomUser,
+    FarmerProfile,
+    BuyerProfile,
+    FarmerSettings,
+    FarmerPaymentMethod,
+)
 import re
 
 
@@ -332,6 +338,149 @@ class CustomUserChangeForm(UserChangeForm):
         fields = ('username', 'first_name', 'last_name', 'email', 'phone_number', 'location', 'profile_picture', 'bio')
 
 
+class AdminProfileUpdateForm(forms.ModelForm):
+    """Focused profile edit form for admin accounts."""
+
+    class Meta:
+        model = CustomUser
+        fields = ('first_name', 'last_name', 'email', 'phone_number', 'profile_picture')
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'admin@example.com'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+8801XXXXXXXXX'}),
+            'profile_picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if email and CustomUser.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
+            raise forms.ValidationError('This email is already in use by another account.')
+        return email
+
+    def clean_phone_number(self):
+        phone = (self.cleaned_data.get('phone_number') or '').strip()
+        if phone and CustomUser.objects.exclude(pk=self.instance.pk).filter(phone_number=phone).exists():
+            raise forms.ValidationError('This phone number is already in use by another account.')
+        return phone
+
+
+class FarmerAccountSettingsForm(forms.ModelForm):
+    """Account section for farmer settings page."""
+
+    class Meta:
+        model = CustomUser
+        fields = ('first_name', 'last_name', 'email', 'phone_number', 'profile_picture')
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'name@example.com'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+8801XXXXXXXXX'}),
+            'profile_picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_email(self):
+        email = (self.cleaned_data.get('email') or '').strip().lower()
+        if email and CustomUser.objects.exclude(pk=self.instance.pk).filter(email__iexact=email).exists():
+            raise forms.ValidationError('This email is already in use by another account.')
+        return email
+
+    def clean_phone_number(self):
+        phone = (self.cleaned_data.get('phone_number') or '').strip()
+        if phone and CustomUser.objects.exclude(pk=self.instance.pk).filter(phone_number=phone).exists():
+            raise forms.ValidationError('This phone number is already in use by another account.')
+        return phone
+
+
+class FarmerPreferenceSettingsForm(forms.ModelForm):
+    """Farm preference section for farmer settings page."""
+
+    DEFAULT_CROP_CHOICES = [
+        ('', 'Select default crop type'),
+        ('rice', 'Rice'),
+        ('wheat', 'Wheat'),
+        ('maize', 'Maize'),
+        ('potato', 'Potato'),
+        ('tomato', 'Tomato'),
+        ('onion', 'Onion'),
+    ]
+
+    default_crop_type = forms.ChoiceField(
+        choices=DEFAULT_CROP_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+
+    class Meta:
+        model = FarmerSettings
+        fields = ('quantity_unit', 'farm_size_unit', 'default_crop_type', 'language')
+        widgets = {
+            'quantity_unit': forms.Select(attrs={'class': 'form-select'}),
+            'farm_size_unit': forms.Select(attrs={'class': 'form-select'}),
+            'language': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        current_crop = (getattr(self.instance, 'default_crop_type', '') or '').strip().lower()
+        known_values = [choice[0] for choice in self.DEFAULT_CROP_CHOICES if choice[0]]
+        if current_crop and current_crop not in known_values:
+            self.fields['default_crop_type'].choices = self.DEFAULT_CROP_CHOICES + [
+                (current_crop, current_crop.replace('_', ' ').title())
+            ]
+
+
+class FarmerNotificationSettingsForm(forms.ModelForm):
+    """Notification toggle section for farmer settings page."""
+
+    class Meta:
+        model = FarmerSettings
+        fields = ('email_notifications', 'sms_alerts', 'order_updates', 'ai_alerts')
+        widgets = {
+            'email_notifications': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'sms_alerts': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'order_updates': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'ai_alerts': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class FarmerAISettingsForm(forms.ModelForm):
+    """AI setting section for farmer settings page."""
+
+    class Meta:
+        model = FarmerSettings
+        fields = ('disease_detection_enabled', 'auto_recommendations', 'risk_sensitivity')
+        widgets = {
+            'disease_detection_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'auto_recommendations': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'risk_sensitivity': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+
+class FarmerPaymentMethodForm(forms.ModelForm):
+    """Payment method add/edit form."""
+
+    class Meta:
+        model = FarmerPaymentMethod
+        fields = ('method_type', 'account_name', 'account_number', 'bank_name')
+        widgets = {
+            'method_type': forms.Select(attrs={'class': 'form-select', 'id': 'paymentMethodType'}),
+            'account_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Account holder name'}),
+            'account_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Account/mobile number'}),
+            'bank_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Bank name (for bank account)'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        method_type = cleaned_data.get('method_type')
+        bank_name = (cleaned_data.get('bank_name') or '').strip()
+
+        if method_type == 'bank' and not bank_name:
+            self.add_error('bank_name', 'Bank name is required for bank account method.')
+
+        return cleaned_data
+
+
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={'class': 'form-control'}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control'}))
@@ -348,6 +497,19 @@ class FarmerProfileForm(forms.ModelForm):
             'soil_type': forms.TextInput(attrs={'class': 'form-control'}),
             'experience_years': forms.NumberInput(attrs={'class': 'form-control'}),
             'registration_number': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+
+class FarmerProfileBasicForm(forms.ModelForm):
+    """Profile edit form for farmer basic details shown in profile edit UI."""
+
+    class Meta:
+        model = FarmerProfile
+        fields = ('farm_name', 'farm_size', 'farm_location')
+        widgets = {
+            'farm_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'farm_size': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'farm_location': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 

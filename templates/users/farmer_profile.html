@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Farmer Profile - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --profile-bg: #f2f8f4;
+        --card-bg: #ffffff;
+        --text-main: #143b2e;
+        --text-muted: #5f7b70;
+        --green-soft: #dff3e5;
+        --green-mid: #7ebf96;
+        --green-strong: #1f8a52;
+        --line-soft: #e7efe9;
+    }
+
+    .farmer-profile-shell {
+        max-width: 1080px;
+    }
+
+    .farmer-profile-card {
+        background: var(--card-bg);
+        border: 1px solid var(--line-soft);
+        border-radius: 18px;
+        box-shadow: 0 10px 30px rgba(20, 59, 46, 0.06);
+    }
+
+    .farmer-profile-identity {
+        background: linear-gradient(140deg, #f8fcf9 0%, var(--profile-bg) 100%);
+    }
+
+    .profile-avatar {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        border: 3px solid var(--green-soft);
+        background: #ebf7ef;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .profile-avatar i {
+        color: var(--green-strong);
+        font-size: 2.2rem;
+    }
+
+    .profile-name {
+        color: var(--text-main);
+        font-weight: 700;
+        margin-bottom: 0.15rem;
+    }
+
+    .badge-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 0.82rem;
+        padding: 0.35rem 0.8rem;
+    }
+
+    .badge-beginner {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .badge-intermediate {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .badge-expert {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .profile-meta {
+        color: var(--text-muted);
+        font-size: 0.92rem;
+        margin-top: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.9rem;
+    }
+
+    .profile-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .section-title {
+        color: var(--text-main);
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 0.2rem;
+    }
+
+    .section-subtitle {
+        color: var(--text-muted);
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .info-item {
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        padding: 0.75rem 0.85rem;
+        background: #fcfffd;
+    }
+
+    .info-label {
+        color: var(--text-muted);
+        font-size: 0.74rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.2rem;
+    }
+
+    .info-value {
+        color: var(--text-main);
+        font-size: 0.95rem;
+        font-weight: 600;
+        margin-bottom: 0;
+        word-break: break-word;
+    }
+
+    .summary-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        padding: 0.8rem 0.9rem;
+        margin-bottom: 0.75rem;
+        background: #fcfffd;
+    }
+
+    .summary-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .summary-left {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    .summary-icon {
+        color: var(--green-strong);
+    }
+
+    .summary-value {
+        color: var(--text-main);
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+    }
+
+    .btn-profile-primary {
+        background: var(--green-strong);
+        color: #fff;
+        border: 0;
+    }
+
+    .btn-profile-primary:hover {
+        background: #176f42;
+        color: #fff;
+    }
+
+    .btn-profile-secondary {
+        background: #f4f8f5;
+        color: var(--text-main);
+        border: 1px solid #d8e8dd;
+    }
+
+    .btn-profile-secondary:hover {
+        background: #eaf4ee;
+        color: var(--text-main);
+    }
+
+    @media (max-width: 767.98px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .profile-meta {
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4 farmer-profile-shell">
+    <div class="card farmer-profile-card farmer-profile-identity mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                <div class="profile-avatar">
+                    {% if profile_user.profile_picture %}
+                        <img src="{{ profile_user.profile_picture.url }}" alt="Farmer profile picture">
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+
+                <div class="flex-grow-1">
+                    <h5 class="section-title"><i class="fas fa-id-card me-2"></i>Profile Overview</h5>
+                    <p class="section-subtitle mb-2">Your personal identity and contact details.</p>
+                    <h3 class="profile-name">{{ profile_user.get_full_name|default:profile_user.username }}</h3>
+                    <span class="badge-chip {{ badge_class }}">
+                        <i class="fas fa-award"></i> {{ farmer_badge }} Farmer
+                    </span>
+
+                    <div class="profile-meta">
+                        <span><i class="fas fa-location-dot"></i> {{ profile_location }}</span>
+                        <span><i class="fas fa-envelope"></i> {{ profile_user.email|default:'Not set' }}</span>
+                        <span><i class="fas fa-phone"></i> {{ profile_user.phone_number|default:'Not set' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <div class="card farmer-profile-card h-100">
+                <div class="card-body p-4">
+                    <h5 class="section-title"><i class="fas fa-tractor me-2"></i>Farm Information</h5>
+                    <p class="section-subtitle">Core farm details and setup.</p>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <p class="info-label">Farm Name</p>
+                            <p class="info-value">{{ farmer_profile.farm_name|default:'Not set' }}</p>
+                        </div>
+                        <div class="info-item">
+                            <p class="info-label">Farm Size</p>
+                            <p class="info-value">
+                                {% if farmer_profile and farmer_profile.farm_size %}
+                                    {{ farmer_profile.farm_size|floatformat:2 }} acres
+                                {% else %}
+                                    Not set
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="info-item">
+                            <p class="info-label">Farm Location</p>
+                            <p class="info-value">{{ farmer_profile.farm_location|default:'Not set' }}</p>
+                        </div>
+                        <div class="info-item">
+                            <p class="info-label">Soil Type</p>
+                            <p class="info-value">{{ farmer_profile.soil_type|default:'Not set' }}</p>
+                        </div>
+                        <div class="info-item" style="grid-column: 1 / -1;">
+                            <p class="info-label">Irrigation Type</p>
+                            <p class="info-value">{{ irrigation_type }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card farmer-profile-card h-100">
+                <div class="card-body p-4">
+                    <h5 class="section-title"><i class="fas fa-seedling me-2"></i>Farming Summary</h5>
+                    <p class="section-subtitle">Simple profile summary for your farming account.</p>
+
+                    <div class="summary-row">
+                        <div class="summary-left">
+                            <i class="fas fa-leaf summary-icon"></i>
+                            <span>Total crops listed</span>
+                        </div>
+                        <span class="summary-value">{{ total_crops_listed }}</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-left">
+                            <i class="fas fa-clipboard-check summary-icon"></i>
+                            <span>Total orders completed</span>
+                        </div>
+                        <span class="summary-value">{{ total_orders_completed }}</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-left">
+                            <i class="fas fa-star summary-icon"></i>
+                            <span>Rating</span>
+                        </div>
+                        <span class="summary-value">
+                            {% if rating %}{{ rating|floatformat:1 }}{% else %}N/A{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card farmer-profile-card mt-3">
+        <div class="card-body p-4 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
+            <div>
+                <h6 class="mb-1" style="color: var(--text-main); font-weight: 700;">Actions</h6>
+                <p class="mb-0" style="color: var(--text-muted); font-size: 0.9rem;">Quickly edit your information or return to the dashboard.</p>
+            </div>
+            <div class="action-buttons">
+                {% if can_edit_profile %}
+                    <a href="{% url 'profile_edit' %}" class="btn btn-profile-primary">
+                        <i class="fas fa-pen-to-square me-1"></i> Edit Profile
+                    </a>
+                    <a href="{% url 'farmer_settings' %}" class="btn btn-profile-secondary">
+                        <i class="fas fa-sliders me-1"></i> Settings
+                    </a>
+                {% endif %}
+                <a href="{% url 'dashboard' %}" class="btn btn-profile-secondary">
+                    <i class="fas fa-table-columns me-1"></i> Go to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

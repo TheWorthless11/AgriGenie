@@ -1,15 +1,125 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q, Avg, Count
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
-from users.models import CustomUser, FarmerProfile, BuyerProfile, Notification
-from users.forms import CustomUserCreationForm, CustomUserChangeForm, FarmerProfileForm, BuyerProfileForm, CustomAuthenticationForm, DynamicRegistrationForm
+from django.contrib.sessions.models import Session
+from django.utils import timezone
+from users.models import (
+    CustomUser,
+    FarmerProfile,
+    BuyerProfile,
+    Notification,
+    FarmerSettings,
+    FarmerPaymentMethod,
+)
+from users.forms import (
+    CustomUserCreationForm,
+    CustomUserChangeForm,
+    FarmerProfileForm,
+    FarmerProfileBasicForm,
+    BuyerProfileForm,
+    CustomAuthenticationForm,
+    DynamicRegistrationForm,
+    AdminProfileUpdateForm,
+    FarmerAccountSettingsForm,
+    FarmerPreferenceSettingsForm,
+    FarmerNotificationSettingsForm,
+    FarmerAISettingsForm,
+    FarmerPaymentMethodForm,
+)
 from farmer.models import Crop, Order, Message
 from marketplace.models import CropListing
+from admin_panel.models import ActivityLog
+import json
+
+
+def _client_ip(request):
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def _describe_device(user_agent):
+    ua = (user_agent or '').lower()
+
+    platform = 'Unknown OS'
+    if 'windows' in ua:
+        platform = 'Windows'
+    elif 'android' in ua:
+        platform = 'Android'
+    elif 'iphone' in ua or 'ipad' in ua or 'ios' in ua:
+        platform = 'iOS'
+    elif 'mac os' in ua or 'macintosh' in ua:
+        platform = 'macOS'
+    elif 'linux' in ua:
+        platform = 'Linux'
+
+    browser = 'Browser'
+    if 'edg' in ua:
+        browser = 'Edge'
+    elif 'chrome' in ua and 'edg' not in ua:
+        browser = 'Chrome'
+    elif 'safari' in ua and 'chrome' not in ua:
+        browser = 'Safari'
+    elif 'firefox' in ua:
+        browser = 'Firefox'
+
+    return f'{platform} / {browser}'
+
+
+def _log_activity(user, action, description='', request=None):
+    """Best-effort activity logging used by profile/admin UX sections."""
+    if not user or not user.is_authenticated:
+        return
+
+    try:
+        ActivityLog.objects.create(
+            user=user,
+            action=action,
+            description=description,
+            ip_address=_client_ip(request) if request else None,
+            user_agent=(request.META.get('HTTP_USER_AGENT', '')[:500] if request else ''),
+        )
+    except Exception:
+        # Logging must never block core user flows.
+        pass
+
+
+def _active_sessions_for_user(user, current_session_key=None):
+    sessions = []
+    for session in Session.objects.filter(expire_date__gte=timezone.now()).order_by('-expire_date'):
+        try:
+            session_data = session.get_decoded()
+        except Exception:
+            continue
+
+        if str(session_data.get('_auth_user_id')) != str(user.id):
+            continue
+
+        sessions.append({
+            'session_key': session.session_key,
+            'expires_at': session.expire_date,
+            'is_current': bool(current_session_key and session.session_key == current_session_key),
+        })
+
+    return sessions
+
+
+def _profile_completion_percent(user):
+    checkpoints = [
+        bool(user.first_name),
+        bool(user.last_name),
+        bool(user.email),
+        bool(user.phone_number),
+        bool(user.profile_picture),
+    ]
+    return round((sum(checkpoints) / len(checkpoints)) * 100)
 
 
 def start_google_login(request):
@@ -233,6 +343,7 @@ def login_view(request):
                         request.session.cycle_key()  # Regenerate session key for security
                         
                         messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+                        _log_activity(user, 'login', 'Logged in successfully using PIN authentication.', request)
                         
                         # Create redirect response and ensure session cookie is set
                         from django.http import HttpResponseRedirect
@@ -264,6 +375,7 @@ def login_view(request):
                         request.session.modified = True
                         request.session.cycle_key()
                         messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+                        _log_activity(authenticated_user, 'login', 'Logged in successfully using password authentication.', request)
                         from django.http import HttpResponseRedirect
                         from django.urls import reverse
                         from django.conf import settings
@@ -300,6 +412,7 @@ def login_view(request):
                     request.session.modified = True
                     request.session.cycle_key()
                     messages.success(request, f'Welcome back, {user.first_name or user.username}!')
+                    _log_activity(authenticated_user, 'login', 'Buyer logged in successfully.', request)
                     
                     from django.http import HttpResponseRedirect
                     from django.urls import reverse
@@ -481,6 +594,8 @@ def buyer_onboarding(request):
 
 def logout_view(request):
     """User logout view"""
+    if request.user.is_authenticated:
+        _log_activity(request.user, 'logout', 'User logged out.', request)
     logout(request)
     messages.success(request, 'You have been logged out successfully!')
     return redirect('login')
@@ -501,20 +616,10 @@ def dashboard(request):
     }
     
     if user.role == 'farmer':
-        farmer_profile = FarmerProfile.objects.filter(user=user).first()
-        crops = Crop.objects.filter(farmer=user).count()
-        orders = Order.objects.filter(farmer=user).count()
-        messages_count = Message.objects.filter(recipient=user, is_read=False).count()
-        is_approved = True
-        
-        context.update({
-            'farmer_profile': farmer_profile,
-            'crops_count': crops,
-            'orders_count': orders,
-            'unread_messages': messages_count,
-            'is_approved': is_approved,
-        })
-        return render(request, 'farmer/dashboard.html', context)
+        # Keep farmer dashboard data in one place to avoid context drift.
+        from farmer.views import farmer_dashboard
+
+        return farmer_dashboard(request)
     
     elif user.role == 'buyer':
         buyer_profile = BuyerProfile.objects.filter(user=user).first()
@@ -617,24 +722,82 @@ def submit_buyer_approval_documents(request):
 def profile_view(request, username=None):
     """View user profile"""
     if username:
-        user = get_object_or_404(CustomUser, username=username)
+        profile_user = get_object_or_404(CustomUser, username=username)
     else:
-        user = request.user
+        profile_user = request.user
     
-    context = {'profile_user': user}
+    context = {
+        'profile_user': profile_user,
+        'can_edit_profile': request.user.id == profile_user.id,
+    }
+
+    if profile_user.role == 'admin':
+        current_session_key = request.session.session_key if request.user.id == profile_user.id else None
+        active_sessions = _active_sessions_for_user(profile_user, current_session_key=current_session_key)
+        current_device = _describe_device(request.META.get('HTTP_USER_AGENT', ''))
+        role_label = 'Super Admin' if profile_user.is_superuser else 'Admin'
+
+        context.update({
+            'role_label': role_label,
+            'last_login_time': profile_user.last_login,
+            'account_created': profile_user.created_at,
+            'profile_completion': _profile_completion_percent(profile_user),
+            'recent_activities': ActivityLog.objects.filter(user=profile_user).order_by('-timestamp')[:8],
+            'active_sessions': active_sessions[:5],
+            'active_sessions_count': len(active_sessions),
+            'current_device': current_device,
+            'can_manage_security': request.user.id == profile_user.id,
+        })
+        return render(request, 'users/admin_profile.html', context)
     
-    if user.role == 'farmer':
-        farmer_profile = FarmerProfile.objects.filter(user=user).first()
-        crops = Crop.objects.filter(farmer=user, is_available=True).count()
+    if profile_user.role == 'farmer':
+        farmer_profile = FarmerProfile.objects.filter(user=profile_user).first()
+        crops = Crop.objects.filter(farmer=profile_user).count()
+        completed_orders = (
+            Order.objects.filter(
+                Q(farmer=profile_user) | Q(crop__farmer=profile_user),
+                status='delivered',
+            )
+            .distinct()
+            .count()
+        )
         rating = farmer_profile.rating if farmer_profile else 0
+
+        experience_years = farmer_profile.experience_years if farmer_profile else 0
+        if experience_years >= 10:
+            farmer_badge = 'Expert'
+            badge_class = 'badge-expert'
+        elif experience_years >= 4:
+            farmer_badge = 'Intermediate'
+            badge_class = 'badge-intermediate'
+        else:
+            farmer_badge = 'Beginner'
+            badge_class = 'badge-beginner'
+
+        profile_location = profile_user.get_full_location() if profile_user.get_full_location() else ''
+        if not profile_location and farmer_profile and farmer_profile.farm_location:
+            profile_location = farmer_profile.farm_location
+        if not profile_location:
+            profile_location = 'Not set'
+
+        latest_irrigation_record = profile_user.irrigation_records.order_by('-date', '-created_at').first()
+        irrigation_type = latest_irrigation_record.get_method_display() if latest_irrigation_record else 'Not specified'
+
         context.update({
             'farmer_profile': farmer_profile,
             'crops_count': crops,
+            'total_crops_listed': crops,
+            'total_orders_completed': completed_orders,
             'rating': rating,
+            'farmer_badge': farmer_badge,
+            'badge_class': badge_class,
+            'profile_location': profile_location,
+            'irrigation_type': irrigation_type,
         })
+        return render(request, 'users/farmer_profile.html', context)
     
-    elif user.role == 'buyer':
-        buyer_profile = BuyerProfile.objects.filter(user=user).first()
+    elif profile_user.role == 'buyer':
+        buyer_profile = BuyerProfile.objects.filter(user=profile_user).first()
         context.update({'buyer_profile': buyer_profile})
     
     return render(request, 'users/profile.html', context)
@@ -644,19 +807,38 @@ def profile_view(request, username=None):
 def profile_edit(request):
     """Edit user profile"""
     user = request.user
+    form_class = AdminProfileUpdateForm if user.role == 'admin' else CustomUserChangeForm
     
     if request.method == 'POST':
-        form = CustomUserChangeForm(request.POST, request.FILES, instance=user)
+        form = form_class(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
+            _log_activity(user, 'update_profile', 'Updated account profile details.', request)
             messages.success(request, 'Profile updated successfully!')
+
+            if user.role == 'admin':
+                return redirect('profile')
             
             # Handle role-specific profile
             if user.role == 'farmer' and request.POST.get('farm_name'):
-                farmer_profile, created = FarmerProfile.objects.get_or_create(user=user)
-                farmer_form = FarmerProfileForm(request.POST, instance=farmer_profile)
+                farmer_profile, _ = FarmerProfile.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        'farm_name': request.POST.get('farm_name') or f"{user.username}'s Farm",
+                        'farm_size': 0,
+                        'farm_location': request.POST.get('farm_location') or (user.get_full_location() or user.location or ''),
+                        'soil_type': 'Not specified',
+                        'experience_years': 0,
+                        'registration_number': f'FR-{user.id:06d}',
+                    },
+                )
+                farmer_form = FarmerProfileBasicForm(request.POST, instance=farmer_profile)
                 if farmer_form.is_valid():
                     farmer_form.save()
+                else:
+                    for _, errs in farmer_form.errors.items():
+                        for err in errs:
+                            messages.error(request, err)
             
             elif user.role == 'buyer' and request.POST.get('company_name'):
                 buyer_profile, created = BuyerProfile.objects.get_or_create(user=user)
@@ -666,15 +848,28 @@ def profile_edit(request):
             
             return redirect('profile')
     else:
-        form = CustomUserChangeForm(instance=user)
+        form = form_class(instance=user)
     
-    context = {'form': form, 'title': 'Edit Profile'}
+    context = {
+        'form': form,
+        'title': 'Edit Profile',
+        'is_admin_profile_edit': user.role == 'admin',
+    }
     
     if user.role == 'farmer':
-        farmer_profile = FarmerProfile.objects.filter(user=user).first()
-        if farmer_profile:
-            farmer_form = FarmerProfileForm(instance=farmer_profile)
-            context['farmer_form'] = farmer_form
+        farmer_profile, _ = FarmerProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                'farm_name': f"{user.username}'s Farm",
+                'farm_size': 0,
+                'farm_location': user.get_full_location() or user.location or '',
+                'soil_type': 'Not specified',
+                'experience_years': 0,
+                'registration_number': f'FR-{user.id:06d}',
+            },
+        )
+        farmer_form = FarmerProfileBasicForm(instance=farmer_profile)
+        context['farmer_form'] = farmer_form
     
     elif user.role == 'buyer':
         buyer_profile = BuyerProfile.objects.filter(user=user).first()
@@ -683,6 +878,480 @@ def profile_edit(request):
             context['buyer_form'] = buyer_form
     
     return render(request, 'users/profile_edit.html', context)
+
+
+@login_required(login_url='login')
+@require_http_methods(["GET", "POST"])
+def farmer_settings(request):
+    """Modern multi-section settings page for farmer accounts."""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Only farmer accounts can access this page.')
+        return redirect('dashboard')
+
+    user = request.user
+
+    farmer_profile, _ = FarmerProfile.objects.get_or_create(
+        user=user,
+        defaults={
+            'farm_name': f"{user.first_name}'s Farm" if user.first_name else f"{user.username}'s Farm",
+            'farm_size': 0,
+            'farm_location': user.get_full_location() or user.location or '',
+            'soil_type': 'Not specified',
+            'experience_years': 0,
+            'registration_number': f'FR-{user.id:06d}',
+        },
+    )
+    settings_obj, _ = FarmerSettings.objects.get_or_create(user=user)
+
+    tab_for_action = {
+        'save_account': 'account',
+        'save_security': 'security',
+        'change_password': 'security',
+        'save_preferences': 'preferences',
+        'save_notifications': 'notifications',
+        'save_ai': 'ai',
+        'save_payment_method': 'payment',
+        'delete_payment_method': 'payment',
+        'download_data': 'privacy',
+        'delete_account': 'privacy',
+    }
+    valid_tabs = {'account', 'security', 'preferences', 'notifications', 'ai', 'payment', 'privacy'}
+
+    def _styled_password_form(form):
+        for field in form.fields.values():
+            existing_class = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (existing_class + ' form-control').strip()
+        return form
+
+    active_tab = request.GET.get('tab', 'account')
+    if active_tab not in valid_tabs:
+        active_tab = 'account'
+
+    account_form = FarmerAccountSettingsForm(instance=user)
+    password_form = _styled_password_form(PasswordChangeForm(user))
+    preference_form = FarmerPreferenceSettingsForm(instance=settings_obj)
+    notification_form = FarmerNotificationSettingsForm(instance=settings_obj)
+    ai_form = FarmerAISettingsForm(instance=settings_obj)
+    payment_form = FarmerPaymentMethodForm()
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        active_tab = tab_for_action.get(action, active_tab)
+
+        if action == 'save_account':
+            account_form = FarmerAccountSettingsForm(request.POST, request.FILES, instance=user)
+            if account_form.is_valid():
+                account_form.save()
+                messages.success(request, 'Account settings updated successfully.')
+                return redirect(f'{request.path}?tab=account')
+            messages.error(request, 'Please correct the highlighted account fields.')
+
+        elif action == 'save_security':
+            user.two_factor_enabled = bool(request.POST.get('two_factor_enabled'))
+            user.save(update_fields=['two_factor_enabled'])
+            status_text = 'enabled' if user.two_factor_enabled else 'disabled'
+            messages.success(request, f'Two-factor authentication {status_text}.')
+            return redirect(f'{request.path}?tab=security')
+
+        elif action == 'change_password':
+            password_form = _styled_password_form(PasswordChangeForm(user, request.POST))
+            if password_form.is_valid():
+                password_form.save()
+                update_session_auth_hash(request, user)
+                _log_activity(user, 'update_profile', 'Changed password from farmer settings page.', request)
+                messages.success(request, 'Password changed successfully.')
+                return redirect(f'{request.path}?tab=security')
+            messages.error(request, 'Please correct the password fields and try again.')
+
+        elif action == 'save_preferences':
+            preference_form = FarmerPreferenceSettingsForm(request.POST, instance=settings_obj)
+            if preference_form.is_valid():
+                preference_form.save()
+                messages.success(request, 'Farm preferences saved.')
+                return redirect(f'{request.path}?tab=preferences')
+            messages.error(request, 'Please correct the farm preference values.')
+
+        elif action == 'save_notifications':
+            notification_form = FarmerNotificationSettingsForm(request.POST, instance=settings_obj)
+            if notification_form.is_valid():
+                notification_form.save()
+                messages.success(request, 'Notification preferences updated.')
+                return redirect(f'{request.path}?tab=notifications')
+            messages.error(request, 'Unable to save notification preferences.')
+
+        elif action == 'save_ai':
+            ai_form = FarmerAISettingsForm(request.POST, instance=settings_obj)
+            if ai_form.is_valid():
+                ai_form.save()
+                messages.success(request, 'AI settings updated.')
+                return redirect(f'{request.path}?tab=ai')
+            messages.error(request, 'Please review AI settings and try again.')
+
+        elif action == 'save_payment_method':
+            method_id = (request.POST.get('method_id') or '').strip()
+            method_instance = None
+            if method_id:
+                method_instance = get_object_or_404(FarmerPaymentMethod, id=method_id, user=user)
+
+            payment_form = FarmerPaymentMethodForm(request.POST, instance=method_instance)
+            if payment_form.is_valid():
+                payment_method = payment_form.save(commit=False)
+                payment_method.user = user
+                payment_method.save()
+                messages.success(request, 'Payment method saved successfully.')
+                return redirect(f'{request.path}?tab=payment')
+            messages.error(request, 'Please correct payment method details.')
+
+        elif action == 'delete_payment_method':
+            method_id = (request.POST.get('method_id') or '').strip()
+            payment_method = get_object_or_404(FarmerPaymentMethod, id=method_id, user=user)
+            payment_method.delete()
+            messages.success(request, 'Payment method removed.')
+            return redirect(f'{request.path}?tab=payment')
+
+        elif action == 'download_data':
+            export_orders = (
+                Order.objects.filter(Q(farmer=user) | Q(crop__farmer=user))
+                .select_related('buyer', 'crop')
+                .distinct()
+                .order_by('-order_date')[:100]
+            )
+
+            payload = {
+                'exported_at': timezone.now().isoformat(),
+                'account': {
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'phone_number': user.phone_number,
+                    'location': user.get_full_location() or user.location,
+                    'role': user.role,
+                    'created_at': user.created_at.isoformat() if user.created_at else None,
+                },
+                'farm_information': {
+                    'farm_name': farmer_profile.farm_name,
+                    'farm_size': farmer_profile.farm_size,
+                    'farm_location': farmer_profile.farm_location,
+                    'soil_type': farmer_profile.soil_type,
+                    'experience_years': farmer_profile.experience_years,
+                    'rating': farmer_profile.rating,
+                },
+                'preferences': {
+                    'quantity_unit': settings_obj.quantity_unit,
+                    'farm_size_unit': settings_obj.farm_size_unit,
+                    'default_crop_type': settings_obj.default_crop_type,
+                    'language': settings_obj.language,
+                },
+                'notifications': {
+                    'email_notifications': settings_obj.email_notifications,
+                    'sms_alerts': settings_obj.sms_alerts,
+                    'order_updates': settings_obj.order_updates,
+                    'ai_alerts': settings_obj.ai_alerts,
+                },
+                'ai_settings': {
+                    'disease_detection_enabled': settings_obj.disease_detection_enabled,
+                    'auto_recommendations': settings_obj.auto_recommendations,
+                    'risk_sensitivity': settings_obj.risk_sensitivity,
+                },
+                'payment_methods': list(
+                    FarmerPaymentMethod.objects.filter(user=user).values(
+                        'method_type',
+                        'account_name',
+                        'account_number',
+                        'bank_name',
+                        'is_active',
+                        'created_at',
+                    )
+                ),
+                'transaction_history': [
+                    {
+                        'order_id': order.id,
+                        'crop': order.crop.crop_name if order.crop else None,
+                        'buyer': order.buyer.username if order.buyer else None,
+                        'quantity': order.quantity,
+                        'total_price': order.total_price,
+                        'status': order.status,
+                        'order_date': order.order_date.isoformat() if order.order_date else None,
+                    }
+                    for order in export_orders
+                ],
+            }
+
+            response = HttpResponse(
+                json.dumps(payload, indent=2, default=str),
+                content_type='application/json',
+            )
+            filename = f"agrigenie_farmer_data_{timezone.now().strftime('%Y%m%d_%H%M%S')}.json"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+
+        elif action == 'delete_account':
+            confirm_text = (request.POST.get('delete_confirmation') or '').strip()
+            delete_password = request.POST.get('delete_password') or ''
+
+            if confirm_text != 'DELETE_ACCOUNT':
+                messages.error(request, 'Please type DELETE_ACCOUNT to confirm account deletion.')
+            elif not user.check_password(delete_password):
+                messages.error(request, 'Incorrect password. Account deletion cancelled.')
+            else:
+                username = user.username
+                _log_activity(user, 'security_logout', 'Account deleted from farmer settings.', request)
+                logout(request)
+                user.delete()
+                messages.success(request, f'Account {username} deleted successfully.')
+                return redirect('home')
+
+        else:
+            messages.error(request, 'Unknown action requested.')
+
+    last_login_activity = ActivityLog.objects.filter(user=user, action='login').order_by('-timestamp')[:5]
+    payment_methods = FarmerPaymentMethod.objects.filter(user=user, is_active=True)
+    transactions = (
+        Order.objects.filter(Q(farmer=user) | Q(crop__farmer=user))
+        .select_related('buyer', 'crop')
+        .distinct()
+        .order_by('-order_date')[:12]
+    )
+
+    context = {
+        'title': 'Farmer Settings',
+        'active_tab': active_tab,
+        'account_form': account_form,
+        'password_form': password_form,
+        'preference_form': preference_form,
+        'notification_form': notification_form,
+        'ai_form': ai_form,
+        'payment_form': payment_form,
+        'farmer_profile': farmer_profile,
+        'last_login_activity': last_login_activity,
+        'payment_methods': payment_methods,
+        'transactions': transactions,
+    }
+    return render(request, 'users/farmer_settings.html', context)
+
+
+@login_required(login_url='login')
+@require_http_methods(["GET", "POST"])
+def buyer_settings(request):
+    """Modern multi-section settings page for buyer accounts."""
+    if request.user.role != 'buyer':
+        messages.error(request, 'Only buyer accounts can access this page.')
+        return redirect('dashboard')
+
+    user = request.user
+
+    buyer_profile, _ = BuyerProfile.objects.get_or_create(
+        user=user,
+        defaults={
+            'company_name': user.first_name or user.username,
+            'business_type': 'Individual',
+            'registration_number': '',
+        },
+    )
+
+    tab_for_action = {
+        'save_account': 'account',
+        'save_security': 'security',
+        'change_password': 'security',
+        'save_business': 'business',
+        'download_data': 'privacy',
+        'delete_account': 'privacy',
+    }
+    valid_tabs = {'account', 'security', 'business', 'privacy'}
+
+    def _styled_password_form(form):
+        for field in form.fields.values():
+            existing_class = field.widget.attrs.get('class', '')
+            field.widget.attrs['class'] = (existing_class + ' form-control').strip()
+        return form
+
+    active_tab = request.GET.get('tab', 'account')
+    if active_tab not in valid_tabs:
+        active_tab = 'account'
+
+    account_form = FarmerAccountSettingsForm(instance=user)
+    password_form = _styled_password_form(PasswordChangeForm(user))
+    business_form = BuyerProfileForm(instance=buyer_profile)
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip()
+        active_tab = tab_for_action.get(action, active_tab)
+
+        if action == 'save_account':
+            account_form = FarmerAccountSettingsForm(request.POST, request.FILES, instance=user)
+            if account_form.is_valid():
+                account_form.save()
+                messages.success(request, 'Account settings updated successfully.')
+                return redirect(f'{request.path}?tab=account')
+            messages.error(request, 'Please correct the highlighted account fields.')
+
+        elif action == 'save_security':
+            user.two_factor_enabled = bool(request.POST.get('two_factor_enabled'))
+            user.save(update_fields=['two_factor_enabled'])
+            status_text = 'enabled' if user.two_factor_enabled else 'disabled'
+            messages.success(request, f'Two-factor authentication {status_text}.')
+            return redirect(f'{request.path}?tab=security')
+
+        elif action == 'change_password':
+            password_form = _styled_password_form(PasswordChangeForm(user, request.POST))
+            if password_form.is_valid():
+                password_form.save()
+                update_session_auth_hash(request, user)
+                _log_activity(user, 'update_profile', 'Changed password from buyer settings page.', request)
+                messages.success(request, 'Password changed successfully.')
+                return redirect(f'{request.path}?tab=security')
+            messages.error(request, 'Please correct the password fields and try again.')
+
+        elif action == 'save_business':
+            business_form = BuyerProfileForm(request.POST, instance=buyer_profile)
+            if business_form.is_valid():
+                business_form.save()
+                messages.success(request, 'Business details updated successfully.')
+                return redirect(f'{request.path}?tab=business')
+            messages.error(request, 'Please correct the business details fields.')
+
+        elif action == 'download_data':
+            purchase_orders = (
+                Order.objects.filter(buyer=user)
+                .select_related('crop', 'crop__farmer')
+                .order_by('-order_date')[:100]
+            )
+
+            payload = {
+                'exported_at': timezone.now().isoformat(),
+                'account': {
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'email': user.email,
+                    'phone_number': user.phone_number,
+                    'location': user.get_full_location() or user.location,
+                    'role': user.role,
+                    'created_at': user.created_at.isoformat() if user.created_at else None,
+                },
+                'business_information': {
+                    'company_name': buyer_profile.company_name,
+                    'business_type': buyer_profile.business_type,
+                    'registration_number': buyer_profile.registration_number,
+                    'is_approved': buyer_profile.is_approved,
+                    'rating': buyer_profile.rating,
+                    'total_spent': buyer_profile.total_spent,
+                },
+                'preferences': user.preferences,
+                'purchase_history': [
+                    {
+                        'order_id': order.id,
+                        'crop': order.crop.crop_name if order.crop else None,
+                        'farmer': order.crop.farmer.username if order.crop and order.crop.farmer else None,
+                        'quantity': order.quantity,
+                        'total_price': order.total_price,
+                        'status': order.status,
+                        'order_date': order.order_date.isoformat() if order.order_date else None,
+                    }
+                    for order in purchase_orders
+                ],
+            }
+
+            response = HttpResponse(
+                json.dumps(payload, indent=2, default=str),
+                content_type='application/json',
+            )
+            filename = f"agrigenie_buyer_data_{timezone.now().strftime('%Y%m%d_%H%M%S')}.json"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+
+        elif action == 'delete_account':
+            confirm_text = (request.POST.get('delete_confirmation') or '').strip()
+            delete_password = request.POST.get('delete_password') or ''
+
+            if confirm_text != 'DELETE_ACCOUNT':
+                messages.error(request, 'Please type DELETE_ACCOUNT to confirm account deletion.')
+            elif not user.check_password(delete_password):
+                messages.error(request, 'Incorrect password. Account deletion cancelled.')
+            else:
+                username = user.username
+                _log_activity(user, 'security_logout', 'Account deleted from buyer settings.', request)
+                logout(request)
+                user.delete()
+                messages.success(request, f'Account {username} deleted successfully.')
+                return redirect('home')
+
+        else:
+            messages.error(request, 'Unknown action requested.')
+
+    last_login_activity = ActivityLog.objects.filter(user=user, action='login').order_by('-timestamp')[:5]
+
+    context = {
+        'title': 'Buyer Settings',
+        'active_tab': active_tab,
+        'account_form': account_form,
+        'password_form': password_form,
+        'business_form': business_form,
+        'buyer_profile': buyer_profile,
+        'last_login_activity': last_login_activity,
+    }
+    return render(request, 'users/buyer_settings.html', context)
+
+
+@login_required(login_url='login')
+def change_password_view(request):
+    """Allow authenticated users to change password from profile security section."""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, request.user)
+            _log_activity(request.user, 'update_profile', 'Changed account password.', request)
+            messages.success(request, 'Password changed successfully.')
+            return redirect('profile')
+    else:
+        form = PasswordChangeForm(request.user)
+
+    for field in form.fields.values():
+        existing_class = field.widget.attrs.get('class', '')
+        field.widget.attrs['class'] = (existing_class + ' form-control').strip()
+
+    return render(request, 'users/change_password.html', {
+        'form': form,
+        'title': 'Change Password',
+    })
+
+
+@login_required(login_url='login')
+@require_http_methods(["POST"])
+def toggle_two_factor(request):
+    """Simple profile-level two-factor toggle state."""
+    request.user.two_factor_enabled = not request.user.two_factor_enabled
+    request.user.save(update_fields=['two_factor_enabled'])
+
+    state = 'enabled' if request.user.two_factor_enabled else 'disabled'
+    _log_activity(request.user, 'toggle_2fa', f'Two-factor authentication {state}.', request)
+    messages.success(request, f'Two-factor authentication {state}.')
+    return redirect('profile')
+
+
+@login_required(login_url='login')
+@require_http_methods(["POST"])
+def logout_all_devices(request):
+    """Terminate all active sessions for the current user."""
+    user = request.user
+    terminated = 0
+
+    for session in Session.objects.filter(expire_date__gte=timezone.now()):
+        try:
+            session_data = session.get_decoded()
+        except Exception:
+            continue
+
+        if str(session_data.get('_auth_user_id')) == str(user.id):
+            session.delete()
+            terminated += 1
+
+    _log_activity(user, 'security_logout', f'Ended {terminated} active session(s).', request)
+    logout(request)
+    messages.success(request, f'Logged out from {terminated} session(s). Please sign in again.')
+    return redirect('login')
 
 
 @login_required(login_url='login')
