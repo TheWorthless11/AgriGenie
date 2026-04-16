@@ -319,6 +319,46 @@ For issues and questions:
 - [ ] IoT sensor integration
 - [ ] Crop insurance marketplace
 
+## Zero-Cost Public Deployment (Windows)
+
+You can run **all AgriGenie features** locally and expose them publicly via HTTPS with Cloudflare Quick Tunnel.
+
+### Quick Start
+
+1. Start Docker Desktop.
+2. Install cloudflared (one time):
+   ```powershell
+   winget install --id Cloudflare.cloudflared -e
+   ```
+3. From project root, run:
+   ```powershell
+   .\\start_zero_cost.bat
+   ```
+4. Stop everything when needed:
+   ```powershell
+   .\\stop_zero_cost.bat
+   ```
+
+### Stable URL For Google OAuth
+
+If Google login shows `redirect_uri_mismatch`, configure a named tunnel once:
+
+Use a full hostname from a Cloudflare-managed domain (example: `app.yourdomain.com`).
+
+```powershell
+.\setup_named_tunnel.bat app.yourdomain.com
+```
+
+Then add this callback URI in Google Cloud Console OAuth credentials:
+
+```text
+https://app.yourdomain.com/accounts/google/login/callback/
+```
+
+### Full Guide
+
+See [docs/SELF_HOST_CLOUDFLARE_ZERO_COST.md](docs/SELF_HOST_CLOUDFLARE_ZERO_COST.md) for verification commands, logs, and troubleshooting.
+
 ## Credits
 
 - Django community
