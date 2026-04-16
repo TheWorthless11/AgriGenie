@@ -60,6 +60,53 @@ COUNTRY_NAME_OVERRIDES = {
     'AE': 'United Arab Emirates',
 }
 
+SUPPORTED_DISEASE_CROPS = (
+    'Tomato',
+    'Potato',
+    'Bell Pepper',
+)
+
+
+def _ensure_supported_disease_master_crops():
+    """Ensure model-supported crops are present and enabled for disease detection."""
+    defaults = {
+        'Tomato': {
+            'category': 'vegetables',
+            'crop_type': 'conventional',
+            'description': 'Model-supported crop for AI disease detection.',
+        },
+        'Potato': {
+            'category': 'vegetables',
+            'crop_type': 'conventional',
+            'description': 'Model-supported crop for AI disease detection.',
+        },
+        'Bell Pepper': {
+            'category': 'vegetables',
+            'crop_type': 'conventional',
+            'description': 'Model-supported crop for AI disease detection.',
+        },
+    }
+
+    for crop_name, crop_defaults in defaults.items():
+        master_crop, _ = MasterCrop.objects.get_or_create(
+            crop_name=crop_name,
+            defaults={
+                **crop_defaults,
+                'is_active': True,
+                'allow_detection': True,
+            },
+        )
+
+        update_fields = []
+        if not master_crop.is_active:
+            master_crop.is_active = True
+            update_fields.append('is_active')
+        if not master_crop.allow_detection:
+            master_crop.allow_detection = True
+            update_fields.append('allow_detection')
+        if update_fields:
+            master_crop.save(update_fields=update_fields)
+
 
 def _kelvin_to_celsius(temp_kelvin):
     """Convert Kelvin temperature to Celsius with 2 decimal precision."""
@@ -465,11 +512,15 @@ def farmer_dashboard(request):
         messages.error(request, 'Access denied!')
         return redirect('dashboard')
     
-    crops = Crop.objects.filter(farmer=request.user)
-    orders = Order.objects.filter(farmer=request.user)
+    crops = Crop.objects.filter(farmer=request.user).select_related('master_crop')
+    orders = (
+        Order.objects.filter(Q(farmer=request.user) | Q(crop__farmer=request.user))
+        .select_related('crop', 'crop__master_crop')
+        .distinct()
+    )
     pending_orders = orders.filter(status='pending')
     recent_messages = Message.objects.filter(recipient=request.user).order_by('-created_at')[:5]
-    unread_messages = recent_messages.filter(is_read=False).count()
+    unread_messages = Message.objects.filter(recipient=request.user, is_read=False).count()
     farmer_profile = FarmerProfile.objects.filter(user=request.user).first()
     
     context = {
@@ -672,10 +723,21 @@ def disease_detection(request, crop_id=None):
         messages.error(request, 'Only farmers can use disease detection!')
         return redirect('dashboard')
     
-    # Only show crops that have master_crop assigned
-    farmer_crops = Crop.objects.filter(farmer=request.user, master_crop__isnull=False).select_related('master_crop')
-    # Master crops that admin allows farmers to analyze
-    master_crops = MasterCrop.objects.filter(is_active=True, allow_detection=True)
+    _ensure_supported_disease_master_crops()
+
+    # Show only crops supported by the current disease model
+    farmer_crops = Crop.objects.filter(
+        farmer=request.user,
+        master_crop__isnull=False,
+        master_crop__crop_name__in=SUPPORTED_DISEASE_CROPS,
+    ).select_related('master_crop')
+
+    # Master crops that are model-supported and enabled by admin
+    master_crops = MasterCrop.objects.filter(
+        is_active=True,
+        allow_detection=True,
+        crop_name__in=SUPPORTED_DISEASE_CROPS,
+    ).order_by('crop_name')
     selected_crop = None
     selected_master_crop = None
     
@@ -687,8 +749,17 @@ def disease_detection(request, crop_id=None):
         # Prefer a farmer crop if provided, otherwise allow selecting a master crop type
         if selected_crop_id:
             selected_crop = get_object_or_404(Crop, id=selected_crop_id, farmer=request.user)
+            if not selected_crop.master_crop or selected_crop.master_crop.crop_name not in SUPPORTED_DISEASE_CROPS:
+                messages.error(request, 'Selected crop is not supported by the current disease model.')
+                selected_crop = None
         elif selected_master_crop_id:
-            selected_master_crop = get_object_or_404(MasterCrop, id=selected_master_crop_id, is_active=True, allow_detection=True)
+            selected_master_crop = get_object_or_404(
+                MasterCrop,
+                id=selected_master_crop_id,
+                is_active=True,
+                allow_detection=True,
+                crop_name__in=SUPPORTED_DISEASE_CROPS,
+            )
         else:
             messages.error(request, 'Please select either one of your crops or an allowed crop type!')
 
@@ -1146,6 +1217,7 @@ def crop_price_prediction(request):
         'commodities': options['commodities'],
         'varieties_json': json.dumps(options['varieties']),
         'markets': options['markets'],
+        'years': options.get('years', []),
     }
     return render(request, 'farmer/crop_price_prediction.html', context)
 
@@ -1168,8 +1240,9 @@ def price_predict_api(request):
     variety = data.get('variety', '').strip()
     market = data.get('market', '').strip()
     month = data.get('month')
+    year = data.get('year')
 
-    if not all([commodity, variety, market, month]):
+    if not all([commodity, variety, market, month, year]):
         return JsonResponse({'error': 'All fields are required'}, status=400)
 
     try:
@@ -1179,11 +1252,18 @@ def price_predict_api(request):
     except (TypeError, ValueError):
         return JsonResponse({'error': 'Month must be 1-12'}, status=400)
 
+    try:
+        year = int(year)
+        if year < 2000 or year > 2100:
+            raise ValueError
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Year must be between 2000 and 2100'}, status=400)
+
     import os
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
     from ai_models.price_prediction.predictor import predict_price
     try:
-        result = predict_price(commodity, variety, market, month)
+        result = predict_price(commodity, variety, market, month, year)
     except ImportError as e:
         return JsonResponse({'error': f'Prediction service unavailable: {str(e)}'}, status=503)
     except FileNotFoundError as e:
@@ -1206,12 +1286,22 @@ def price_history_api(request):
     commodity = request.GET.get('commodity', '').strip()
     variety = request.GET.get('variety', '').strip()
     market = request.GET.get('market', '').strip()
+    year = request.GET.get('year', '').strip()
 
     if not all([commodity, variety, market]):
         return JsonResponse({'error': 'commodity, variety, market required'}, status=400)
 
+    parsed_year = None
+    if year:
+        try:
+            parsed_year = int(year)
+            if parsed_year < 2000 or parsed_year > 2100:
+                raise ValueError
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'year must be between 2000 and 2100'}, status=400)
+
     from ai_models.price_prediction.predictor import get_price_history
-    history = get_price_history(commodity, variety, market)
+    history = get_price_history(commodity, variety, market, year=parsed_year)
     return JsonResponse({'history': history})
 
 

@@ -54,7 +54,7 @@
                                 <option value="">-- Choose from your crops --</option>
                                 {% for crop in crops %}
                                     <option value="{{ crop.id }}" {% if crop.id|stringformat:"s" == selected_crop_id %}selected{% endif %}>
-                                        {{ crop.master_crop.crop_name }} - {{ crop.master_crop.get_crop_type_display }} ({{ crop.quantity }}{{ crop.unit }})
+                                        {{ crop.master_crop.crop_name }}
                                     </option>
                                 {% empty %}
                                     <option value="" disabled>No crops available</option>
@@ -68,7 +68,7 @@
                             <select id="masterCropSelect" name="master_crop" class="form-select">
                                 <option value="">-- Choose a crop type --</option>
                                 {% for m in master_crops %}
-                                    <option value="{{ m.id }}">{{ m.crop_name }} ({{ m.get_category_display }})</option>
+                                    <option value="{{ m.id }}">{{ m.crop_name }}</option>
                                 {% empty %}
                                     <option value="" disabled>No crop types available for analysis</option>
                                 {% endfor %}

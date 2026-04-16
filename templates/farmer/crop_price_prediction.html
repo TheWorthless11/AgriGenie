@@ -153,6 +153,13 @@
                     </select>
                 </div>
                 <div class="col-12 col-md-6 col-xl-3 prediction-field">
+                    <label for="predYear">Year</label>
+                    <select id="predYear" class="form-select">
+                        <option value="" selected disabled>Select prediction year</option>
+                        {% for y in years %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3 prediction-field">
                     <label for="predMonth">Month</label>
                     <select id="predMonth" class="form-select">
                         <option value="" selected disabled>Select prediction month</option>
@@ -185,7 +192,7 @@
                     <div class="prediction-metric-value" id="resMarket"><span class="prediction-empty"></span></div>
                 </div>
                 <div class="prediction-metric">
-                    <span class="prediction-metric-label">Month</span>
+                    <span class="prediction-metric-label">Period</span>
                     <div class="prediction-metric-value" id="resMonth"><span class="prediction-empty"></span></div>
                 </div>
                 <div class="prediction-metric">
@@ -234,6 +241,7 @@
     const cropSel   = document.getElementById('predCrop');
     const varSel    = document.getElementById('predVariety');
     const mktSel    = document.getElementById('predMarket');
+    const yearSel   = document.getElementById('predYear');
     const monthSel  = document.getElementById('predMonth');
     const btn       = document.getElementById('predictBtn');
     const errBox    = document.getElementById('predError');
@@ -274,10 +282,11 @@
         const commodity = cropSel.value;
         const variety = varSel.value;
         const market = mktSel.value;
+        const year = yearSel.value;
         const month = monthSel.value;
 
-        if (!commodity || !variety || !market || !month) {
-            showError('Please select all four fields before predicting.');
+        if (!commodity || !variety || !market || !year || !month) {
+            showError('Please select crop, variety, division, year, and month before predicting.');
             return;
         }
 
@@ -291,7 +300,13 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken'),
             },
-            body: JSON.stringify({ commodity: commodity, variety: variety, market: market, month: parseInt(month) }),
+            body: JSON.stringify({
+                commodity: commodity,
+                variety: variety,
+                market: market,
+                year: parseInt(year),
+                month: parseInt(month),
+            }),
         })
         .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
         .then(function (res) {
@@ -303,12 +318,19 @@
             var d = res.data;
             document.getElementById('resCrop').textContent = d.commodity + ' (' + d.variety.replace(/_/g, ' ') + ')';
             document.getElementById('resMarket').textContent = d.market;
-            document.getElementById('resMonth').textContent = MONTH_NAMES[d.month] || d.month;
+            document.getElementById('resMonth').textContent = (MONTH_NAMES[d.month] || d.month) + ' ' + d.year;
             document.getElementById('resPrice').textContent = '৳ ' + d.predicted_price.toFixed(2) + ' / KG';
             document.getElementById('resRange').textContent = '৳ ' + d.price_low.toFixed(2) + ' – ৳ ' + d.price_high.toFixed(2);
 
             // Advisory
-            document.getElementById('insightText').textContent = d.advisory;
+            var insight = d.advisory;
+            if (d.actual_price !== undefined && d.actual_price !== null) {
+                insight += ' Actual: ৳ ' + d.actual_price.toFixed(2);
+                if (d.percent_error !== undefined && d.percent_error !== null) {
+                    insight += ' | Error: ' + d.percent_error.toFixed(2) + '%';
+                }
+            }
+            document.getElementById('insightText').textContent = insight;
             var pill = document.getElementById('insightPill');
             pill.style.display = 'inline-block';
             if (d.advisory.toLowerCase().includes('increase')) { pill.textContent = '↑ Upward'; pill.style.background = 'rgba(47,107,59,0.12)'; pill.style.color = '#2f6b3b'; }
@@ -316,7 +338,7 @@
             else { pill.textContent = '→ Stable'; pill.style.background = 'rgba(216,146,42,0.12)'; pill.style.color = '#9b6513'; }
 
             // 2) Fetch historical prices for chart
-            loadChart(commodity, variety, market, d.predicted_price, parseInt(month));
+            loadChart(commodity, variety, market, d.predicted_price, d.month, d.year);
         })
         .catch(function () {
             btn.disabled = false;
@@ -326,26 +348,46 @@
     });
 
     // ---------- Chart ----------
-    function loadChart(commodity, variety, market, predictedPrice, predMonth) {
-        var qs = '?commodity=' + encodeURIComponent(commodity) + '&variety=' + encodeURIComponent(variety) + '&market=' + encodeURIComponent(market);
+    function loadChart(commodity, variety, market, predictedPrice, predMonth, predYear) {
+        var qs = '?commodity=' + encodeURIComponent(commodity) +
+                 '&variety=' + encodeURIComponent(variety) +
+                 '&market=' + encodeURIComponent(market) +
+                 '&year=' + encodeURIComponent(predYear);
         fetch("{% url 'price_history_api' %}" + qs)
         .then(function (r) { return r.json(); })
         .then(function (res) {
             var hist = res.history || [];
-            var labels = hist.map(function (h) { return MONTH_NAMES[h.month].substring(0,3) + ' ' + h.year; });
+            hist.sort(function (a, b) {
+                if (a.year !== b.year) return a.year - b.year;
+                return a.month - b.month;
+            });
+
+            var labels = hist.map(function (h) {
+                return MONTH_NAMES[h.month].substring(0, 3) + ' ' + h.year;
+            });
             var prices = hist.map(function (h) { return h.price; });
 
-            // Append predicted point
-            var lastYear = hist.length ? hist[hist.length - 1].year : 2026;
-            var predYear = predMonth <= (hist.length ? hist[hist.length - 1].month : 0) ? lastYear + 1 : lastYear;
-            labels.push(MONTH_NAMES[predMonth].substring(0,3) + ' ' + predYear + ' (P)');
-            prices.push(null); // gap so we draw predicted separately
+            var predLabelBase = MONTH_NAMES[predMonth].substring(0, 3) + ' ' + predYear;
+            var predIndex = labels.indexOf(predLabelBase);
 
-            var predPrices = new Array(prices.length).fill(null);
-            predPrices[predPrices.length - 2] = hist.length ? hist[hist.length - 1].price : predictedPrice;
-            predPrices[predPrices.length - 1] = predictedPrice;
+            if (predIndex === -1) {
+                labels.push(predLabelBase + ' (P)');
+                prices.push(null);
+                predIndex = labels.length - 1;
+            }
 
-            prices[prices.length - 1] = null; // keep null for history line
+            var predPrices = new Array(labels.length).fill(null);
+            var prevActualIndex = -1;
+            for (var i = Math.min(predIndex - 1, prices.length - 1); i >= 0; i--) {
+                if (prices[i] !== null && prices[i] !== undefined) {
+                    prevActualIndex = i;
+                    break;
+                }
+            }
+            if (prevActualIndex >= 0) {
+                predPrices[prevActualIndex] = prices[prevActualIndex];
+            }
+            predPrices[predIndex] = predictedPrice;
 
             if (chartInstance) chartInstance.destroy();
 
@@ -357,7 +399,7 @@
                     datasets: [
                         {
                             label: 'Historical',
-                            data: prices.map(function (v, i) { return i < prices.length - 1 ? hist[i].price : null; }),
+                            data: prices,
                             borderColor: '#2f6b3b',
                             backgroundColor: 'rgba(47,107,59,0.08)',
                             fill: true,

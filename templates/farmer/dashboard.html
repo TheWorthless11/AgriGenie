@@ -3,6 +3,75 @@
 
 {% block title %}Farmer Dashboard - AgriGenie{% endblock %}
 
+{% block extra_css %}
+<style>
+    .farmer-summary-card {
+        border: 0;
+        border-radius: 1rem;
+        background: linear-gradient(165deg, #ffffff 0%, #f8fcf9 100%);
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+        height: 100%;
+    }
+
+    .farmer-summary-card .card-body {
+        padding: 1.15rem 1.2rem;
+    }
+
+    .farmer-summary-label {
+        margin-bottom: 0.35rem;
+        font-size: 0.74rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .farmer-summary-value {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.05;
+        color: #14532d;
+    }
+
+    .farmer-summary-icon {
+        width: 2.8rem;
+        height: 2.8rem;
+        border-radius: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .farmer-summary-card.theme-success .farmer-summary-icon {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .farmer-summary-card.theme-info .farmer-summary-icon {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .farmer-summary-card.theme-warning .farmer-summary-icon {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .farmer-summary-card.theme-accent .farmer-summary-icon {
+        background: #fef3c7;
+        color: #a16207;
+    }
+
+    @media (max-width: 575.98px) {
+        .farmer-summary-value {
+            font-size: 1.65rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -25,57 +94,57 @@
     {% endif %}
 
     <!-- Stats Row -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card farmer-summary-card theme-success">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Active Crops</p>
-                            <h3 class="fw-bold text-success">{{ crops_count }}</h3>
+                            <p class="farmer-summary-label">Active Crops</p>
+                            <p class="farmer-summary-value">{{ crops_count }}</p>
                         </div>
-                        <i class="fas fa-leaf fa-2x text-success opacity-50"></i>
+                        <span class="farmer-summary-icon"><i class="fas fa-seedling"></i></span>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card farmer-summary-card theme-info">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Pending Orders</p>
-                            <h3 class="fw-bold text-info">{{ pending_orders_count }}</h3>
+                            <p class="farmer-summary-label">Pending Orders</p>
+                            <p class="farmer-summary-value">{{ pending_orders_count }}</p>
                         </div>
-                        <i class="fas fa-shopping-bag fa-2x text-info opacity-50"></i>
+                        <span class="farmer-summary-icon"><i class="fas fa-basket-shopping"></i></span>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card farmer-summary-card theme-warning">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Unread Messages</p>
-                            <h3 class="fw-bold text-warning">{{ unread_messages }}</h3>
+                            <p class="farmer-summary-label">Unread Messages</p>
+                            <p class="farmer-summary-value">{{ unread_messages }}</p>
                         </div>
-                        <i class="fas fa-envelope fa-2x text-warning opacity-50"></i>
+                        <span class="farmer-summary-icon"><i class="fas fa-envelope"></i></span>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card farmer-summary-card theme-accent">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <p class="text-muted small mb-1">Farm Rating</p>
-                            <h3 class="fw-bold text-warning">
-                                {% if farmer_profile.rating %}{{ farmer_profile.rating|floatformat:1 }}⭐{% else %}—{% endif %}
-                            </h3>
+                            <p class="farmer-summary-label">Farm Rating</p>
+                            <p class="farmer-summary-value">
+                                {% if farmer_profile.rating %}{{ farmer_profile.rating|floatformat:1 }}{% else %}—{% endif %}
+                            </p>
                         </div>
-                        <i class="fas fa-star fa-2x text-warning opacity-50"></i>
+                        <span class="farmer-summary-icon"><i class="fas fa-star"></i></span>
                     </div>
                 </div>
             </div>
@@ -107,15 +176,19 @@
                                 {% for order in recent_orders %}
                                 <tr>
                                     <td><strong>#{{ order.id }}</strong></td>
-                                    <td>{{ order.crop.master_crop.crop_name }}</td>
+                                    <td>{{ order.crop.crop_name }}</td>
                                     <td>{{ order.quantity }} {{ order.crop.unit }}</td>
                                     <td>
                                         {% if order.status == 'pending' %}
                                             <span class="badge bg-warning">Pending</span>
-                                        {% elif order.status == 'confirmed' %}
-                                            <span class="badge bg-info">Confirmed</span>
+                                        {% elif order.status == 'accepted' %}
+                                            <span class="badge bg-info">Accepted</span>
                                         {% elif order.status == 'shipped' %}
                                             <span class="badge bg-primary">Shipped</span>
+                                        {% elif order.status == 'rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                        {% elif order.status == 'cancelled' %}
+                                            <span class="badge bg-secondary">Cancelled</span>
                                         {% else %}
                                             <span class="badge bg-success">Delivered</span>
                                         {% endif %}
