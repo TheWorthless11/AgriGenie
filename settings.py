@@ -13,7 +13,11 @@ load_dotenv(os.path.join(BASE_DIR, '.env'), override=dotenv_override)
 # 3. Security Settings
 SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
+    if host.strip()
+]
 
 # 4. Application Definition
 INSTALLED_APPS = [
@@ -89,15 +93,16 @@ TEMPLATES = [
 ]
 
 # 6. Database Configuration
+db_engine = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE'),
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-        'CONN_MAX_AGE': 60,
+        'HOST': os.getenv('DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('DB_PORT', ''),
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
             'connect_timeout': 10,
@@ -230,3 +235,14 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:8000',
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origin.strip()
+]
+
+if os.getenv('TRUST_X_FORWARDED_PROTO', 'True').strip().lower() in {'1', 'true', 'yes', 'on'}:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+USE_X_FORWARDED_HOST = os.getenv('USE_X_FORWARDED_HOST', 'True').strip().lower() in {'1', 'true', 'yes', 'on'}
