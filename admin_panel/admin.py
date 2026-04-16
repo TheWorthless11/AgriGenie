@@ -1,8 +1,14 @@
 from django.contrib import admin
-from .models import MasterCrop, UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog
 from .models import (
-    MasterCrop, UserApproval, SystemAlert, SystemReport, 
-    AIDiseaseMonitor, AIPricePredictor, ActivityLog, FarmerListing # Add this
+    MasterCrop,
+    UserApproval,
+    SystemAlert,
+    SystemReport,
+    AIDiseaseMonitor,
+    AIPricePredictor,
+    ActivityLog,
+    FarmerListing,
+    AdminSettings,
 )
 
 @admin.register(MasterCrop)
@@ -73,3 +79,9 @@ class FarmerListingAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     list_editable = ['is_available', 'price_per_unit']
     date_hierarchy = 'harvest_date'
+
+
+@admin.register(AdminSettings)
+class AdminSettingsAdmin(admin.ModelAdmin):
+    list_display = ['site_name', 'default_language', 'default_timezone', 'maintenance_mode', 'updated_at', 'updated_by']
+    readonly_fields = ['updated_at']

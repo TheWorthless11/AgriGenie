@@ -3,10 +3,23 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Count, Avg, Q
 from django.db import connection, IntegrityError, transaction
+from django.core.cache import cache
+from django.core.management import call_command
 from django.utils import timezone
 from datetime import timedelta
+import csv
+import io
+import os
 
-from admin_panel.models import UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog, UserReport, MasterCrop
+from admin_panel.models import UserApproval, SystemAlert, SystemReport, AIDiseaseMonitor, AIPricePredictor, ActivityLog, UserReport, MasterCrop, AdminSettings
+from admin_panel.forms import (
+    GeneralSettingsForm,
+    UserManagementSettingsForm,
+    NotificationSettingsForm,
+    SecuritySettingsForm,
+    AiFeatureSettingsForm,
+    SystemSettingsForm,
+)
 from users.models import CustomUser, FarmerProfile, BuyerProfile, Notification
 from farmer.models import Crop, Order, CropDisease, IrrigationCropCatalog
 from marketplace.models import CropListing
@@ -17,54 +30,56 @@ def is_admin(user):
     return user.is_authenticated and user.role == 'admin'
 
 
+def _admin_activity(request, action, description):
+    """Non-blocking activity logger for admin actions."""
+    if not request.user.is_authenticated:
+        return
+
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    ip_address = forwarded_for.split(',')[0].strip() if forwarded_for else request.META.get('REMOTE_ADDR')
+
+    try:
+        ActivityLog.objects.create(
+            user=request.user,
+            action=action,
+            description=description,
+            ip_address=ip_address,
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+    except Exception:
+        pass
+
+
 @login_required(login_url='login')
 @user_passes_test(is_admin)
 def admin_dashboard(request):
-    """Admin dashboard with statistics"""
+    """Admin dashboard focused on high-priority moderation and alerts."""
     total_users = CustomUser.objects.count()
-    total_farmers = CustomUser.objects.filter(role='farmer').count()
-    total_buyers = CustomUser.objects.filter(role='buyer').count()
-    pending_approvals = UserApproval.objects.filter(status='pending').count()
-    
     total_crops = Crop.objects.count()
-    active_crops = Crop.objects.filter(is_available=True).count()
-    total_orders = Order.objects.count()
-    pending_orders = Order.objects.filter(status='pending').count()
-    
-    # Calculate revenue from delivered orders
-    total_revenue = sum([order.total_price for order in Order.objects.filter(status='delivered')])
-    
-    # Recent activities
-    recent_activities = ActivityLog.objects.all().order_by('-timestamp')[:10]
-    
-    # AI Model Statistics
-    disease_monitor = AIDiseaseMonitor.objects.first()
-    price_predictor = AIPricePredictor.objects.first()
-    
-    # Today's statistics
-    today = timezone.now().date()
-    today_orders = Order.objects.filter(order_date__date=today).count()
-    today_crops = Crop.objects.filter(created_at__date=today).count()
-    
-    # User reports
-    pending_reports = UserReport.objects.filter(status='pending').count()
-    
+
+    pending_users_qs = (
+        UserApproval.objects
+        .select_related('user')
+        .filter(status='pending', user__role__in=['buyer', 'farmer'])
+        .order_by('-created_at')
+    )
+    pending_approvals = pending_users_qs.count()
+    pending_users = pending_users_qs
+
+    system_alerts = SystemAlert.objects.filter(is_active=True).count()
+    recent_alerts = SystemAlert.objects.all().order_by('-created_at')[:8]
+
+    # Keep this lightweight for a compact dashboard section.
+    recent_activities = ActivityLog.objects.select_related('user').order_by('-timestamp')[:8]
+
     context = {
         'total_users': total_users,
-        'total_farmers': total_farmers,
-        'total_buyers': total_buyers,
         'pending_approvals': pending_approvals,
-        'pending_reports': pending_reports,
         'total_crops': total_crops,
-        'active_crops': active_crops,
-        'total_orders': total_orders,
-        'pending_orders': pending_orders,
-        'total_revenue': total_revenue,
+        'system_alerts': system_alerts,
+        'pending_users': pending_users,
+        'recent_alerts': recent_alerts,
         'recent_activities': recent_activities,
-        'disease_monitor': disease_monitor,
-        'price_predictor': price_predictor,
-        'today_orders': today_orders,
-        'today_crops': today_crops,
         'title': 'Admin Dashboard'
     }
     return render(request, 'admin_panel/dashboard.html', context)
@@ -163,6 +178,12 @@ def approve_user(request, approval_id):
                 title='Account Approved',
                 message=f'Your {user.get_role_display()} account has been approved! You can now access all features.'
             )
+
+            _admin_activity(
+                request,
+                'approve_user',
+                f'Approved {user_role} account for {user.username}.',
+            )
             
             messages.success(request, f'{user.username} ({user_role}) approved successfully!')
         
@@ -192,6 +213,12 @@ def approve_user(request, approval_id):
                 notification_type='system',
                 title='Account Rejected',
                 message=f'Your {approval.user.get_role_display()} account was rejected. Reason: {reason}'
+            )
+
+            _admin_activity(
+                request,
+                'reject_user',
+                f'Rejected {user_role} account for {approval.user.username}.',
             )
             
             messages.success(request, f'{approval.user.username} ({user_role}) rejected!')
@@ -277,6 +304,12 @@ def reject_user(request, approval_id):
             notification_type='system',
             title='Account Rejected',
             message=f'Your {approval.user.get_role_display()} account was rejected. Reason: {reason}'
+        )
+
+        _admin_activity(
+            request,
+            'reject_user',
+            f'Rejected account for {approval.user.username}.',
         )
         
         messages.success(request, f'{approval.user.username} has been rejected.')
@@ -562,6 +595,177 @@ def system_reports(request):
 
 @login_required(login_url='login')
 @user_passes_test(is_admin)
+def admin_settings(request):
+    """Comprehensive admin control panel for system configuration."""
+    settings_obj = AdminSettings.get_solo()
+    tab_map = {
+        'save_general': 'general',
+        'save_user_management': 'users',
+        'save_notifications': 'notifications',
+        'save_security': 'security',
+        'save_ai': 'ai',
+        'save_system': 'system',
+        'clear_cache': 'system',
+        'backup_database': 'system',
+        'download_logs': 'system',
+        'reset_defaults': 'system',
+    }
+    valid_tabs = {'general', 'users', 'notifications', 'security', 'ai', 'system'}
+
+    def _build_forms():
+        return {
+            'general_form': GeneralSettingsForm(instance=settings_obj),
+            'user_form': UserManagementSettingsForm(instance=settings_obj),
+            'notification_form': NotificationSettingsForm(instance=settings_obj),
+            'security_form': SecuritySettingsForm(instance=settings_obj),
+            'ai_form': AiFeatureSettingsForm(instance=settings_obj),
+            'system_form': SystemSettingsForm(instance=settings_obj),
+        }
+
+    forms_context = _build_forms()
+    active_tab = request.GET.get('tab', 'general')
+    if active_tab not in valid_tabs:
+        active_tab = 'general'
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '').strip()
+        active_tab = tab_map.get(action, 'general')
+
+        if action == 'save_general':
+            form = GeneralSettingsForm(request.POST, request.FILES, instance=settings_obj)
+            if form.is_valid():
+                updated = form.save(commit=False)
+                updated.updated_by = request.user
+                updated.save()
+                messages.success(request, 'General settings saved successfully.')
+                return redirect(f'{request.path}?tab={active_tab}')
+            else:
+                messages.error(request, 'Please fix errors in General Settings before saving.')
+                forms_context['general_form'] = form
+
+        elif action == 'save_user_management':
+            form = UserManagementSettingsForm(request.POST, instance=settings_obj)
+            if form.is_valid():
+                updated = form.save(commit=False)
+                updated.updated_by = request.user
+                updated.save()
+                messages.success(request, 'User management settings saved successfully.')
+                return redirect(f'{request.path}?tab={active_tab}')
+            else:
+                messages.error(request, 'Please fix errors in User Management Settings before saving.')
+                forms_context['user_form'] = form
+
+        elif action == 'save_notifications':
+            form = NotificationSettingsForm(request.POST, instance=settings_obj)
+            if form.is_valid():
+                updated = form.save(commit=False)
+                updated.updated_by = request.user
+                updated.save()
+                messages.success(request, 'Notification settings saved successfully.')
+                return redirect(f'{request.path}?tab={active_tab}')
+            else:
+                messages.error(request, 'Please fix errors in Notification Settings before saving.')
+                forms_context['notification_form'] = form
+
+        elif action == 'save_security':
+            form = SecuritySettingsForm(request.POST, instance=settings_obj)
+            if form.is_valid():
+                updated = form.save(commit=False)
+                updated.updated_by = request.user
+                updated.save()
+                messages.success(request, 'Security settings saved successfully.')
+                return redirect(f'{request.path}?tab={active_tab}')
+            else:
+                messages.error(request, 'Please fix errors in Security Settings before saving.')
+                forms_context['security_form'] = form
+
+        elif action == 'save_ai':
+            form = AiFeatureSettingsForm(request.POST, instance=settings_obj)
+            if form.is_valid():
+                updated = form.save(commit=False)
+                updated.updated_by = request.user
+                updated.save()
+                messages.success(request, 'AI / feature settings saved successfully.')
+                return redirect(f'{request.path}?tab={active_tab}')
+            else:
+                messages.error(request, 'Please fix errors in AI / Feature Settings before saving.')
+                forms_context['ai_form'] = form
+
+        elif action == 'save_system':
+            form = SystemSettingsForm(request.POST, instance=settings_obj)
+            if form.is_valid():
+                updated = form.save(commit=False)
+                updated.updated_by = request.user
+                updated.save()
+                messages.success(request, 'System settings saved successfully.')
+                return redirect(f'{request.path}?tab={active_tab}')
+            else:
+                messages.error(request, 'Please fix errors in System Settings before saving.')
+                forms_context['system_form'] = form
+
+        elif action == 'clear_cache':
+            cache.clear()
+            _admin_activity(request, 'update_profile', 'Cleared system cache from admin settings.')
+            messages.success(request, 'Application cache cleared successfully.')
+            return redirect(f'{request.path}?tab={active_tab}')
+
+        elif action == 'backup_database':
+            backup_dir = os.path.join(django_settings.MEDIA_ROOT, 'backups')
+            os.makedirs(backup_dir, exist_ok=True)
+
+            timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+            backup_filename = f'agrigenie_backup_{timestamp}.json'
+            backup_path = os.path.join(backup_dir, backup_filename)
+
+            with open(backup_path, 'w', encoding='utf-8') as backup_file:
+                call_command('dumpdata', '--natural-foreign', '--natural-primary', stdout=backup_file)
+
+            _admin_activity(request, 'update_profile', f'Created database backup: {backup_filename}.')
+            messages.success(request, f'Database backup created: {backup_filename}')
+            return redirect(f'{request.path}?tab={active_tab}')
+
+        elif action == 'download_logs':
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(['Timestamp', 'User', 'Action', 'Description', 'IP Address'])
+
+            for log in ActivityLog.objects.select_related('user').order_by('-timestamp')[:2000]:
+                writer.writerow([
+                    log.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                    log.user.username,
+                    log.get_action_display(),
+                    (log.description or '').replace('\n', ' ').strip(),
+                    log.ip_address or '',
+                ])
+
+            filename = f'activity_logs_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv'
+            response = HttpResponse(output.getvalue(), content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            _admin_activity(request, 'update_profile', f'Downloaded activity logs export: {filename}.')
+            return response
+
+        elif action == 'reset_defaults':
+            settings_obj.reset_to_defaults()
+            settings_obj.updated_by = request.user
+            settings_obj.save()
+            _admin_activity(request, 'update_profile', 'Reset admin settings to defaults.')
+            messages.success(request, 'All settings have been reset to defaults.')
+            return redirect(f'{request.path}?tab={active_tab}')
+
+        else:
+            messages.error(request, 'Unknown settings action requested.')
+
+    context = {
+        **forms_context,
+        'settings_obj': settings_obj,
+        'active_tab': active_tab,
+        'title': 'Admin Settings',
+    }
+    return render(request, 'admin_panel/settings.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
 def ai_monitoring(request):
     """Monitor AI models performance — diseases it can detect & price predictions"""
     import json
@@ -757,8 +961,15 @@ def admin_crop_detail(request, crop_id):
 def admin_remove_crop(request, crop_id):
     """Remove inappropriate crop"""
     crop = get_object_or_404(Crop, id=crop_id)
+    crop_name = crop.crop_name
+    farmer_name = crop.farmer.username if crop.farmer_id else 'unknown farmer'
     crop.delete()
-    messages.success(request, f'Crop "{crop.crop_name}" has been removed.')
+    _admin_activity(
+        request,
+        'remove_crop',
+        f'Removed crop "{crop_name}" listed by {farmer_name}.',
+    )
+    messages.success(request, f'Crop "{crop_name}" has been removed.')
     return redirect('crop_management')
 
 

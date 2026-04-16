@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Profile - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-shell {
+        max-width: 1200px;
+    }
+
+    .profile-card {
+        border: 0;
+        border-radius: 1rem;
+        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+        background: #ffffff;
+    }
+
+    .profile-header {
+        background: linear-gradient(140deg, #f8fdf9 0%, #eefaf1 100%);
+    }
+
+    .profile-avatar-wrap {
+        width: 88px;
+        height: 88px;
+        border-radius: 1.15rem;
+        background: #e3f6e8;
+        border: 2px solid rgba(21, 128, 61, 0.15);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .profile-avatar-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .profile-avatar-wrap i {
+        font-size: 2rem;
+        color: #1b7a44;
+    }
+
+    .profile-role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #166534;
+        font-weight: 600;
+        font-size: 0.82rem;
+        padding: 0.35rem 0.75rem;
+    }
+
+    .profile-meta-item {
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #14532d;
+        margin: 0;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .info-item {
+        border: 1px solid #ecf3ee;
+        border-radius: 0.85rem;
+        padding: 0.8rem 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .info-item-icon {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 0.65rem;
+        background: #ecfdf3;
+        color: #15803d;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .info-item-label {
+        color: #6b7280;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.1rem;
+    }
+
+    .info-item-value {
+        color: #111827;
+        font-weight: 600;
+        margin: 0;
+        word-break: break-word;
+    }
+
+    .security-card .btn,
+    .quick-actions-card .btn {
+        border-radius: 0.75rem;
+    }
+
+    .profile-progress {
+        height: 0.55rem;
+        border-radius: 999px;
+        background: #e5efe8;
+    }
+
+    .profile-progress .progress-bar {
+        background: linear-gradient(90deg, #16a34a, #22c55e);
+    }
+
+    .activity-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .activity-item {
+        border-bottom: 1px solid #eef2f7;
+        padding: 0.9rem 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .activity-item:last-child {
+        border-bottom: 0;
+    }
+
+    .activity-name {
+        font-weight: 600;
+        color: #14532d;
+        margin-bottom: 0.2rem;
+    }
+
+    .activity-desc {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .activity-time {
+        color: #6b7280;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        align-self: center;
+    }
+
+    .session-chip {
+        border-radius: 999px;
+        background: #f0fdf4;
+        color: #166534;
+        font-size: 0.76rem;
+        padding: 0.2rem 0.6rem;
+        border: 1px solid #dcfce7;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 profile-shell">
+    <div class="card profile-card profile-header mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="profile-avatar-wrap">
+                        {% if profile_user.profile_picture %}
+                            <img src="{{ profile_user.profile_picture.url }}" alt="Admin avatar">
+                        {% else %}
+                            <i class="fas fa-user-shield"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 class="mb-1 fw-bold text-success">{{ profile_user.get_full_name|default:profile_user.username }}</h3>
+                        <div class="text-muted mb-2">@{{ profile_user.username }}</div>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="profile-role-badge"><i class="fas fa-badge-check"></i> {{ role_label }}</span>
+                            <span class="profile-meta-item">
+                                <i class="fas fa-clock me-1"></i>
+                                Last login:
+                                {% if last_login_time %}
+                                    {{ last_login_time|date:"M d, Y h:i A" }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'profile_edit' %}" class="btn btn-success">
+                        <i class="fas fa-pen-to-square me-1"></i>Edit Profile
+                    </a>
+                    <a href="{% url 'profile_edit' %}" class="btn btn-outline-success">
+                        <i class="fas fa-camera me-1"></i>Update Photo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="card profile-card mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="section-title"><i class="fas fa-id-card me-2"></i>Profile Information</h5>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-item-icon"><i class="fas fa-user"></i></span>
+                            <div>
+                                <div class="info-item-label">Username</div>
+                                <p class="info-item-value">{{ profile_user.username }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-icon"><i class="fas fa-signature"></i></span>
+                            <div>
+                                <div class="info-item-label">Full Name</div>
+                                <p class="info-item-value">{{ profile_user.get_full_name|default:'Not set' }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-icon"><i class="fas fa-envelope"></i></span>
+                            <div>
+                                <div class="info-item-label">Email</div>
+                                <p class="info-item-value">{{ profile_user.email|default:'Not set' }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-icon"><i class="fas fa-phone"></i></span>
+                            <div>
+                                <div class="info-item-label">Phone Number</div>
+                                <p class="info-item-value">{{ profile_user.phone_number|default:'Not set' }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-icon"><i class="fas fa-user-tie"></i></span>
+                            <div>
+                                <div class="info-item-label">Role</div>
+                                <p class="info-item-value">{{ role_label }}</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-item-icon"><i class="fas fa-calendar-days"></i></span>
+                            <div>
+                                <div class="info-item-label">Account Created</div>
+                                <p class="info-item-value">{{ account_created|date:"M d, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card profile-card">
+                <div class="card-body p-4">
+                    <h5 class="section-title mb-3"><i class="fas fa-timeline me-2"></i>Recent Activity</h5>
+                    {% if recent_activities %}
+                        <ul class="activity-list">
+                            {% for activity in recent_activities %}
+                                <li class="activity-item">
+                                    <div>
+                                        <div class="activity-name">{{ activity.get_action_display }}</div>
+                                        <p class="activity-desc">{{ activity.description|default:'No additional details.' }}</p>
+                                    </div>
+                                    <div class="activity-time">{{ activity.timestamp|date:"M d, h:i A" }}</div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">No recent activity yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card profile-card quick-actions-card mb-4">
+                <div class="card-body p-4">
+                    <h5 class="section-title mb-3"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-success">
+                            <i class="fas fa-table-columns me-2"></i>Go to Dashboard
+                        </a>
+                        <a href="{% url 'user_management' %}" class="btn btn-outline-success">
+                            <i class="fas fa-users-cog me-2"></i>Manage Users
+                        </a>
+                        <a href="{% url 'admin_reports' %}" class="btn btn-outline-success">
+                            <i class="fas fa-flag me-2"></i>View Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card profile-card security-card mb-4">
+                <div class="card-body p-4">
+                    <h5 class="section-title mb-3"><i class="fas fa-shield-halved me-2"></i>Security</h5>
+
+                    {% if can_manage_security %}
+                        <div class="d-grid gap-2 mb-3">
+                            <a href="{% url 'change_password' %}" class="btn btn-outline-success">
+                                <i class="fas fa-key me-2"></i>Change Password
+                            </a>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center border rounded-3 p-3 mb-3">
+                            <div>
+                                <div class="fw-semibold text-dark">Two-Factor Authentication</div>
+                                <small class="text-muted">Additional security layer for your account</small>
+                            </div>
+                            <form method="post" action="{% url 'toggle_two_factor' %}">
+                                {% csrf_token %}
+                                <div class="form-check form-switch m-0">
+                                    <input class="form-check-input" type="checkbox" {% if profile_user.two_factor_enabled %}checked{% endif %} onchange="this.form.submit()">
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="border rounded-3 p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold">Active Sessions</span>
+                                <span class="session-chip">{{ active_sessions_count }} active</span>
+                            </div>
+                            <div class="small text-muted mb-2">Current device: {{ current_device }}</div>
+                            {% if active_sessions %}
+                                <ul class="list-unstyled small mb-0">
+                                    {% for session in active_sessions %}
+                                        <li class="mb-1 text-muted">
+                                            {% if session.is_current %}<i class="fas fa-circle text-success me-1" style="font-size:0.5rem;"></i>Current{% else %}<i class="fas fa-circle text-secondary me-1" style="font-size:0.5rem;"></i>Other{% endif %}
+                                            session · expires {{ session.expires_at|date:"M d, h:i A" }}
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                        </div>
+
+                        <form method="post" action="{% url 'logout_all_devices' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('This will sign you out from all devices. Continue?');">
+                                <i class="fas fa-right-from-bracket me-2"></i>Logout from all devices
+                            </button>
+                        </form>
+                    {% else %}
+                        <p class="text-muted mb-0">Security controls are available only for your own account.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card profile-card">
+                <div class="card-body p-4">
+                    <h5 class="section-title mb-3"><i class="fas fa-chart-line me-2"></i>Profile Completion</h5>
+                    <div class="d-flex justify-content-between small mb-2">
+                        <span class="text-muted">Completion</span>
+                        <span class="fw-semibold text-success">{{ profile_completion }}%</span>
+                    </div>
+                    <div class="progress profile-progress mb-2" role="progressbar" aria-valuenow="{{ profile_completion }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar" style="width: {{ profile_completion }}%;"></div>
+                    </div>
+                    <small class="text-muted">Complete missing profile details to improve account security and recovery.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -216,13 +216,150 @@ class UserReport(models.Model):
         return f"{self.user.username} - {self.subject} ({self.get_status_display()})"
 
 
+class AdminSettings(models.Model):
+    LANGUAGE_CHOICES = (
+        ('en', 'English'),
+        ('bn', 'Bangla'),
+        ('hi', 'Hindi'),
+    )
+
+    TIMEZONE_CHOICES = (
+        ('Asia/Dhaka', 'Asia/Dhaka (UTC+6)'),
+        ('Asia/Kolkata', 'Asia/Kolkata (UTC+5:30)'),
+        ('UTC', 'UTC'),
+        ('Europe/London', 'Europe/London'),
+        ('America/New_York', 'America/New_York'),
+    )
+
+    DEFAULT_ROLE_CHOICES = (
+        ('user', 'User'),
+        ('moderator', 'Moderator'),
+        ('admin', 'Admin'),
+    )
+
+    MODEL_VERSION_CHOICES = (
+        ('v1', 'v1 Stable'),
+        ('v2', 'v2 Enhanced'),
+        ('v3-beta', 'v3 Beta'),
+    )
+
+    SESSION_TIMEOUT_CHOICES = (
+        (15, '15 minutes'),
+        (30, '30 minutes'),
+        (60, '1 hour'),
+        (120, '2 hours'),
+        (240, '4 hours'),
+    )
+
+    # General settings
+    site_name = models.CharField(max_length=120, default='AgriGenie')
+    site_logo = models.ImageField(upload_to='settings/logo/', null=True, blank=True)
+    default_language = models.CharField(max_length=10, choices=LANGUAGE_CHOICES, default='en')
+    default_timezone = models.CharField(max_length=64, choices=TIMEZONE_CHOICES, default='Asia/Dhaka')
+
+    # User management settings
+    auto_approve_new_users = models.BooleanField(default=False)
+    allow_admin_role = models.BooleanField(default=True)
+    allow_user_role = models.BooleanField(default=True)
+    allow_moderator_role = models.BooleanField(default=True)
+    max_users_limit = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)])
+    default_new_user_role = models.CharField(max_length=20, choices=DEFAULT_ROLE_CHOICES, default='user')
+
+    # Notification settings
+    email_notifications_enabled = models.BooleanField(default=True)
+    system_alert_notifications_enabled = models.BooleanField(default=True)
+    alert_threshold_percent = models.PositiveSmallIntegerField(
+        default=85,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+    )
+    notification_email = models.EmailField(blank=True, null=True)
+
+    # Security settings
+    password_min_length = models.PositiveSmallIntegerField(
+        default=8,
+        validators=[MinValueValidator(6), MaxValueValidator(64)],
+    )
+    require_password_uppercase = models.BooleanField(default=True)
+    require_password_lowercase = models.BooleanField(default=True)
+    require_password_numbers = models.BooleanField(default=True)
+    enable_two_factor_auth = models.BooleanField(default=False)
+    session_timeout_minutes = models.PositiveSmallIntegerField(choices=SESSION_TIMEOUT_CHOICES, default=30)
+    max_login_attempts = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+    )
+
+    # AI / feature settings
+    enable_ai_recommendations = models.BooleanField(default=True)
+    ai_model_version = models.CharField(max_length=20, choices=MODEL_VERSION_CHOICES, default='v1')
+    ai_api_key = models.CharField(max_length=255, blank=True, null=True)
+    enable_disease_detection = models.BooleanField(default=True)
+
+    # System settings
+    maintenance_mode = models.BooleanField(default=False)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='admin_settings_updates',
+    )
+
+    class Meta:
+        verbose_name = 'Admin Settings'
+        verbose_name_plural = 'Admin Settings'
+
+    def __str__(self):
+        return f'Admin Settings ({self.site_name})'
+
+    @classmethod
+    def get_solo(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+    def reset_to_defaults(self):
+        self.site_name = 'AgriGenie'
+        self.site_logo = None
+        self.default_language = 'en'
+        self.default_timezone = 'Asia/Dhaka'
+        self.auto_approve_new_users = False
+        self.allow_admin_role = True
+        self.allow_user_role = True
+        self.allow_moderator_role = True
+        self.max_users_limit = None
+        self.default_new_user_role = 'user'
+        self.email_notifications_enabled = True
+        self.system_alert_notifications_enabled = True
+        self.alert_threshold_percent = 85
+        self.notification_email = None
+        self.password_min_length = 8
+        self.require_password_uppercase = True
+        self.require_password_lowercase = True
+        self.require_password_numbers = True
+        self.enable_two_factor_auth = False
+        self.session_timeout_minutes = 30
+        self.max_login_attempts = 5
+        self.enable_ai_recommendations = True
+        self.ai_model_version = 'v1'
+        self.ai_api_key = ''
+        self.enable_disease_detection = True
+        self.maintenance_mode = False
+
+
 class ActivityLog(models.Model):
     ACTION_TYPES = (
         ('login', 'Login'),
         ('logout', 'Logout'),
+        ('update_profile', 'Update Profile'),
+        ('toggle_2fa', 'Toggle Two-Factor Authentication'),
+        ('security_logout', 'Logout All Sessions'),
         ('create_crop', 'Create Crop'),
         ('update_crop', 'Update Crop'),
         ('delete_crop', 'Delete Crop'),
+        ('remove_crop', 'Remove Crop'),
+        ('approve_user', 'Approve User'),
+        ('reject_user', 'Reject User'),
         ('place_order', 'Place Order'),
         ('cancel_order', 'Cancel Order'),
         ('upload_image', 'Upload Image'),

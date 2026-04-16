@@ -3,169 +3,188 @@
 
 {% block title %}Admin Dashboard - AgriGenie{% endblock %}
 
+{% block extra_css %}
+<style>
+    .admin-summary-card {
+        border: 0;
+        border-radius: 1rem;
+        background: linear-gradient(165deg, #ffffff 0%, #f8fcf9 100%);
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+        height: 100%;
+    }
+
+    .admin-summary-card .card-body {
+        padding: 1.15rem 1.2rem;
+    }
+
+    .admin-summary-label {
+        margin-bottom: 0.35rem;
+        font-size: 0.74rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .admin-summary-value {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.05;
+        color: #14532d;
+    }
+
+    .admin-summary-icon {
+        width: 2.8rem;
+        height: 2.8rem;
+        border-radius: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+    }
+
+    .admin-summary-card.theme-success .admin-summary-icon {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .admin-summary-card.theme-warning .admin-summary-icon {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .admin-summary-card.theme-info .admin-summary-icon {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .admin-summary-card.theme-danger .admin-summary-icon {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .admin-section-card {
+        border: 0;
+        border-radius: 1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+
+    .admin-section-card .card-header {
+        padding: 1rem 1.2rem;
+        border-bottom: 1px solid #eef2f7;
+        background: #ffffff;
+        border-radius: 1rem 1rem 0 0;
+    }
+
+    .admin-section-card .table thead th {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #4b5563;
+    }
+
+    .admin-section-card .table tbody td {
+        vertical-align: middle;
+    }
+
+    .quick-action-group .btn {
+        min-width: 72px;
+    }
+
+    .activity-feed-item {
+        padding: 0.95rem 1.2rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .activity-feed-item:last-child {
+        border-bottom: 0;
+    }
+
+    .activity-meta {
+        font-size: 0.78rem;
+        color: #6b7280;
+    }
+
+    @media (max-width: 575.98px) {
+        .admin-summary-value {
+            font-size: 1.65rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row mb-4">
-        <div class="col-md-8">
+        <div class="col-12">
             <h1 class="fw-bold">
                 <i class="fas fa-cogs text-success"></i> Admin Dashboard
             </h1>
             <p class="text-muted">System Overview & Management</p>
         </div>
-        <div class="col-md-4 text-md-end">
-            <a href="{% url 'user_approvals' %}" class="btn btn-warning">
-                <i class="fas fa-hourglass-half"></i> Pending Approvals
-            </a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card admin-summary-card theme-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="admin-summary-label">Total Users</p>
+                            <p class="admin-summary-value">{{ total_users }}</p>
+                        </div>
+                        <span class="admin-summary-icon"><i class="fas fa-users"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card admin-summary-card theme-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="admin-summary-label">Pending Approvals</p>
+                            <p class="admin-summary-value">{{ pending_approvals }}</p>
+                        </div>
+                        <span class="admin-summary-icon"><i class="fas fa-user-clock"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card admin-summary-card theme-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="admin-summary-label">Total Crops</p>
+                            <p class="admin-summary-value">{{ total_crops }}</p>
+                        </div>
+                        <span class="admin-summary-icon"><i class="fas fa-seedling"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card admin-summary-card theme-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="admin-summary-label">System Alerts</p>
+                            <p class="admin-summary-value">{{ system_alerts }}</p>
+                        </div>
+                        <span class="admin-summary-icon"><i class="fas fa-bell"></i></span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Key Stats -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Total Users</p>
-                            <h3 class="fw-bold text-success">{{ total_users }}</h3>
-                        </div>
-                        <i class="fas fa-users fa-2x text-success opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Pending Approvals</p>
-                            <h3 class="fw-bold text-warning">{{ pending_approvals }}</h3>
-                        </div>
-                        <i class="fas fa-hourglass-half fa-2x text-warning opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Total Crops</p>
-                            <h3 class="fw-bold text-info">{{ total_crops }}</h3>
-                        </div>
-                        <i class="fas fa-leaf fa-2x text-info opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">System Alerts</p>
-                            <h3 class="fw-bold text-danger">{{ system_alerts }}</h3>
-                        </div>
-                        <i class="fas fa-exclamation-circle fa-2x text-danger opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Admin Actions -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header agri-card-header">
-                    <h5 class="mb-0"><i class="fas fa-cogs"></i> Management</h5>
-                </div>
-                <div class="list-group list-group-flush">
-                    <a href="{% url 'user_management' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-users-cog text-success"></i> User Management
-                    </a>
-                    <a href="{% url 'user_approvals' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-check-circle text-warning"></i> User Approvals</span>
-                        {% if pending_approvals > 0 %}
-                            <span class="badge bg-warning text-dark">{{ pending_approvals }}</span>
-                        {% endif %}
-                    </a>
-                    <a href="{% url 'master_crops_list' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-seedling text-success"></i> Master Crops
-                    </a>
-                    <a href="{% url 'crop_management' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-leaf text-info"></i> Crop Listings
-                    </a>
-                    <a href="{% url 'system_alerts_admin' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-bell text-danger"></i> System Alerts
-                    </a>
-                    <a href="{% url 'admin_reports' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                        <span><i class="fas fa-flag text-warning"></i> User Reports</span>
-                        {% if pending_reports > 0 %}
-                            <span class="badge bg-danger">{{ pending_reports }}</span>
-                        {% endif %}
-                    </a>
-                    <a href="{% url 'ai_monitoring' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-brain text-secondary"></i> AI Monitoring
-                    </a>
-                    <a href="{% url 'activity_logs' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-history text-muted"></i> Activity Logs
-                    </a>
-                </div>
-            </div>
-
-            <!-- System Health -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header agri-card-header">
-                    <h5 class="mb-0"><i class="fas fa-heartbeat"></i> System Health</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <small>Database</small>
-                            <small class="badge bg-success">Healthy</small>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-success" style="width: 100%;"></div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <small>Cache</small>
-                            <small class="badge bg-success">Healthy</small>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-success" style="width: 100%;"></div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <small>API Response</small>
-                            <small class="badge bg-success">Fast</small>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-success" style="width: 95%;"></div>
-                        </div>
-                    </div>
-                    <div class="mb-0">
-                        <div class="d-flex justify-content-between mb-1">
-                            <small>Storage</small>
-                            <small class="badge bg-warning">85% Used</small>
-                        </div>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar bg-warning" style="width: 85%;"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Approvals -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header agri-card-header d-flex justify-content-between align-items-center">
+        <div class="col-12">
+            <div class="card admin-section-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-hourglass-half"></i> Pending User Approvals</h5>
                     <a href="{% url 'user_approvals' %}" class="btn btn-sm btn-light">View All</a>
                 </div>
@@ -184,7 +203,7 @@
                             {% if pending_users %}
                                 {% for user_approval in pending_users %}
                                 <tr>
-                                    <td><strong>{{ user_approval.user.get_full_name }}</strong></td>
+                                    <td><strong>{{ user_approval.user.get_full_name|default:user_approval.user.username }}</strong></td>
                                     <td>
                                         {% if user_approval.user.role == 'farmer' %}
                                             <span class="badge bg-success">Farmer</span>
@@ -192,12 +211,20 @@
                                             <span class="badge bg-info">Buyer</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ user_approval.user.email }}</td>
+                                    <td>{{ user_approval.user.email|default:'-' }}</td>
                                     <td>{{ user_approval.created_at|date:"M d, Y" }}</td>
-                                    <td>
-                                        <a href="{% url 'approve_user' user_approval.id %}" class="btn btn-sm btn-success">
-                                            Approve
-                                        </a>
+                                    <td class="quick-action-group text-nowrap">
+                                        <form method="post" action="{% url 'approve_user' user_approval.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="approve">
+                                            <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                        </form>
+                                        <form method="post" action="{% url 'approve_user' user_approval.id %}" class="d-inline ms-1">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="reject">
+                                            <input type="hidden" name="reason" value="Rejected from dashboard quick action">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Reject</button>
+                                        </form>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -210,10 +237,13 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Recent System Alerts -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header agri-card-header d-flex justify-content-between align-items-center">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card admin-section-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-exclamation-circle"></i> Recent System Alerts</h5>
                     <a href="{% url 'system_alerts_admin' %}" class="btn btn-sm btn-light">View All</a>
                 </div>
@@ -223,7 +253,6 @@
                             <tr>
                                 <th>Alert</th>
                                 <th>Type</th>
-                                <th>Severity</th>
                                 <th>Created</th>
                                 <th>Status</th>
                             </tr>
@@ -233,29 +262,20 @@
                                 {% for alert in recent_alerts %}
                                 <tr>
                                     <td>{{ alert.title }}</td>
-                                    <td>{{ alert.alert_type }}</td>
-                                    <td>
-                                        {% if alert.severity == 'critical' %}
-                                            <span class="badge bg-danger">Critical</span>
-                                        {% elif alert.severity == 'warning' %}
-                                            <span class="badge bg-warning">Warning</span>
-                                        {% else %}
-                                            <span class="badge bg-info">Info</span>
-                                        {% endif %}
-                                    </td>
+                                    <td>{{ alert.get_alert_type_display }}</td>
                                     <td>{{ alert.created_at|date:"M d, Y H:i" }}</td>
                                     <td>
-                                        {% if alert.is_resolved %}
-                                            <span class="badge bg-success">Resolved</span>
+                                        {% if alert.is_active %}
+                                            <span class="badge bg-success">Active</span>
                                         {% else %}
-                                            <span class="badge bg-danger">Active</span>
+                                            <span class="badge bg-secondary">Inactive</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted py-3">No recent alerts</td>
+                                    <td colspan="4" class="text-center text-muted py-3">No recent alerts</td>
                                 </tr>
                             {% endif %}
                         </tbody>
