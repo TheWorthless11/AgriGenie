@@ -7,6 +7,7 @@ Thread-safe singleton that lazy-loads model once.
 import os
 import json
 import threading
+from datetime import datetime
 import numpy as np
 import pandas as pd
 import joblib
@@ -124,16 +125,24 @@ def get_dropdown_options():
         varieties[c] = sorted(df.loc[df["Commodity"] == c, "Variety"].unique().tolist())
     markets = sorted(df["Market"].unique().tolist())
     months = list(range(1, 13))
+    years = sorted(df["Year"].dropna().astype(int).unique().tolist())
+    if years:
+        next_year = years[-1] + 1
+        if next_year not in years:
+            years.append(next_year)
+    else:
+        years = [datetime.now().year]
 
     return {
         "commodities": commodities,
         "varieties": varieties,
         "markets": markets,
         "months": months,
+        "years": years,
     }
 
 
-def predict_price(commodity, variety, market, month):
+def predict_price(commodity, variety, market, month, year=None):
     """
     Predict next-month Price_per_KG for the given inputs.
 
@@ -159,23 +168,76 @@ def predict_price(commodity, variety, market, month):
     variety = variety.strip().title().replace(" ", "_")
     market = market.strip().title()
 
-    # ---- Get latest LOOKBACK rows for this combination ----
+    # ---- Resolve the time window used by the model ----
+    # The model is trained to predict the next point from the previous LOOKBACK rows.
+    # So for a selected period, we must feed the LOOKBACK rows immediately before it.
     mask = (
         (df_raw["Commodity"] == commodity) &
         (df_raw["Variety"] == variety) &
         (df_raw["Market"] == market)
     )
-    group = df_raw.loc[mask].sort_values(["Year", "Month"]).tail(LOOKBACK).copy()
+    series = df_raw.loc[mask].sort_values(["Year", "Month"]).copy()
 
-    if len(group) < LOOKBACK:
+    if len(series) < LOOKBACK:
         raise ValueError(
             f"Not enough historical data for {commodity}/{variety}/{market}. "
-            f"Need {LOOKBACK} months, found {len(group)}."
+            f"Need {LOOKBACK} months, found {len(series)}."
         )
 
-    # ---- Override month to the prediction target ----
-    # We set the *last row* month to the requested prediction month
-    group.iloc[-1, group.columns.get_loc("Month")] = month
+    month = int(month)
+    if month < 1 or month > 12:
+        raise ValueError("Month must be 1-12")
+
+    if year is None:
+        year = int(series.iloc[-1]["Year"])
+    year = int(year)
+
+    serial = series["Year"].astype(int) * 12 + series["Month"].astype(int)
+    target_serial = year * 12 + month
+
+    target_rows = series.loc[
+        (series["Year"].astype(int) == year) &
+        (series["Month"].astype(int) == month)
+    ]
+
+    actual_price = None
+    is_backtest = False
+
+    if not target_rows.empty:
+        # Backtest mode: selected month exists in history. Compare predicted vs actual.
+        target_idx = target_rows.index[0]
+        target_pos = series.index.get_loc(target_idx)
+        if target_pos < LOOKBACK:
+            raise ValueError(
+                f"Not enough history before {year}-{month:02d} to predict. "
+                f"Need at least {LOOKBACK} previous months."
+            )
+        group = series.iloc[target_pos - LOOKBACK:target_pos].copy()
+        actual_price = float(target_rows.iloc[0][TARGET])
+        is_backtest = True
+    else:
+        # Forecast mode: selected month not present in dataset.
+        latest_year = int(series.iloc[-1]["Year"])
+        latest_month = int(series.iloc[-1]["Month"])
+        latest_serial = latest_year * 12 + latest_month
+
+        if target_serial > latest_serial + 1:
+            raise ValueError(
+                f"Forecast supports up to the next month beyond latest data ({latest_year}-{latest_month:02d})."
+            )
+
+        if target_serial <= latest_serial:
+            # Missing month inside historical range: use the nearest previous LOOKBACK rows.
+            prior = series.loc[serial < target_serial]
+            if len(prior) < LOOKBACK:
+                raise ValueError(
+                    f"Not enough history before {year}-{month:02d} to predict."
+                )
+            group = prior.tail(LOOKBACK).copy()
+        else:
+            # Next-month forecast from latest LOOKBACK rows.
+            group = series.tail(LOOKBACK).copy()
+
     group["Month_sin"] = np.sin(2 * np.pi * group["Month"] / 12)
     group["Month_cos"] = np.cos(2 * np.pi * group["Month"] / 12)
 
@@ -217,10 +279,8 @@ def predict_price(commodity, variety, market, month):
     price_high = predicted_price + margin
 
     # ---- Advisory text ----
-    # Compare predicted price with last known price
-    last_real_price = float(
-        tgt_scaler.inverse_transform([[price_scaled[-1]]])[0, 0]
-    )
+    # Compare predicted price with latest observed price in the input window.
+    last_real_price = float(tgt_scaler.inverse_transform([[price_scaled[-1]]])[0, 0])
     if predicted_price > last_real_price * 1.05:
         advisory = "Price is expected to increase. Consider holding stock for better returns."
     elif predicted_price < last_real_price * 0.95:
@@ -228,7 +288,7 @@ def predict_price(commodity, variety, market, month):
     else:
         advisory = "Price is expected to remain stable. Market conditions look steady."
 
-    return {
+    result = {
         "predicted_price": round(predicted_price, 2),
         "price_low": round(price_low, 2),
         "price_high": round(price_high, 2),
@@ -237,10 +297,23 @@ def predict_price(commodity, variety, market, month):
         "variety": variety,
         "market": market,
         "month": month,
+        "year": year,
+        "is_backtest": is_backtest,
     }
 
+    if actual_price is not None:
+        abs_err = abs(predicted_price - actual_price)
+        pct_err = (abs_err / actual_price * 100.0) if actual_price > 0 else None
+        result.update({
+            "actual_price": round(actual_price, 2),
+            "absolute_error": round(abs_err, 2),
+            "percent_error": round(pct_err, 2) if pct_err is not None else None,
+        })
 
-def get_price_history(commodity, variety, market, limit=24):
+    return result
+
+
+def get_price_history(commodity, variety, market, limit=24, year=None):
     """
     Return recent monthly prices for the chart.
     Returns list of dicts [{year, month, price}, …].
@@ -259,7 +332,15 @@ def get_price_history(commodity, variety, market, limit=24):
         (df["Variety"] == variety) &
         (df["Market"] == market)
     )
-    grp = df.loc[mask].sort_values(["Year", "Month"]).tail(limit)
+    grp = df.loc[mask].sort_values(["Year", "Month"])
+
+    if year is not None:
+        year = int(year)
+        grp_year = grp.loc[grp["Year"].astype(int) == year]
+        if not grp_year.empty:
+            grp = grp_year
+
+    grp = grp.tail(limit)
     return [
         {"year": int(r.Year), "month": int(r.Month), "price": float(r.Price_per_KG)}
         for _, r in grp.iterrows()

@@ -51,7 +51,7 @@ class DiseaseDetectionModel:
         14: {'name': 'Tomato Yellow Leaf Curl Virus', 'type': 'viral'},
     }
     
-    # Treatment recommendations for each disease
+     # Treatment recommendations for each disease
     TREATMENT_RECOMMENDATIONS = {
         'Pepper Bell Bacterial Spot': 'Remove infected leaves, apply copper-based bactericide, avoid overhead watering, rotate crops.',
         'Pepper Bell Healthy': 'Plant is healthy. Continue regular monitoring and maintenance.',
