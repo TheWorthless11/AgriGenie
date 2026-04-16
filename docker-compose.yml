@@ -9,6 +9,8 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d agrigenie_db"]
       interval: 10s
@@ -22,6 +24,8 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -29,8 +33,10 @@ services:
       retries: 10
 
   web:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: agrigenie-web:latest
-    pull_policy: never
     container_name: agrigenie-web
     restart: unless-stopped
     command: >
@@ -49,7 +55,10 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       CACHE_URL: redis://redis:6379/1
-      ALLOWED_HOSTS: localhost,127.0.0.1,web
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,web,.trycloudflare.com}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-https://*.trycloudflare.com}
+      TRUST_X_FORWARDED_PROTO: ${TRUST_X_FORWARDED_PROTO:-True}
+      USE_X_FORWARDED_HOST: ${USE_X_FORWARDED_HOST:-True}
     depends_on:
       db:
         condition: service_healthy
@@ -62,8 +71,10 @@ services:
       - media_data:/app/media
 
   celery_worker:
-    image: agrigenie-celery_worker:latest
-    pull_policy: never
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agrigenie-web:latest
     container_name: agrigenie-celery-worker
     restart: unless-stopped
     command: celery -A celery_config worker -l info
@@ -88,8 +99,10 @@ services:
       - media_data:/app/media
 
   celery_beat:
-    image: agrigenie-celery_beat:latest
-    pull_policy: never
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agrigenie-web:latest
     container_name: agrigenie-celery-beat
     restart: unless-stopped
     command: celery -A celery_config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
