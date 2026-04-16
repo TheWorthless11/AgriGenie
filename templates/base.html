@@ -68,7 +68,17 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
-                                <li><a class="dropdown-item" href="{% url 'profile_edit' %}">Settings</a></li>
+                                <li>
+                                    {% if user.role == 'farmer' %}
+                                        <a class="dropdown-item" href="{% url 'farmer_settings' %}">Settings</a>
+                                    {% elif user.role == 'admin' %}
+                                        <a class="dropdown-item" href="{% url 'admin_settings' %}">Settings</a>
+                                    {% elif user.role == 'buyer' %}
+                                        <a class="dropdown-item" href="{% url 'buyer_settings' %}">Settings</a>
+                                    {% else %}
+                                        <a class="dropdown-item" href="{% url 'profile_edit' %}">Settings</a>
+                                    {% endif %}
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
                             </ul>
@@ -128,20 +138,35 @@
                         <a class="sidebar-link {% if current_url == 'admin_dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
                             <i class="fas fa-table-columns"></i><span>Dashboard</span>
                         </a>
-                        <a class="sidebar-link {% if current_url == 'user_approvals' %}active{% endif %}" href="{% url 'user_approvals' %}">
-                            <i class="fas fa-user-check"></i><span>Approvals</span>
+                        <a class="sidebar-link {% if current_url == 'user_management' or current_url == 'user_detail_view' or current_url == 'delete_user' or current_url == 'block_user' or current_url == 'unblock_user' or current_url == 'toggle_user_approval' %}active{% endif %}" href="{% url 'user_management' %}">
+                            <i class="fas fa-users-cog"></i><span>User Management</span>
                         </a>
-                        <a class="sidebar-link {% if current_url == 'master_crops_list' or current_url == 'add_master_crop' or current_url == 'edit_master_crop' or current_url == 'delete_master_crop' %}active{% endif %}" href="{% url 'master_crops_list' %}">
+                        <a class="sidebar-link {% if current_url == 'user_approvals' or current_url == 'approve_user' or current_url == 'reject_user' %}active{% endif %}" href="{% url 'user_approvals' %}">
+                            <i class="fas fa-user-check"></i><span>User Approvals</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'master_crops_list' or current_url == 'add_master_crop' or current_url == 'edit_master_crop' or current_url == 'delete_master_crop' or current_url == 'import_crop_variants' or current_url == 'toggle_master_crop_status' %}active{% endif %}" href="{% url 'master_crops_list' %}">
                             <i class="fas fa-wheat-awn"></i><span>Master Crops</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'crop_management' or current_url == 'admin_crop_detail' or current_url == 'admin_remove_crop' %}active{% endif %}" href="{% url 'crop_management' %}">
+                            <i class="fas fa-list-check"></i><span>Crop Listings</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'system_alerts_admin' %}active{% endif %}" href="{% url 'system_alerts_admin' %}">
+                            <i class="fas fa-bell"></i><span>System Alerts</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'admin_reports' %}active{% endif %}" href="{% url 'admin_reports' %}">
+                            <i class="fas fa-flag"></i><span>User Reports</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'ai_monitoring' %}active{% endif %}" href="{% url 'ai_monitoring' %}">
+                            <i class="fas fa-brain"></i><span>AI Monitoring</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'activity_logs' %}active{% endif %}" href="{% url 'activity_logs' %}">
+                            <i class="fas fa-history"></i><span>Activity Logs</span>
+                        </a>
+                        <a class="sidebar-link {% if current_url == 'admin_settings' %}active{% endif %}" href="{% url 'admin_settings' %}">
+                            <i class="fas fa-sliders"></i><span>Settings</span>
                         </a>
                         <a class="sidebar-link {% if current_url == 'irrigation_crops_admin' or current_url == 'add_irrigation_crop_admin' or current_url == 'edit_irrigation_crop_admin' or current_url == 'delete_irrigation_crop_admin' %}active{% endif %}" href="{% url 'irrigation_crops_admin' %}">
                             <i class="fas fa-droplet"></i><span>Irrigation</span>
-                        </a>
-                        <a class="sidebar-link {% if current_url == 'crop_management' or current_url == 'admin_crop_detail' %}active{% endif %}" href="{% url 'crop_management' %}">
-                            <i class="fas fa-list-check"></i><span>Crop Listings</span>
-                        </a>
-                        <a class="sidebar-link {% if current_url == 'admin_reports' or current_url == 'system_alerts_admin' or current_url == 'activity_logs' or current_url == 'ai_monitoring' %}active{% endif %}" href="{% url 'admin_reports' %}">
-                            <i class="fas fa-chart-pie"></i><span>Reports</span>
                         </a>
                     {% endif %}
                     </nav>
