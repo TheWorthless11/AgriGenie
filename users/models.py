@@ -6,10 +6,15 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 class CustomUserManager(UserManager):
     def create_user(self, username, email=None, password=None, role='buyer', **extra_fields):
         extra_fields.setdefault('role', role)
+        # Defensive guard: never allow NULL for non-nullable boolean fields.
+        if extra_fields.get('two_factor_enabled') is None:
+            extra_fields['two_factor_enabled'] = False
         return super().create_user(username, email, password, **extra_fields)
 
     def create_superuser(self, username, email=None, password=None, **extra_fields):
         extra_fields.setdefault('role', 'admin')
+        if extra_fields.get('two_factor_enabled') is None:
+            extra_fields['two_factor_enabled'] = False
         return super().create_superuser(username, email, password, **extra_fields)
 
 
@@ -58,6 +63,12 @@ class CustomUser(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
     
     objects = CustomUserManager()
+
+    def save(self, *args, **kwargs):
+        # Coalesce legacy/empty values from old code paths to satisfy DB constraints.
+        if self.two_factor_enabled is None:
+            self.two_factor_enabled = False
+        super().save(*args, **kwargs)
     
     def set_pin(self, raw_pin):
         """Hash and store the PIN securely"""

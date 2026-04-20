@@ -305,6 +305,7 @@ class DynamicRegistrationForm(forms.ModelForm):
             country=self.cleaned_data.get('country', 'Bangladesh'),
             preferences=self.cleaned_data.get('preferences', ''),
             auth_type=auth_type,
+            two_factor_enabled=False,
         )
         
         # Handle profile picture

@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
 from django.db.models import Q, Avg, Count
+from django.db import IntegrityError
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
 from django.contrib.sessions.models import Session
@@ -507,7 +508,13 @@ def farmer_onboarding(request):
                 approval.reason_for_rejection = ''
                 approval.reviewed_by = None
                 approval.reviewed_at = None
-                approval.save()
+                try:
+                    approval.save()
+                except IntegrityError:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'The provided NID is already linked to another approval request.'
+                    }, status=400)
                 
                 # Update farmer profile approval status
                 fp.approval_status = 'pending'
