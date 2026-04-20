@@ -1,13 +1,40 @@
-﻿# runtime
-.runtime/
+﻿# Python
+__pycache__/
+*.pyc
 
-# latex temp files
+# Virtual environment
+.env
+venv/
+env/
+
+# VS Code
+.vscode/
+
+# Django
+staticfiles/
+media/
+
+# Migrations cache
+*/migrations/__pycache__/
+
+# Project cache
+*/__pycache__/
+
+# AI models (large files)
+ai_models/*.h5
+ai_models/archive/
+
+# LaTeX
 *.aux
 *.lof
 *.lot
 *.out
 *.toc
+*.log
 
-# output files
+# Build/output
 *.pdf
 *.tar
+
+# Runtime
+.runtime/
