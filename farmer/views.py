@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import never_cache
 from django.db.models import Q, Avg, Count, Sum
 from django.utils import timezone
 from django.conf import settings
@@ -505,6 +506,7 @@ def is_farmer_approved(user):
     return True
 
 
+@never_cache
 @login_required(login_url='login')
 def farmer_dashboard(request):
     """Farmer dashboard"""
