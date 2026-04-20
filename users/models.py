@@ -45,6 +45,15 @@ class CustomUser(AbstractUser):
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     is_verified = models.BooleanField(default=False)
+
+    # Admin moderation controls
+    is_blocked_by_admin = models.BooleanField(default=False)
+    blocked_reason = models.TextField(blank=True, null=True)
+    blocked_date = models.DateTimeField(blank=True, null=True)
+
+    # Account security controls
+    two_factor_enabled = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

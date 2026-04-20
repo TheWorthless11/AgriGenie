@@ -4,6 +4,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.cache import never_cache
 from django.db.models import Q, Avg, Count
 from django.http import JsonResponse, HttpResponse
 from django.urls import reverse
@@ -601,6 +602,7 @@ def logout_view(request):
     return redirect('login')
 
 
+@never_cache
 @login_required(login_url='login')
 def dashboard(request):
     """User dashboard view"""
@@ -718,6 +720,7 @@ def submit_buyer_approval_documents(request):
     return redirect('dashboard')
 
 
+@never_cache
 @login_required(login_url='login')
 def profile_view(request, username=None):
     """View user profile"""
@@ -880,6 +883,7 @@ def profile_edit(request):
     return render(request, 'users/profile_edit.html', context)
 
 
+@never_cache
 @login_required(login_url='login')
 @require_http_methods(["GET", "POST"])
 def farmer_settings(request):
@@ -1131,6 +1135,7 @@ def farmer_settings(request):
     return render(request, 'users/farmer_settings.html', context)
 
 
+@never_cache
 @login_required(login_url='login')
 @require_http_methods(["GET", "POST"])
 def buyer_settings(request):
