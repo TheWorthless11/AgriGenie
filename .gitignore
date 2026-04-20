@@ -1,62 +1,13 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-env/
-venv/
-ENV/
-build/
-dist/
-eggs/
-*.egg-info/
+﻿# runtime
+.runtime/
 
-# Django
-*.log
-local_settings.py
-db.sqlite3
-media/
+# latex temp files
+*.aux
+*.lof
+*.lot
+*.out
+*.toc
 
-# VS Code
-.vscode/
-
-# macOS
-.DS_Store
-
-# ===== ML / AI Models =====
-ai_models/*.h5
-ai_models/archive/
-
-# ===== OS / Editor =====
-Thumbs.db
-.idea/
-
-# Environment files
-.env
-env/
-venv/
-ENV/
-
-staticfiles/
-
-# Celery/Broker
-celerybeat-schedule
-celerybeat.pid
-
-# XAMPP / MySQL local exports
-*.sql
-
-# System Reports (if you save them as files)
-reports/
-sent_emails/
-
-# Documentation clutter folder (The one we created earlier)
-# docs/  <-- Only uncomment this if you DON'T want your guides on GitHub
-
-# Ignore local virtual environments from teammates
-.venv/
-venv/
-env/
-
-# Ignore Anaconda-specific local files if any
-.conda/
+# output files
+*.pdf
+*.tar
