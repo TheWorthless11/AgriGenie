@@ -94,21 +94,24 @@ TEMPLATES = [
 
 # 6. Database Configuration
 db_engine = os.getenv('DB_ENGINE', 'django.db.backends.sqlite3')
+db_name = os.getenv('DB_NAME')
+
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE'),
-        'NAME': os.getenv('DB_NAME'),
+        'ENGINE': db_engine,
+        'NAME': db_name or (BASE_DIR / 'db.sqlite3'),
         'USER': os.getenv('DB_USER'),
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
         'HOST': os.getenv('DB_HOST', '127.0.0.1'),
         'PORT': os.getenv('DB_PORT', ''),
         'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '60')),
         'CONN_HEALTH_CHECKS': True,
-        'OPTIONS': {
-            'connect_timeout': 10,
-        },
+        'OPTIONS': {},
     }
 }
+
+if db_engine != 'django.db.backends.sqlite3':
+    DATABASES['default']['OPTIONS']['connect_timeout'] = 10
 
 # 7. Password Validation & Internationalization
 AUTH_PASSWORD_VALIDATORS = [
