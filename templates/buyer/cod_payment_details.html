@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}COD Payment Details - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Payment Success Alert (if already paid) -->
+            {% if payment.status == 'completed' %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <h4 class="alert-heading">✓ Upfront Payment Received!</h4>
+                <p>Your upfront payment of ৳{{ payment.upfront_amount|floatformat:2 }} has been confirmed.</p>
+                <hr>
+                <p class="mb-0">You will pay the remaining ৳{{ payment.remaining_amount|floatformat:2 }} at the time of delivery.</p>
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            {% endif %}
+
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">📋 Cash on Delivery (COD) Payment Details</h3>
+                </div>
+                <div class="card-body p-5">
+                    <!-- Order Information -->
+                    <div class="card mb-4 bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Order Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Order ID:</strong> #{{ order.id }}</p>
+                                    <p><strong>Crop:</strong> {{ order.crop.crop_name }}</p>
+                                    <p><strong>Farmer:</strong> {{ order.farmer.first_name }} {{ order.farmer.last_name }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Quantity:</strong> {{ order.quantity }} {{ order.crop.unit }}</p>
+                                    <p><strong>Order Date:</strong> {{ order.order_date|date:"M d, Y" }}</p>
+                                    <p><strong>Delivery Date:</strong> {{ order.delivery_date|date:"M d, Y" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Breakdown -->
+                    <h5 class="mb-4">💰 Payment Breakdown</h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-warning">Pay Now</h6>
+                                    <h3 class="text-warning">৳{{ payment.upfront_amount|floatformat:2 }}</h3>
+                                    <p class="text-muted small">(20% Upfront)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title text-info">Pay at Delivery</h6>
+                                    <h3 class="text-info">৳{{ payment.remaining_amount|floatformat:2 }}</h3>
+                                    <p class="text-muted small">(80% at Delivery)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Total Amount -->
+                    <div class="alert alert-success mb-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><strong>Total Order Amount:</strong></h5>
+                            <h4 class="mb-0 text-success">৳{{ payment.total_amount|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+
+                    <!-- COD Instructions -->
+                    <div class="card mb-4 bg-light border-info">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">📝 COD Payment Instructions</h5>
+                            <ol class="mb-0">
+                                <li>Your farmer will contact you shortly to confirm delivery time</li>
+                                <li>Pay ৳{{ payment.upfront_amount|floatformat:2 }} to confirm the order (20% upfront)</li>
+                                <li>Farmer will prepare and ship your order</li>
+                                <li>Upon delivery, pay the remaining ৳{{ payment.remaining_amount|floatformat:2 }} (80%)</li>
+                                <li>After payment confirmation, order status becomes "Completed"</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <!-- Important Notice -->
+                    <div class="alert alert-warning mb-4">
+                        <h6 class="alert-heading">⚠️ Important Details</h6>
+                        <ul class="mb-0">
+                            <li>Both payments must be made within the agreed timeline</li>
+                            <li>Provide payment confirmation to the farmer</li>
+                            <li>Report any issues with the order immediately</li>
+                            <li>For disputes, contact our support team</li>
+                        </ul>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-group mt-5">
+                        <a href="{% url 'order_detail' order.id %}" class="btn btn-success btn-lg btn-block">
+                            <i class="fas fa-check-circle"></i> Confirm & Return to Order
+                        </a>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'buyer_payment_choice' order.id %}" class="btn btn-link text-secondary">
+                            Change payment method
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card mt-4 border-light shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted">Need Help?</h6>
+                    <p class="text-muted small mb-0">
+                        If you have any questions about the COD payment process, 
+                        <a href="{% url 'contact_farmer' order.farmer.id %}">contact the farmer directly</a> 
+                        or reach out to our <a href="#">support team</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 8px;
+    }
+    
+    .card-header {
+        border-radius: 8px 8px 0 0;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}NID Approval - Admin Dashboard - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nid-detail-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .nid-info-section {
+        background: linear-gradient(165deg, #ffffff 0%, #f8fcf9 100%);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+    }
+
+    .farmer-card {
+        background: linear-gradient(165deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .farmer-card h5 {
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .farmer-info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .farmer-info-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .farmer-info-label {
+        font-weight: 600;
+        opacity: 0.9;
+    }
+
+    .nid-photo-container {
+        text-align: center;
+        padding: 2rem;
+        background-color: #f9fafb;
+        border-radius: 0.75rem;
+        border: 2px dashed #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+
+    .nid-photo-container img {
+        max-width: 100%;
+        max-height: 600px;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .approval-form-section {
+        background-color: #f9fafb;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .btn-approve {
+        background-color: #10b981;
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-approve:hover {
+        background-color: #059669;
+        transform: translateY(-2px);
+    }
+
+    .btn-reject {
+        background-color: #ef4444;
+        border: none;
+        color: white;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-reject:hover {
+        background-color: #dc2626;
+        transform: translateY(-2px);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .status-pending {
+        background-color: #fef3c7;
+        color: #b45309;
+    }
+
+    .status-approved {
+        background-color: #dcfce7;
+        color: #166534;
+    }
+
+    .status-rejected {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-value {
+        color: #6b7280;
+        margin-bottom: 1rem;
+    }
+
+    .verification-checklist {
+        background-color: #f0fdf4;
+        border-left: 4px solid #10b981;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .checklist-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        color: #166534;
+    }
+
+    .checklist-item i {
+        margin-right: 0.75rem;
+        font-weight: 600;
+    }
+
+    @media (max-width: 576px) {
+        .nid-detail-container {
+            padding: 1rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn-approve, .btn-reject {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 nid-detail-container">
+    <!-- Header -->
+    <div class="mb-4">
+        <a href="{% url 'nid_submissions' %}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="fas fa-arrow-left"></i> Back to Submissions
+        </a>
+        <h1 class="fw-bold">
+            <i class="fas fa-id-card text-primary"></i> NID Approval Review
+        </h1>
+    </div>
+
+    <!-- Farmer Info Card -->
+    <div class="farmer-card">
+        <h5><i class="fas fa-user-circle"></i> Farmer Information</h5>
+        
+        <div class="farmer-info-row">
+            <span class="farmer-info-label">Username:</span>
+            <span>{{ farmer.username }}</span>
+        </div>
+        
+        <div class="farmer-info-row">
+            <span class="farmer-info-label">Full Name:</span>
+            <span>{{ farmer.get_full_name|default:"N/A" }}</span>
+        </div>
+        
+        <div class="farmer-info-row">
+            <span class="farmer-info-label">Email:</span>
+            <span>{{ farmer.email }}</span>
+        </div>
+        
+        <div class="farmer-info-row">
+            <span class="farmer-info-label">Phone:</span>
+            <span>{{ farmer.phone_number|default:"N/A" }}</span>
+        </div>
+        
+        <div class="farmer-info-row">
+            <span class="farmer-info-label">Farm Name:</span>
+            <span>{{ farmer_profile.farm_name }}</span>
+        </div>
+        
+        <div class="farmer-info-row">
+            <span class="farmer-info-label">Location:</span>
+            <span>{{ farmer_profile.farm_location }}</span>
+        </div>
+        
+        <div class="farmer-info-row">
+            <span class="farmer-info-label">Current Status:</span>
+            <span>
+                {% if farmer_profile.nid_approval_status == 'pending' %}
+                    <span class="status-badge status-pending">
+                        <i class="fas fa-hourglass-half"></i> Pending Review
+                    </span>
+                {% elif farmer_profile.nid_approval_status == 'approved' %}
+                    <span class="status-badge status-approved">
+                        <i class="fas fa-check-circle"></i> Approved
+                    </span>
+                {% elif farmer_profile.nid_approval_status == 'rejected' %}
+                    <span class="status-badge status-rejected">
+                        <i class="fas fa-times-circle"></i> Rejected
+                    </span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- NID Details Section -->
+    <div class="nid-info-section">
+        <h5 class="mb-3"><i class="fas fa-file-upload"></i> NID Submission Details</h5>
+        
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="info-label">NID Number:</div>
+                <div class="info-value">
+                    <code style="font-size: 1.1rem; font-weight: 600;">{{ farmer_profile.nid_number }}</code>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="info-label">Submission Date:</div>
+                <div class="info-value">
+                    {% if farmer_profile.nid_submission_date %}
+                        {{ farmer_profile.nid_submission_date|date:"M d, Y \a\t H:i" }}
+                    {% else %}
+                        <span class="text-muted">N/A</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NID Photo Display -->
+    {% if farmer_profile.nid_photo %}
+    <div class="nid-info-section">
+        <h5 class="mb-3"><i class="fas fa-image"></i> NID Document</h5>
+        <div class="nid-photo-container">
+            <img src="{{ farmer_profile.nid_photo.url }}" alt="NID Photo">
+        </div>
+        <div style="text-align: center;">
+            <a href="{{ farmer_profile.nid_photo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-external-link-alt"></i> View Full Size
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Verification Checklist -->
+    {% if farmer_profile.nid_approval_status == 'pending' %}
+    <div class="verification-checklist">
+        <h6 class="mb-3"><i class="fas fa-clipboard-check"></i> Verification Checklist</h6>
+        <div class="checklist-item">
+            <i class="fas fa-check"></i> NID document is clear and readable
+        </div>
+        <div class="checklist-item">
+            <i class="fas fa-check"></i> All text is legible and in correct orientation
+        </div>
+        <div class="checklist-item">
+            <i class="fas fa-check"></i> Farmer identity matches registration details
+        </div>
+        <div class="checklist-item">
+            <i class="fas fa-check"></i> Document is not altered or edited
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Approval Form -->
+    <form method="post" id="approvalForm">
+        {% csrf_token %}
+        
+        <div class="approval-form-section">
+            <h5 class="mb-3"><i class="fas fa-comment-dots"></i> Admin Notes</h5>
+            <textarea name="admin_notes" placeholder="Add notes for approval/rejection..." class="form-control" rows="4">{{ farmer_profile.nid_admin_notes }}</textarea>
+            <small class="form-text text-muted mt-2">These notes will be visible to the farmer if you reject the submission.</small>
+        </div>
+
+        <!-- Action Buttons -->
+        {% if farmer_profile.nid_approval_status != 'approved' %}
+        <div class="action-buttons">
+            <button type="submit" name="action" value="approve" class="btn btn-approve btn-lg flex-grow-1">
+                <i class="fas fa-check-circle"></i> Approve NID
+            </button>
+            <button type="submit" name="action" value="reject" class="btn btn-reject btn-lg flex-grow-1" onclick="return confirm('Are you sure you want to reject this NID submission?');">
+                <i class="fas fa-times-circle"></i> Reject NID
+            </button>
+        </div>
+        {% else %}
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> This NID has already been approved.
+            {% if farmer_profile.nid_approved_date %}
+                Approved on {{ farmer_profile.nid_approved_date|date:"M d, Y \a\t H:i" }}
+            {% endif %}
+        </div>
+        {% endif %}
+    </form>
+
+    <!-- Previous Rejections -->
+    {% if farmer_profile.nid_approval_status == 'rejected' %}
+    <div class="alert alert-danger mt-4">
+        <h6><i class="fas fa-exclamation-circle"></i> Rejection Reason</h6>
+        <p class="mb-0">{{ farmer_profile.nid_admin_notes|default:"No specific reason provided." }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

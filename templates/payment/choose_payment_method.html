@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Choose Payment Method - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h2 class="text-success">
+            <i class="fas fa-building"></i> Select Payment Method
+        </h2>
+        <p class="text-muted">Choose how you would like to pay for this order</p>
+    </div>
+    
+    <!-- Order Summary -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-box"></i> Order Summary</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Crop:</strong> {{ order.crop.crop_name }}</p>
+                    <p class="mb-2"><strong>Quantity:</strong> {{ order.quantity }} {{ order.crop.unit }}</p>
+                    <p class="mb-2"><strong>Unit Price:</strong> ৳{{ order.crop.price_per_unit|floatformat:2 }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Farmer:</strong> {{ order.farmer.get_full_name|default:order.farmer.username }}</p>
+                    <p class="mb-2"><strong>Delivery Date:</strong> {{ order.delivery_date|date:"M d, Y" }}</p>
+                    <p class="mb-2"><strong>Order Date:</strong> {{ order.order_date|date:"M d, Y" }}</p>
+                </div>
+            </div>
+            <div class="border-top pt-3">
+                <h4 class="text-success"><strong>Total Amount: ৳{{ total_amount|floatformat:2 }}</strong></h4>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Methods -->
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header agri-card-header">
+                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Payment Methods</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- COD Option -->
+                        <div class="payment-option mb-4 p-3 border rounded" style="cursor: pointer; transition: all 0.3s ease;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="cod_option" 
+                                       value="cod" onchange="togglePaymentDetails()">
+                                <label class="form-check-label w-100" for="cod_option">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-1" style="color: #28a745;">
+                                                <i class="fas fa-money-bill-wave"></i> Cash on Delivery (COD)
+                                            </h5>
+                                            <p class="text-muted mb-2">Pay 20% now (Upfront) and 80% when you receive the order</p>
+                                        </div>
+                                    </div>
+                                    <div class="cod-details mt-2">
+                                        <div class="alert alert-info mb-0">
+                                            <p class="mb-1"><strong>Upfront Payment: ৳{{ total_amount|floatformat:2 }} × 20% = <span class="h5 text-success">৳{{ total_amount|floatformat:"0.2"|add:"*0.2"|floatformat:2 }}</span></strong></p>
+                                            <p class="mb-0"><strong>Remaining Balance: ৳{{ total_amount|floatformat:2 }} × 80% = <span class="h5 text-warning">৳{{ total_amount|floatformat:"0.2"|add:"*0.8"|floatformat:2 }}</span></strong></p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Online Payment Option -->
+                        <div class="payment-option mb-4 p-3 border rounded" style="cursor: pointer; transition: all 0.3s ease;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="ssl_option" 
+                                       value="sslcommerz" onchange="togglePaymentDetails()">
+                                <label class="form-check-label w-100" for="ssl_option">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-1" style="color: #0066cc;">
+                                                <i class="fas fa-server"></i> Online Payment (SSLCommerz)
+                                            </h5>
+                                            <p class="text-muted mb-2">Pay the full amount securely using SSLCommerz payment gateway</p>
+                                            <div class="mt-2">
+                                                <span class="badge bg-info">Secured Payment</span>
+                                                <span class="badge bg-light text-dark">Instant Confirmation</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="ssl-details mt-2">
+                                        <div class="alert alert-primary mb-0">
+                                            <p class="mb-0"><strong>Full Payment: <span class="h5 text-primary">৳{{ total_amount|floatformat:2 }}</span></strong></p>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Information -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header agri-card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle"></i> Payment Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="cod-info" class="payment-info" style="display: none;">
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading"><i class="fas fa-shield-alt"></i> Cash on Delivery Details</h6>
+                                <ul class="mb-0">
+                                    <li>Pay 20% of total amount (৳{{ total_amount|floatformat:"0.2"|add:"*0.2"|floatformat:2 }}) when you place the order</li>
+                                    <li>Pay remaining 80% (৳{{ total_amount|floatformat:"0.2"|add:"*0.8"|floatformat:2 }}) when you receive the product</li>
+                                    <li>Your order will be marked as "Pending Payment" until delivery</li>
+                                    <li>No payment gateway charges applied</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div id="ssl-info" class="payment-info" style="display: none;">
+                            <div class="alert alert-primary">
+                                <h6 class="alert-heading"><i class="fas fa-lock"></i> Online Payment Details</h6>
+                                <ul class="mb-0">
+                                    <li>Pay the full amount (৳{{ total_amount|floatformat:2 }}) via SSLCommerz</li>
+                                    <li>SSLCommerz is a trusted payment gateway in Bangladesh</li>
+                                    <li>Your payment will be processed securely and instantly</li>
+                                    <li>Order confirmation will be sent immediately after payment</li>
+                                    <li>You can track your order in real-time</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-arrow-right"></i> Continue to Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Sidebar Help -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> Need Help?</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-3">Which payment method should I choose?</h6>
+                    
+                    <p><strong>Choose COD if:</strong></p>
+                    <ul>
+                        <li>You prefer to pay partially upfront</li>
+                        <li>You want to inspect products before full payment</li>
+                        <li>You don't have online payment available</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <p><strong>Choose Online Payment if:</strong></p>
+                    <ul>
+                        <li>You want instant order confirmation</li>
+                        <li>You prefer secure online payment</li>
+                        <li>You want real-time order tracking</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-headset"></i> Support</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Having trouble with payment options?</p>
+                    <a href="{% url 'contact_farmer' farmer.id %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-envelope"></i> Contact Farmer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .payment-option {
+        background-color: #f9f9f9;
+        border: 2px solid #e0e0e0 !important;
+        transition: all 0.3s ease;
+    }
+    
+    .payment-option:hover {
+        background-color: #f5f5f5;
+        border-color: #28a745 !important;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+    }
+    
+    .form-check-input:checked ~ .form-check-label {
+        font-weight: 600;
+    }
+    
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+</style>
+
+<script>
+    function togglePaymentDetails() {
+        const codInfo = document.getElementById('cod-info');
+        const sslInfo = document.getElementById('ssl-info');
+        const codOption = document.getElementById('cod_option');
+        
+        if (codOption.checked) {
+            codInfo.style.display = 'block';
+            sslInfo.style.display = 'none';
+        } else {
+            codInfo.style.display = 'none';
+            sslInfo.style.display = 'block';
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const radios = document.querySelectorAll('input[name="payment_method"]');
+        
+        // Set first option as default
+        if (radios.length > 0 && !document.querySelector('input[name="payment_method"]:checked')) {
+            radios[0].checked = true;
+        }
+        
+        togglePaymentDetails();
+    });
+</script>
+{% endblock %}

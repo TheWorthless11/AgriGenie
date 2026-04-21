@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'admin_panel',
     'marketplace',
     'chat',                  # Real-time chat application
+    'payment',               # Payment gateway integration
     
     # Third-Party Apps
     'rest_framework',

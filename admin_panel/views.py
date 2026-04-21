@@ -1,11 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.db.models import Count, Avg, Q
 from django.db import connection, IntegrityError, transaction
 from django.core.cache import cache
 from django.core.management import call_command
 from django.utils import timezone
+from django.views.decorators.http import require_http_methods
+from django.http import HttpResponseRedirect
 from datetime import timedelta
 import csv
 import io
@@ -28,6 +31,75 @@ from marketplace.models import CropListing
 def is_admin(user):
     """Check if user is admin"""
     return user.is_authenticated and user.role == 'admin'
+
+
+def _admin_activity(request, action, description):
+    """Non-blocking activity logger for admin actions."""
+    if not request.user.is_authenticated:
+        return
+
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    ip_address = forwarded_for.split(',')[0].strip() if forwarded_for else request.META.get('REMOTE_ADDR')
+
+    try:
+        ActivityLog.objects.create(
+            user=request.user,
+            action=action,
+            description=description,
+            ip_address=ip_address,
+            user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+        )
+    except Exception:
+        pass
+def custom_admin_login(request):
+    """Custom admin login page"""
+    if request.user.is_authenticated and is_admin(request.user):
+        return redirect('admin_dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+        
+        if not username or not password:
+            messages.error(request, 'Please enter both username and password.')
+            return render(request, 'admin_login.html')
+        
+        # Authenticate user
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            # Check if user is admin
+            if hasattr(user, 'role') and user.role == 'admin':
+                login(request, user)
+                # Log the admin login
+                _admin_activity(request, 'admin_login', f'{user.username} logged in to admin panel.')
+                
+                next_url = request.GET.get('next', 'admin_dashboard')
+                return redirect(next_url)
+            else:
+                # User exists but is not admin
+                messages.error(request, 'Access denied. Only administrators can access this panel.')
+                _admin_activity(request, 'admin_login_failed', f'Non-admin user {username} attempted admin login.')
+        else:
+            # Authentication failed
+            messages.error(request, 'Invalid username or password.')
+            _admin_activity(request, 'admin_login_failed', f'Failed login attempt for username {username}.')
+        
+        return render(request, 'admin_login.html', {'form': {'username': username}})
+    
+    return render(request, 'admin_login.html')
+
+
+@require_http_methods(["POST"])
+@login_required(login_url='custom_admin_login')
+def custom_admin_logout(request):
+    """Custom admin logout view"""
+    if is_admin(request.user):
+        _admin_activity(request, 'admin_logout', f'{request.user.username} logged out from admin panel.')
+    
+    logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('custom_admin_login')
 
 
 def _admin_activity(request, action, description):
@@ -1410,4 +1482,102 @@ def import_crop_variants(request):
         'variant_list': variant_list,
         'title': 'Import Crop Variants',
     }
-    return render(request, 'admin_panel/import_crop_variants.html', context)
+    return render(request, 'admin_panel/import_crop_variants.html', context)    
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def nid_submissions(request):
+    """View all NID submissions for approval"""
+    # Get all pending NID submissions
+    from users.models import FarmerProfile
+    
+    # Filter by status
+    status_filter = request.GET.get('status', 'pending')
+    if status_filter:
+        submissions = FarmerProfile.objects.exclude(nid_approval_status='not_submitted').filter(nid_approval_status=status_filter)
+    else:
+        submissions = FarmerProfile.objects.exclude(nid_approval_status='not_submitted')
+    
+    # Search
+    search_query = request.GET.get('q', '')
+    if search_query:
+        submissions = submissions.filter(
+            Q(user__username__icontains=search_query) |
+            Q(user__email__icontains=search_query) |
+            Q(nid_number__icontains=search_query) |
+            Q(farm_name__icontains=search_query)
+        )
+    
+    submissions = submissions.order_by('-nid_submission_date')
+    
+    context = {
+        'submissions': submissions,
+        'pending_count': FarmerProfile.objects.filter(nid_approval_status='pending').count(),
+        'approved_count': FarmerProfile.objects.filter(nid_approval_status='approved').count(),
+        'rejected_count': FarmerProfile.objects.filter(nid_approval_status='rejected').count(),
+        'status_filter': status_filter,
+        'search_query': search_query,
+        'title': 'NID Submissions',
+    }
+    return render(request, 'admin_panel/nid_submissions.html', context)
+
+
+@login_required(login_url='login')
+@user_passes_test(is_admin)
+def nid_approval_detail(request, farmer_id):
+    """View and approve/reject NID submission"""
+    from users.models import FarmerProfile
+    
+    farmer = get_object_or_404(CustomUser, id=farmer_id, role='farmer')
+    farmer_profile = get_object_or_404(FarmerProfile, user=farmer)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        notes = request.POST.get('admin_notes', '')
+        
+        if action == 'approve':
+            farmer_profile.nid_approval_status = 'approved'
+            farmer_profile.nid_approved_date = timezone.now()
+            farmer_profile.nid_admin_notes = notes
+            farmer_profile.save()
+            
+            # Create notification for farmer
+            Notification.objects.create(
+                user=farmer,
+                notification_type='system',
+                title='NID Approved',
+                message='Your National ID has been verified successfully! Your account is now fully approved.'
+            )
+            
+            # Log activity
+            _admin_activity(request, 'NID_APPROVED', f'Approved NID for {farmer.username} (NID: {farmer_profile.nid_number})')
+            
+            messages.success(request, f'NID approved for {farmer.username}!')
+            return redirect('nid_submissions')
+        
+        elif action == 'reject':
+            farmer_profile.nid_approval_status = 'rejected'
+            farmer_profile.nid_admin_notes = notes
+            farmer_profile.save()
+            
+            # Create notification for farmer
+            Notification.objects.create(
+                user=farmer,
+                notification_type='system',
+                title='NID Rejected',
+                message=f'Your NID submission was rejected. Reason: {notes}. Please resubmit with clearer photos.'
+            )
+            
+            # Log activity
+            _admin_activity(request, 'NID_REJECTED', f'Rejected NID for {farmer.username} (NID: {farmer_profile.nid_number})')
+            
+            messages.warning(request, f'NID rejected for {farmer.username}!')
+            return redirect('nid_submissions')
+    
+    context = {
+        'farmer': farmer,
+        'farmer_profile': farmer_profile,
+        'title': f'NID Approval - {farmer.username}',
+    }
+    return render(request, 'admin_panel/nid_approval_detail.html', context)

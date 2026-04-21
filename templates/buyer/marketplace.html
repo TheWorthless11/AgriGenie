@@ -4,13 +4,16 @@
 {% block title %}Marketplace - AgriGenie{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-success">
-            <i class="fas fa-store"></i> Marketplace
-        </h2>
-        <div>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-store text-success"></i> Marketplace
+            </h1>
+            <p class="text-muted">Discover fresh crops from local farmers</p>
+        </div>
+        <div class="col-md-4 text-md-end">
             <a href="{% url 'saved_crops' %}" class="btn btn-outline-primary me-2">
                 <i class="fas fa-bookmark"></i> Saved
             </a>
@@ -24,16 +27,19 @@
     </div>
     
     <!-- Search and Filters -->
-    <div class="card shadow-sm mb-4">
+    <div class="card dashboard-table-card mb-4">
+        <div class="card-header dashboard-table-card-header">
+            <h5 class="mb-0"><i class="fas fa-filter"></i> Search & Filter</h5>
+        </div>
         <div class="card-body">
             <form method="GET" class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label">Search</label>
+                    <label class="form-label fw-bold">Search Crops</label>
                     <input type="text" name="q" class="form-control" placeholder="Search crops..." 
                            value="{{ request.GET.q }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Category</label>
+                    <label class="form-label fw-bold">Category</label>
                     <select name="category" class="form-select">
                         <option value="">All Categories</option>
                         <option value="vegetable" {% if request.GET.category == 'vegetable' %}selected{% endif %}>Vegetables</option>
@@ -44,7 +50,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Sort By</label>
+                    <label class="form-label fw-bold">Sort By</label>
                     <select name="sort" class="form-select">
                         <option value="newest" {% if request.GET.sort == 'newest' %}selected{% endif %}>Newest First</option>
                         <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
@@ -62,7 +68,7 @@
     
     <!-- Crops Grid -->
     {% if crops %}
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-4">
             {% for crop in crops %}
                 <div class="col">
                     <div class="card h-100 shadow-sm border-0 crop-card">
@@ -84,19 +90,19 @@
                             <!-- Quality Badge -->
                             <span class="position-absolute top-0 end-0 m-2 badge 
                                 {% if crop.quality_grade == 'A' %}bg-success
-                                {% elif crop.quality_grade == 'B' %}bg-warning
+                                {% elif crop.quality_grade == 'B' %}bg-warning text-dark
                                 {% else %}bg-secondary{% endif %}">
                                 Grade {{ crop.quality_grade }}
                             </span>
                         </div>
                         
                         <div class="card-body">
-                            <h6 class="card-title text-success mb-1" style="font-size: 0.95rem;">
+                            <h6 class="card-title text-success mb-1" style="font-size: 0.95rem; font-weight: 600;">
                                 {{ crop.master_crop.crop_name }}
                             </h6>
                             <p class="text-muted small mb-2">
                                 <i class="fas fa-user"></i> {{ crop.farmer.username }}
-                                <span class="ms-2"><i class="fas fa-map-marker-alt"></i> {{ crop.location|truncatechars:15 }}</span>
+                                <span class="ms-1"><i class="fas fa-map-marker-alt"></i> {{ crop.location|truncatechars:15 }}</span>
                             </p>
                             
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -112,18 +118,18 @@
                                 {% if crop.reviews_count %}
                                     <i class="fas fa-star text-warning"></i>
                                     <strong>{{ crop.avg_rating|floatformat:1 }}</strong>
-                                    <span class="text-muted">({{ crop.reviews_count }} review{{ crop.reviews_count|pluralize }})</span>
+                                    <span class="text-muted">({{ crop.reviews_count }})</span>
                                 {% else %}
-                                    <span class="text-muted"><i class="far fa-star"></i> No reviews yet</span>
+                                    <span class="text-muted"><i class="far fa-star"></i> No reviews</span>
                                 {% endif %}
                             </p>
                             
                             <p class="small text-muted mb-0">
-                                <i class="fas fa-calendar"></i> Available: {{ crop.availability_date|date:"M d, Y" }}
+                                <i class="fas fa-calendar"></i> Available: {{ crop.availability_date|date:"M d" }}
                             </p>
                         </div>
                         
-                        <div class="card-footer bg-white border-0 pt-0">
+                        <div class="card-footer bg-white border-0 pt-0 pb-3 px-3">
                             <div class="d-flex gap-2">
                                 <a href="{% url 'crop_detail' crop_id=crop.id %}" class="btn btn-success btn-sm flex-grow-1">
                                     <i class="fas fa-eye"></i> View
@@ -135,7 +141,7 @@
                                 </a>
                                 <a href="{% url 'start_chat' user_id=crop.farmer.id %}?crop={{ crop.id }}" 
                                    class="btn btn-outline-success btn-sm">
-                                    <i class="fas fa-comment"></i>
+                                    <i class="fas fa-comments"></i>
                                 </a>
                             </div>
                         </div>
@@ -146,13 +152,17 @@
         
         <!-- Pagination -->
         {% if crops.has_other_pages %}
-            <nav class="mt-4">
+            <nav class="mb-4">
                 <ul class="pagination justify-content-center">
                     {% if crops.has_previous %}
                         <li class="page-item">
                             <a class="page-link" href="?page={{ crops.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
-                                Previous
+                                <i class="fas fa-chevron-left"></i> Previous
                             </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link"><i class="fas fa-chevron-left"></i> Previous</span>
                         </li>
                     {% endif %}
                     
@@ -173,8 +183,12 @@
                     {% if crops.has_next %}
                         <li class="page-item">
                             <a class="page-link" href="?page={{ crops.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
-                                Next
+                                Next <i class="fas fa-chevron-right"></i>
                             </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next <i class="fas fa-chevron-right"></i></span>
                         </li>
                     {% endif %}
                 </ul>
@@ -182,11 +196,14 @@
         {% endif %}
         
     {% else %}
-        <div class="card shadow-sm">
-            <div class="card-body text-center py-5">
-                <i class="fas fa-search fa-4x text-muted mb-3"></i>
+        <div class="card dashboard-table-card text-center py-5">
+            <div class="card-body">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                 <h4 class="text-muted">No crops found</h4>
-                <p class="text-muted">Try adjusting your search filters or check back later for new listings.</p>
+                <p class="text-muted mb-4">Try adjusting your search filters or check back later for new listings.</p>
+                <a href="{% url 'marketplace' %}" class="btn btn-success">
+                    <i class="fas fa-refresh"></i> Reset Filters
+                </a>
             </div>
         </div>
     {% endif %}

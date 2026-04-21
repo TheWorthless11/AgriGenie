@@ -1,27 +1,27 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ crop.crop_name }} - AgriGenie{% endblock %}
+{% block title %}{{ crop.master_crop.crop_name }} - AgriGenie{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
     <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
+    <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'marketplace' %}">Marketplace</a></li>
-            <li class="breadcrumb-item active">{{ crop.crop_name }}</li>
+            <li class="breadcrumb-item"><a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'marketplace' %}"><i class="fas fa-store"></i> Marketplace</a></li>
+            <li class="breadcrumb-item active">{{ crop.master_crop.crop_name }}</li>
         </ol>
     </nav>
 
     <div class="row">
         <!-- Crop Image & Info -->
         <div class="col-lg-5 mb-4">
-            <div class="card border-0 shadow-sm">
+            <div class="card dashboard-table-card">
                 {% if crop.crop_image %}
-                    <img src="{{ crop.crop_image.url }}" class="card-img-top" alt="{{ crop.crop_name }}" style="max-height:400px; object-fit:cover;">
+                    <img src="{{ crop.crop_image.url }}" class="card-img-top" alt="{{ crop.master_crop.crop_name }}" style="max-height:350px; object-fit:cover;">
                 {% elif crop.master_crop and crop.master_crop.generic_image %}
-                    <img src="{{ crop.master_crop.generic_image.url }}" class="card-img-top" alt="{{ crop.crop_name }}" style="max-height:400px; object-fit:cover;">
+                    <img src="{{ crop.master_crop.generic_image.url }}" class="card-img-top" alt="{{ crop.master_crop.crop_name }}" style="max-height:350px; object-fit:cover;">
                 {% else %}
                     <div class="bg-light d-flex align-items-center justify-content-center" style="height:300px;">
                         <i class="fas fa-seedling fa-5x text-success opacity-25"></i>
@@ -33,12 +33,12 @@
                         {% csrf_token %}
                         {% if is_in_wishlist %}
                             <input type="hidden" name="action" value="remove_from_wishlist">
-                            <button type="submit" class="btn btn-outline-danger w-100">
+                            <button type="submit" class="btn btn-danger w-100">
                                 <i class="fas fa-heart"></i> Remove from Wishlist
                             </button>
                         {% else %}
                             <input type="hidden" name="action" value="add_to_wishlist">
-                            <button type="submit" class="btn btn-outline-primary w-100">
+                            <button type="submit" class="btn btn-outline-danger w-100">
                                 <i class="far fa-heart"></i> Add to Wishlist
                             </button>
                         {% endif %}
@@ -49,55 +49,175 @@
 
         <!-- Details & Order -->
         <div class="col-lg-7 mb-4">
-            <div class="card border-0 shadow-sm mb-3">
+            <div class="card dashboard-table-card mb-3">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h2 class="fw-bold mb-0">{{ crop.crop_name }}</h2>
+                        <h2 class="fw-bold mb-0">{{ crop.master_crop.crop_name }}</h2>
                         <span class="badge bg-{% if crop.is_available %}success{% else %}secondary{% endif %} fs-6">
-                            {% if crop.is_available %}Available{% else %}Sold Out{% endif %}
+                            {% if crop.is_available %}<i class="fas fa-check-circle"></i> Available{% else %}<i class="fas fa-times-circle"></i> Sold Out{% endif %}
                         </span>
                     </div>
 
                     {% if crop.master_crop %}
-                        <span class="badge bg-info me-1">{{ crop.master_crop.get_category_display }}</span>
-                        <span class="badge bg-secondary">{{ crop.master_crop.get_crop_type_display }}</span>
+                        <span class="badge bg-info me-1"><i class="fas fa-tag"></i> {{ crop.master_crop.get_category_display }}</span>
+                        <span class="badge bg-secondary"><i class="fas fa-leaf"></i> {{ crop.master_crop.get_crop_type_display }}</span>
                     {% endif %}
 
                     <hr>
 
                     <!-- Price -->
                     <div class="d-flex align-items-baseline mb-3">
-                        <h3 class="text-success fw-bold mb-0">&#8377;{{ crop.price_per_unit|floatformat:2 }}</h3>
-                        <span class="text-muted ms-2">/ {{ crop.unit }}</span>
+                        <h3 class="text-success fw-bold mb-0">৳{{ crop.price_per_unit|floatformat:0 }}</h3>
+                        <span class="text-muted ms-2 fs-5">/ {{ crop.unit }}</span>
                     </div>
 
                     <!-- Key Details -->
                     <div class="row g-3 mb-3">
                         <div class="col-6 col-md-4">
                             <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Quantity</small>
-                                <strong>{{ crop.quantity|floatformat:0 }} {{ crop.unit }}</strong>
+                                <small class="text-muted d-block fw-bold">Quantity</small>
+                                <strong class="text-success">{{ crop.quantity|floatformat:0 }} {{ crop.unit }}</strong>
                             </div>
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Quality</small>
-                                <strong>{{ crop.get_quality_grade_display }}</strong>
+                                <small class="text-muted d-block fw-bold">Quality</small>
+                                <strong class="text-info">Grade {{ crop.quality_grade }}</strong>
                             </div>
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Harvest Date</small>
+                                <small class="text-muted d-block fw-bold">Harvest Date</small>
                                 <strong>{{ crop.harvest_date|date:"M d, Y" }}</strong>
                             </div>
                         </div>
                         <div class="col-6 col-md-4">
                             <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Available From</small>
+                                <small class="text-muted d-block fw-bold">Available From</small>
                                 <strong>{{ crop.availability_date|date:"M d, Y" }}</strong>
                             </div>
                         </div>
                         <div class="col-6 col-md-4">
+                            <div class="border rounded p-2 text-center">
+                                <small class="text-muted d-block fw-bold">Location</small>
+                                <strong>{{ crop.location|truncatechars:12 }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <div class="border rounded p-2 text-center">
+                                <small class="text-muted d-block fw-bold">Listed</small>
+                                <strong>{{ crop.created_at|date:"M d, Y" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if crop.description %}
+                        <h6 class="fw-bold mt-3">📝 Description</h6>
+                        <p class="text-muted">{{ crop.description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Farmer Info -->
+            <div class="card dashboard-table-card mb-3">
+                <div class="card-header dashboard-table-card-header">
+                    <h5 class="mb-0"><i class="fas fa-user-tie"></i> Seller Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width:50px;height:50px;">
+                            <i class="fas fa-user-tie text-success fa-lg"></i>
+                        </div>
+                        <div>
+                            <strong class="fs-6">{{ farmer.get_full_name|default:farmer.username }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-map-marker-alt"></i> {{ crop.location }}
+                            </small>
+                        </div>
+                    </div>
+                    <a href="{% url 'start_chat_with_crop' user_id=farmer.id crop_id=crop.id %}" class="btn btn-outline-success w-100">
+                        <i class="fas fa-comments"></i> Chat with Seller
+                    </a>
+                </div>
+            </div>
+
+            <!-- Place Order -->
+            {% if crop.is_available %}
+            <div class="card dashboard-table-card">
+                <div class="card-header dashboard-table-card-header">
+                    <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Place Order</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="place_order">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Quantity ({{ crop.unit }}) <span class="text-danger">*</span></label>
+                            {{ order_form.quantity }}
+                            <small class="form-text text-muted d-block">Available: {{ crop.quantity|floatformat:0 }} {{ crop.unit }}</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Preferred Delivery Date</label>
+                            {{ order_form.delivery_date }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Special Requirements</label>
+                            {{ order_form.special_requirements }}
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 btn-lg fw-bold">
+                            <i class="fas fa-check-circle"></i> Place Order
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="card dashboard-table-card mt-4">
+        <div class="card-header dashboard-table-card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-star"></i> Customer Reviews</h5>
+            {% if avg_rating %}
+                <span class="badge bg-warning text-dark fs-6">
+                    <i class="fas fa-star"></i> {{ avg_rating|floatformat:1 }} / 5.0
+                </span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if reviews %}
+                {% for review in reviews %}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{{ review.reviewer.get_full_name|default:review.reviewer.username }}</strong>
+                            <div class="mb-1">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= review.rating %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-warning"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                    </div>
+                    <p class="fw-semibold mb-1" style="color: #14532d;">{{ review.title }}</p>
+                    <p class="text-muted mb-0">{{ review.review_text }}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="far fa-star fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No reviews yet for this crop. Be the first to review!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
                             <div class="border rounded p-2 text-center">
                                 <small class="text-muted d-block">Location</small>
                                 <strong>{{ crop.location }}</strong>
