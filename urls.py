@@ -63,6 +63,7 @@ urlpatterns = [
     path('my-reports/', user_views.my_reports, name='my_reports'),
     
     # Farmer URLs
+    path('farmer/dashboard/', farmer_views.farmer_dashboard, name='farmer_dashboard'),
     path('farmer/crops/', farmer_views.farmer_crops, name='farmer_crops'),
     path('farmer/orders/', farmer_views.farmer_orders, name='farmer_orders'),
     path('farmer/add-crop/', farmer_views.add_crop, name='add_crop'),
