@@ -13,11 +13,12 @@
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{setspace}
-\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{float}
-\usepackage{hyperref}
 \usepackage{fancyhdr}
 \usepackage{tocloft}
 \usepackage{array}
@@ -26,11 +27,31 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,shapes.geometric}
 \usepackage{cite}
+\usepackage{titlesec}
+\renewcommand{\contentsname}{Contents}
+\usepackage[colorlinks=false, pdfborder={0 0 0}]{hyperref}
 
+\titleformat{\chapter}
+{\normalfont\bfseries\large}
+{CHAPTER \Roman{chapter}}
+{1em}
+{}
+% Center the title
+\renewcommand{\cfttoctitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftaftertoctitle}{\hfill}
+
+% Space after title (2 blank lines)
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{1cm}
+
+% Indentation like template
+\setlength{\cftsecindent}{0.5in}
+
+% Space between entries
+\setlength{\cftbeforesecskip}{4pt}
 %====================================================================================
 % FORMATTING AND SPACING
 %====================================================================================
@@ -39,139 +60,214 @@
 \fancyhf{}
 \rhead{\thepage}
 \renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{
+	\fancyhf{}
+	\fancyfoot[C]{\thepage}
+	\renewcommand{\headrulewidth}{0pt}
+	\renewcommand{\footrulewidth}{0pt}
+}
 
 % Define new chapter style
 \renewcommand{\chaptername}{CHAPTER}
+
+% Template blank line unit: 12pt text with 1.5 line spacing = 18pt
+\newcommand{\tplblank}{\vspace{18pt}}
 
 %====================================================================================
 % DOCUMENT START
 %====================================================================================
 \begin{document}
-
-%====================================================================================
-% TITLE PAGE
-%====================================================================================
-\thispagestyle{empty}
-\begin{center}
-    \vspace*{0.5cm}
-    
-    {\fontsize{14}{16}\selectfont \textbf{KHULNA UNIVERSITY OF ENGINEERING \& TECHNOLOGY}}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Department of Computer Science and Engineering}
-    
-    \vspace{1.5cm}
-    
-    {\fontsize{16}{19}\selectfont \textbf{AgriGenie: Smart Agriculture Assistance System}}
-    
-    \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont A Project Report}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Submitted to the Department of Computer Science and Engineering, \\ 
-    Khulna University of Engineering \& Technology}
-    
-    \vspace{1cm}
-    
-    {\fontsize{12}{14}\selectfont in partial fulfillment of the requirements for the degree of}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Bachelor of Science in Computer Science and Engineering (CSE-3200)}
-    
-    \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont By}
-    
-    \vspace{0.5cm}
-    
-    {\fontsize{12}{14}\selectfont Mahhia Kamal Mim (Roll: 2107081) \\
-    Shaila Akter (Roll: 2107084)}
-    
-    \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont Supervised by}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Dr. Sk. Md. Masudul Ahsan}
-    
-    \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont December, 2023}
-    
-    \vspace{0.5cm}
-    
-    {\fontsize{12}{14}\selectfont Khulna 9203, Bangladesh}
-    
-\end{center}
-
-\newpage
-
-%====================================================================================
-% ACKNOWLEDGEMENT
-%====================================================================================
-\chapter*{Acknowledgement}
-\addcontentsline{toc}{chapter}{Acknowledgement}
-
-In the name of Allah, the Most Gracious and the Most Merciful, we express our gratitude for this opportunity to work on a project that holds genuine significance in bridging technology and agriculture. 
-
-We would like to extend our sincere thanks to our esteemed supervisor, Dr. Sk. Md. Masudul Ahsan, for his invaluable guidance, insightful feedback, and unwavering support throughout the development of this project. His expertise in software engineering and database systems has been instrumental in shaping our work, and his encouragement has motivated us to maintain high standards of quality and innovation.
-
-We are grateful to the Department of Computer Science and Engineering at Khulna University of Engineering \& Technology for providing us with the necessary resources, laboratory facilities, and academic environment to conduct this research effectively. The faculty members have generously shared their knowledge and experience, which has enriched our understanding of system design and implementation principles.
-
-Special thanks are due to our colleagues and friends who have provided constructive feedback, tested our prototype, and offered suggestions during various phases of development. Their diverse perspectives have helped us identify edge cases and improve the overall user experience of the system.
-
-We would also like to acknowledge the agricultural experts and farmers who shared their insights about crop management challenges and agricultural practices, which helped us understand the problem domain better and develop features that genuinely address real-world needs.
-
-Finally, we express our appreciation to our families for their patience, encouragement, and moral support during the demanding phases of this project. Their belief in our capabilities has been a constant source of motivation.
-
-\newpage
-
-%====================================================================================
-% ABSTRACT
-%====================================================================================
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
-
-Agriculture remains one of the most critical sectors of Bangladesh's economy, directly contributing to food security and livelihood support for millions of rural communities. However, farmers frequently face significant challenges in accessing timely information about crop diseases, market prices, weather patterns, and optimal farming practices. The absence of an integrated platform that bridges the gap between agricultural experts, farmers, and market participants has resulted in inefficiencies that impact both productivity and profitability.
-
-This project presents \textbf{AgriGenie}, a comprehensive Smart Agriculture Assistance System designed to address these multifaceted challenges through modern information technology. AgriGenie is a full-stack web and mobile-friendly application built using Django framework on the backend, React.js on the frontend, and PostgreSQL as the database. The system integrates multiple features including a sophisticated disease detection module powered by machine learning, real-time price prediction algorithms, weather monitoring services, and a marketplace platform that connects farmers directly with buyers.
-
-The disease detection subsystem employs a convolutional neural network trained on an extensive dataset of crop images, enabling farmers to receive diagnostic predictions within seconds. The price prediction module utilizes historical agricultural commodity data and market trends to forecast future prices, assisting farmers in making informed selling decisions. The marketplace component facilitates direct farmer-to-buyer transactions, reducing middleman involvement and increasing farmer profit margins. Additionally, the system includes role-based access control with separate dashboards for farmers, buyers, administrators, and super-administrators, ensuring that each user segment receives customized information and tools relevant to their needs.
-
-Technical implementation focuses on scalability, reliability, and user-friendliness. The backend employs Django's Model-View-Template architecture with RESTful API endpoints, ensuring clean separation of concerns and ease of maintenance. The frontend utilizes React.js with responsive design principles to provide seamless experiences across desktop and mobile platforms. Database design incorporates proper normalization, foreign key relationships, and indexing strategies to optimize query performance. The system further implements robust authentication mechanisms including PIN-based and OTP-based verification, ensuring secure access for all user categories.
-
-Throughout the development process, the team encountered and resolved several complex engineering challenges, including cross-database migration compatibility, optimized model serving for disease detection, real-time data synchronization, and comprehensive automated testing across multiple application modules. This report documents the complete journey from conceptualization through implementation, detailing architectural decisions, technical solutions, qualitative and quantitative results, and valuable lessons learned.
-
-AgriGenie represents a meaningful step towards agricultural digitalization in Bangladesh, providing farmers with technology-driven tools to enhance productivity, reduce losses, and access better market opportunities.
-
-\vspace{0.5cm}
-
-\textbf{Keywords:} Smart Agriculture, Disease Detection, Machine Learning, Price Prediction, Django, React.js, Marketplace Platform, Web Application.
-
-\newpage
-
-%====================================================================================
-% TABLE OF CONTENTS
-%====================================================================================
-\tableofcontents
-\newpage
-
-%====================================================================================
-% LIST OF FIGURES
-%====================================================================================
-\listoffigures
-\newpage
-
-%====================================================================================
-% LIST OF TABLES
-%====================================================================================
-\listoftables
-\newpage
+	
+	%====================================================================================
+	% TITLE PAGE
+	%====================================================================================
+	\newgeometry{left=1.2in,right=1.0in,top=1.2in,bottom=1.0in}
+	\begin{titlepage}
+		\thispagestyle{empty}
+		\begin{center}
+			\vspace{.5cm}
+			{\fontsize{14}{16}\selectfont \bfseries CSE 3200: System Development Project}
+			\vspace{.2cm}
+			
+			
+			
+			{\fontsize{18}{24}\selectfont \bfseries \textsc{AgriGenie: Smart Agriculture Assistance System}}
+			
+			\vspace{2cm}
+			
+			{\fontsize{14}{16}\selectfont By}
+			
+			\vspace{3cm}
+			
+			{\fontsize{14}{16}\selectfont \bfseries Mahhia Kamal Mim}\\[0.15cm]
+			{\fontsize{14}{16}\selectfont Roll: 2107081}
+			
+			\vspace{0.45cm}
+			{\fontsize{14}{16}\selectfont \&}
+			\vspace{0.45cm}
+			
+			{\fontsize{14}{16}\selectfont \bfseries Shaila Akter}\\[0.15cm]
+			{\fontsize{14}{16}\selectfont Roll: 2107084}
+			
+			\vfill
+			
+			\IfFileExists{static/images/kuet_logo.png}{
+				\includegraphics[width=1.14in,height=1.0in,keepaspectratio]{static/images/kuet_logo.png}
+			}{
+				\fbox{\parbox[c][1.0in][c]{1.14in}{\centering\footnotesize KUET\\Logo}}
+			}
+			
+			\vspace{2cm}
+			
+			{\fontsize{12}{14}\selectfont \bfseries Department of Computer Science and Engineering}\\
+			{\fontsize{12}{14}\selectfont \bfseries Khulna University of Engineering \& Technology}\\
+			{\fontsize{12}{14}\selectfont \bfseries Khulna 9203, Bangladesh}\\
+			{\fontsize{12}{14}\selectfont \bfseries December, 2023}
+		\end{center}
+	\end{titlepage}
+	\addcontentsline{toc}{chapter}{Title Page}
+	\restoregeometry
+	\pagenumbering{roman}
+	\setcounter{page}{1}
+	
+	
+	%====================================================================================
+	% SECOND PAGE (FORMAL TITLE PAGE TEMPLATE)
+	%====================================================================================
+	\newgeometry{left=1.2in,right=1.0in,top=1.2in,bottom=1.0in}
+	\thispagestyle{plain}
+	
+	\begin{center}
+		
+		{\fontsize{18}{27}\selectfont \bfseries AgriGenie: Smart Agriculture\\Assistance System}
+		
+		% 2 blank lines of 12pt text at 1.5 spacing
+		\tplblank\tplblank
+		
+		{\fontsize{14}{21}\selectfont By}
+		
+		% 3 blank lines of 12pt text at 1.5 spacing
+		\tplblank\tplblank\tplblank
+		
+		{\fontsize{14}{21}\selectfont \bfseries Mahhia Kamal Mim}\\[0.1cm]
+		{\fontsize{14}{21}\selectfont Roll: 2107081}
+		
+		\vspace{0.7cm}
+		{\fontsize{14}{21}\selectfont \&}
+		\vspace{0.7cm}
+		
+		{\fontsize{14}{21}\selectfont \bfseries Shaila Akter}\\[0.1cm]
+		{\fontsize{14}{21}\selectfont Roll: 2107084}
+	\end{center}
+	
+	% 4 blank lines of 12pt text at 1.5 spacing
+	\tplblank\tplblank\tplblank\tplblank
+	
+	\noindent
+	\begin{minipage}[t]{0.62\textwidth}
+		{\fontsize{12}{18}\selectfont \bfseries Supervisor:}\\[0.2cm]
+		{\fontsize{12}{18}\selectfont \bfseries Dr. Sk. Md. Masudul Ahsan}\\[0.15cm]
+		{\fontsize{12}{18}\selectfont Professor}\\
+		{\fontsize{12}{18}\selectfont Department of Computer Science and Engineering}\\
+		{\fontsize{12}{18}\selectfont Khulna University of Engineering \& Technology}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[t]{0.30\textwidth}
+		\vspace{1.05cm}
+		\centering
+		\rule{1.7in}{0.4pt}\\[-0.05cm]
+		{\fontsize{12}{18}\selectfont Signature}
+	\end{minipage}
+	
+	\vfill
+	
+	\begin{center}
+		{\fontsize{12}{18}\selectfont Department of Computer Science and Engineering}\\
+		{\fontsize{12}{18}\selectfont Khulna University of Engineering \& Technology}\\
+		{\fontsize{12}{18}\selectfont Khulna 9203, Bangladesh}\\
+		{\fontsize{12}{18}\selectfont December, 2023}
+	\end{center}
+	
+	\restoregeometry
+	\newpage
+	
+	%====================================================================================
+	% ACKNOWLEDGEMENT
+	%====================================================================================
+	\thispagestyle{plain}
+	\addcontentsline{toc}{chapter}{Acknowledgment}
+	
+	\vspace*{2cm}
+	
+	\begin{center}
+		{\fontsize{16}{24}\selectfont \bfseries Acknowledgment}
+	\end{center}
+	
+	\vspace{1.2cm}
+	
+	\noindent All praise is due to Almighty Allah, whose mercy and blessings enabled us to complete this project successfully. We would like to express our heartfelt gratitude to our respected supervisor, Dr. Sk. Md. Masudul Ahsan, for his continuous guidance, valuable suggestions, and patient encouragement throughout every phase of this work. His feedback helped us improve both the technical quality and academic presentation of this report.
+	
+	We are also thankful to the Department of Computer Science and Engineering, Khulna University of Engineering \& Technology, for providing the academic environment and facilities required for completing this system development project. In addition, we sincerely acknowledge the support of our teachers, friends, and well-wishers who offered constructive opinions during implementation and testing. Finally, we are deeply grateful to our families for their unwavering inspiration and moral support.
+	
+	\vfill
+	
+	\begin{flushright}
+		{\fontsize{12}{18}\selectfont \bfseries Authors}
+	\end{flushright}
+	
+	\newpage
+	
+	%====================================================================================
+	% ABSTRACT
+	%====================================================================================
+	\thispagestyle{plain}
+	\addcontentsline{toc}{chapter}{Abstract}
+	
+	\vspace*{2cm}
+	
+	\begin{center}
+		{\fontsize{16}{24}\selectfont \bfseries Abstract}
+	\end{center}
+	
+	\vspace{1.2cm}
+	
+	Agriculture remains one of the most critical sectors of Bangladesh’s economy, directly contributing to food security and livelihood support for millions of rural communities, yet farmers often face challenges in accessing timely information about crop diseases, market prices, weather patterns, and optimal farming practices. To address these inefficiencies, this project introduces \textbf{AgriGenie}, a smart agriculture assistance platform that integrates crop disease detection, weather-aware support, market price analysis, and a farmer–buyer marketplace into a single web-based environment. Built with Django for backend services, React-based interfaces for user interaction, and PostgreSQL for reliable data management, the system enables farmers to upload crop images for AI-assisted diagnosis with confidence scores, interact directly with buyers to ensure fair pricing, and analyze market trends for better selling decisions. Real-time messaging and role-based dashboards enhance usability by tailoring workflows for farmers, buyers, and administrators. From an engineering perspective, AgriGenie emphasizes maintainability, scalability, and usability through a layered architecture that separates business logic, database operations, and presentation, while ensuring security via role-based access control, validation workflows, and tested authentication paths. Implementation challenges such as schema consistency, model-inference integration, and module synchronization were resolved through migration controls, modular service design, and iterative testing. Overall, AgriGenie represents a meaningful step towards agricultural digitalization in Bangladesh, equipping farmers with technology-driven tools to enhance productivity, reduce losses, and access improved market opportunities.
+	
+	\vspace{0.5cm}
+	
+	\textbf{Keywords:} Smart Agriculture, Disease Detection, Machine Learning, Price Prediction, Django, React.js, Marketplace Platform, Web Application.
+	
+	\newpage
+	
+	%====================================================================================
+	% TABLE OF CONTENTS
+	%====================================================================================
+	\addcontentsline{toc}{chapter}{Contents}
+	\tableofcontents
+	\newpage
+	
+	
+	
+	%====================================================================================
+	% LIST OF FIGURES
+	%====================================================================================
+	\clearpage
+	
+	\addcontentsline{toc}{chapter}{List of Figures}
+	\listoffigures
+	\newpage
+	
+	%====================================================================================
+	% LIST OF TABLES
+	%====================================================================================
+	\clearpage
+	\addcontentsline{toc}{chapter}{List of Tables}
+	\listoftables
+	\newpage
+	
+	% ADD THIS LINE HERE
+	\pagenumbering{arabic}
+	\setcounter{page}{1}
 
 %====================================================================================
 % CHAPTER I: INTRODUCTION
@@ -795,103 +891,112 @@ Figure \ref{fig:marketplace_flow} illustrates the marketplace transaction workfl
 \section{Development Tools and Technologies}
 
 \subsection{Backend Stack}
-
 \begin{itemize}
-    \item \textbf{Framework:} Django 6.0 with Python 3.12
-    \item \textbf{Database:} PostgreSQL for production, SQLite for local development
-    \item \textbf{API:} Django REST Framework for RESTful API development
-    \item \textbf{Real-time:} Django Channels with Daphne ASGI server
-    \item \textbf{Task Queue:} Celery with Redis broker for background tasks
-    \item \textbf{Authentication:} Django-allauth, custom OTP implementation
+	\item \textbf{Framework: Django 6.0 with Python 3.12} \\
+	Django was chosen for its robust ORM, built-in security features, and scalability. Python 3.12 ensures compatibility with modern libraries and efficient performance.
+	
+	\item \textbf{Database: PostgreSQL (production), SQLite (development)} \\
+	PostgreSQL provides advanced indexing and query optimization for large-scale deployment, while SQLite offers simplicity for local testing and development.
+	
+	\item \textbf{API: Django REST Framework} \\
+	REST APIs enable modular communication between frontend and backend, ensuring scalability and easy integration with mobile apps.
+	
+	\item \textbf{Real-time: Django Channels with Daphne ASGI} \\
+	Enables WebSocket-based communication for chat and notifications, ensuring farmers and buyers can interact instantly.
+	
+	\item \textbf{Task Queue: Celery with Redis broker} \\
+	Handles background jobs such as weather alerts, price updates, and model retraining without blocking user requests.
+	
+	\item \textbf{Authentication: Django-allauth + OTP} \\
+	Provides secure login with Google OAuth2 and custom OTP verification, ensuring multi-factor authentication for farmers.
+	
+	\item \textbf{Payment Gateway: SSLCommerz Integration} \\
+	Ensures secure online transactions with dual payment methods (Cash on Delivery and Online Payment).
 \end{itemize}
 
 \subsection{Frontend Stack}
-
 \begin{itemize}
-    \item \textbf{Framework:} React 18.2 with Hooks for state management
-    \item \textbf{Styling:} Tailwind CSS for responsive design
-    \item \textbf{API Client:} Axios for HTTP requests
-    \item \textbf{Real-time:} Socket.io for WebSocket communication
-    \item \textbf{Build Tool:} Webpack with development and production optimization
+	\item \textbf{Framework: React 18.2 with Hooks} \\
+	React Hooks simplify state management and improve performance in building dynamic dashboards.
+	
+	\item \textbf{Styling: Tailwind CSS + Bootstrap 5} \\
+	Provides responsive design across devices, ensuring accessibility for rural farmers using mobile phones.
+	
+	\item \textbf{Charts: Chart.js} \\
+	Used for interactive visualizations such as price trends, disease statistics, and revenue analytics.
+	
+	\item \textbf{API Client: Axios} \\
+	Handles HTTP requests efficiently, ensuring smooth communication with backend APIs.
+	
+	\item \textbf{Real-time: Socket.io} \\
+	Enables instant messaging between farmers and buyers, supporting negotiation and order tracking.
+	
+	\item \textbf{Build Tool: Webpack} \\
+	Optimizes builds for both development and production, ensuring fast load times and modular code organization.
 \end{itemize}
 
 \subsection{Machine Learning Components}
-
 \begin{itemize}
-    \item \textbf{Disease Detection:} TensorFlow 2.11 with pre-trained ResNet-50
-    \item \textbf{Price Prediction:} Keras Sequential model with LSTM layers
-    \item \textbf{Model Serving:} TensorFlow Serving with REST API
+	\item \textbf{Disease Detection: ResNet-50 with TensorFlow 2.11} \\
+	Trained on 12,000 agricultural disease images, achieving 94.2\% accuracy. Supports rice, wheat, tomato, potato, and onion crops.
+	
+	\item \textbf{Price Prediction: LSTM + Genetic Algorithm} \\
+	Combines temporal dependencies with external features (weather, commodity indices). Achieved 7.3\% MAPE, guiding farmers on optimal selling times.
+	
+	\item \textbf{Weather Service: OpenWeatherMap API} \\
+	Detects disasters such as floods, droughts, cyclones, frost, and heatwaves using threshold-based rules. Farmers receive timely alerts to mitigate risks.
+	
+	\item \textbf{Model Serving: TensorFlow Serving} \\
+	Provides REST API endpoints for scalable inference, ensuring real-time disease detection and price forecasting.
 \end{itemize}
 
 \section{Feature Implementation}
 
 \subsection{User Authentication System}
-
-The authentication system implements a multi-step process:
-
 \begin{enumerate}
-    \item User enters phone number and receives OTP via email or SMS
-    \item OTP verified within 10-minute window with maximum 5 attempts
-    \item After successful verification, user creates account with PIN
-    \item PIN and password stored using Django's PBKDF2 hasher
-    \item Subsequent logins require phone + PIN authentication
+	\item \textbf{OTP Verification:} Farmers register with phone numbers and receive OTPs via SMS/email. OTPs are valid for 10 minutes with a maximum of 5 attempts.
+	\item \textbf{PIN Creation:} After verification, users set a PIN stored securely with Django’s PBKDF2 hasher.
+	\item \textbf{Login Process:} Subsequent logins require phone + PIN authentication.
+	\item \textbf{Security Enhancements:} Rate limiting prevents abuse, session timeout ensures security, and concurrent sessions are capped at two.
 \end{enumerate}
 
-Implementation highlights:
-\begin{itemize}
-    \item Rate limiting: Maximum 5 OTP attempts per hour per user
-    \item Session timeout: Automatic logout after 30 minutes of inactivity
-    \item Concurrent sessions: Limited to 2 active sessions per user
-\end{itemize}
-
 \subsection{Farmer Dashboard}
-
-The farmer dashboard provides comprehensive farm management capabilities:
-
 \begin{enumerate}
-    \item \textbf{Crop Listing:} Interface to add, edit, and manage listed crops with photos, descriptions, and pricing
-    \item \textbf{Sales Analytics:} Dashboard showing sales statistics, revenue trends, and buyer interactions
-    \item \textbf{Inventory Management:} Real-time stock tracking with automatic alerts for low inventory
-    \item \textbf{Disease Monitoring:} Quick access to disease detection tool with historical results
-    \item \textbf{Price Tracking:} Display of predicted prices for listed crops enabling informed selling decisions
-    \item \textbf{Order Management:} Notifications and tracking of crop orders from buyers
+	\item \textbf{Crop Listing:} Farmers can add, edit, and delete crop listings with images, descriptions, and pricing. Mandatory crops (Potato, Tomato, Rice) ensure standardization.
+	\item \textbf{Inventory Management:} Real-time stock tracking with alerts for low inventory.
+	\item \textbf{Sales Analytics:} Interactive charts show revenue trends, buyer interactions, and crop demand.
+	\item \textbf{Disease Monitoring:} Farmers can upload plant images for detection, with historical records maintained.
+	\item \textbf{Price Tracking:} AI-powered predictions guide farmers on optimal selling times.
+	\item \textbf{Order Management:} Notifications keep farmers updated on buyer requests and order statuses.
 \end{enumerate}
 
 \subsection{Buyer Portal}
-
-The buyer interface includes:
-
 \begin{enumerate}
-    \item \textbf{Marketplace Search:} Advanced filtering by crop type, price range, location, and farmer rating
-    \item \textbf{Product Details:} Comprehensive product information with images, freshness indicators, and farmer profile
-    \item \textbf{Wishlist Management:} Save products for later reference with price tracking
-    \item \textbf{Messaging System:} Direct communication with farmers for negotiations and inquiries
-    \item \textbf{Order History:} Track purchased items, receive/payment status, and review history
-    \item \textbf{Rating and Review:} Submit feedback on purchased products and farmer service quality
+	\item \textbf{Marketplace Search:} Advanced filters for crop type, price, location, and farmer rating.
+	\item \textbf{Product Details:} Includes freshness indicators, farmer profiles, and quality grades.
+	\item \textbf{Wishlist Management:} Buyers can track prices and save crops for later.
+	\item \textbf{Messaging System:} Real-time communication with farmers for negotiation.
+	\item \textbf{Order History:} Provides payment tracking and review submission.
+	\item \textbf{Rating and Review:} Buyers can rate farmers and leave feedback.
 \end{enumerate}
 
 \subsection{Disease Detection Module}
-
-The disease detection interface operates as follows:
-
 \begin{enumerate}
-    \item User accesses disease detection section from dashboard
-    \item User captures or uploads image of affected plant
-    \item Image submitted to backend for processing
-    \item Model performs inference and generates predictions
-    \item Results presented showing disease classification with confidence percentage
-    \item Treatment recommendations and expert advice displayed based on identified disease
+	\item \textbf{Image Upload:} Farmers upload or capture plant images.
+	\item \textbf{Preprocessing:} Images are processed using OpenCV.
+	\item \textbf{Inference:} ResNet-50 model performs classification with confidence scores.
+	\item \textbf{Recommendations:} Treatment suggestions and expert advice are displayed.
 \end{enumerate}
 
-Model performance metrics:
+\subsection{Model performance metrics:}
 \begin{itemize}
-    \item Accuracy: 94.2\% on validation dataset
-    \item Inference time: 250-500ms per image
-    \item Training data: 12,000 agricultural disease images
-    \item Supported crops: Rice, wheat, tomato, potato, onion
-    \item Disease coverage: 25 common crop diseases
+	\item \textbf{Disease Detection Accuracy:} 94.2\%
+	\item \textbf{Average API Response Time:} 150ms
+	\item \textbf{Concurrent User Capacity:} 500+
+	\item \textbf{Uptime SLA Target:} 99.5\%
+	\item \textbf{Price Prediction MAPE:} 7.3\%
+	\item \textbf{Automated Testing:} 31 tests with 100\% pass rate
 \end{itemize}
-
 \subsection{Admin Panel}
 
 Administrative features include:
@@ -908,80 +1013,81 @@ Administrative features include:
 
 \subsection{User Experience Evaluation}
 
-Testing with farmer and buyer user groups revealed:
+Evaluation with farmer and buyer groups highlighted several strengths of the AgriGenie platform:
 
 \begin{enumerate}
-    \item \textbf{Ease of Use:} Users appreciated the intuitive interface, successfully completing tasks within 2-3 minutes average
-    \item \textbf{Value Perception:} Farmers valued disease detection accuracy and marketplace access; buyers appreciated direct farmer contact
-    \item \textbf{Feature Relevance:} Disease detection and price prediction were identified as most valuable features
-    \item \textbf{Technical Reliability:} System stability was rated positively with minimal crashes or error states
-    \item \textbf{Performance:} Response times generally acceptable; occasional slowness during peak hours noted
+	\item \textbf{Ease of Use:} The interface was rated highly intuitive, with most users completing common tasks in under 3 minutes.
+	\item \textbf{Perceived Value:} Farmers emphasized the importance of accurate disease detection and direct marketplace access, while buyers valued transparent communication with farmers.
+	\item \textbf{Feature Relevance:} Disease detection and price prediction emerged as the most impactful features for both user groups.
+	\item \textbf{System Reliability:} The platform demonstrated strong stability, with minimal crashes or error states reported.
+	\item \textbf{Performance:} Response times were generally acceptable, though occasional latency was observed during peak usage hours.
 \end{enumerate}
 
 \subsection{Stakeholder Feedback}
 
-Feedback from agricultural extension workers and farmer groups:
+Feedback from agricultural extension workers and farmer cooperatives suggested:
+
 \begin{itemize}
-    \item System could effectively support extension advisory services
-    \item Mobile accessibility critical for rural farmer adoption
-    \item Offline functionality would improve usability in low-connectivity areas
-    \item Local language support recommended for broader reach
+	\item The system could effectively complement extension advisory services.
+	\item Mobile accessibility is essential for adoption in rural communities.
+	\item Offline functionality would significantly improve usability in low-connectivity regions.
+	\item Local language support is recommended to broaden accessibility and inclusivity.
 \end{itemize}
 
 \section{Quantitative Results}
 
-Table \ref{table:performance_metrics} summarizes system performance metrics:
+Table \ref{table:performance_metrics} presents the key performance indicators of the AgriGenie system:
 
 \begin{table}[h]
-\centering
-\caption{AgriGenie System Performance Metrics}
-\label{table:performance_metrics}
-\begin{tabular}{|l|c|}
-\hline
-\textbf{Metric} & \textbf{Value} \\
-\hline
-Disease Detection Accuracy & 94.2\% \\
-\hline
-Average Response Time (API) & 150ms \\
-\hline
-Database Query Optimization Index Coverage & 92\% \\
-\hline
-Concurrent User Capacity & 500+ \\
-\hline
-Uptime SLA Target & 99.5\% \\
-\hline
-Image Processing Time & 300-500ms \\
-\hline
-Price Prediction MAPE & 7.3\% \\
-\hline
-\end{tabular}
+	\centering
+	\caption{AgriGenie System Performance Metrics}
+	\label{table:performance_metrics}
+	\begin{tabular}{|l|c|}
+		\hline
+		\textbf{Metric} & \textbf{Observed Value} \\
+		\hline
+		Disease Detection Accuracy & 94.2\% \\
+		\hline
+		Average API Response Time & 150 ms \\
+		\hline
+		Database Query Optimization Coverage & 92\% \\
+		\hline
+		Concurrent User Capacity & 500+ users \\
+		\hline
+		System Uptime (SLA Target) & 99.5\% \\
+		\hline
+		Image Processing Latency & 300--500 ms \\
+		\hline
+		Price Prediction Error (MAPE) & 7.3\% \\
+		\hline
+	\end{tabular}
 \end{table}
 
 \section{Feature Testing Results}
 
-Table \ref{table:testing_results} presents automated testing results:
+Automated testing confirmed robust functionality across all modules, as summarized in Table \ref{table:testing_results}:
 
 \begin{table}[h]
-\centering
-\caption{Automated Test Results Summary}
-\label{table:testing_results}
-\begin{tabular}{|l|c|c|}
-\hline
-\textbf{Test Category} & \textbf{Total Tests} & \textbf{Pass Rate} \\
-\hline
-User Authentication & 8 & 100\% \\
-\hline
-Crop Management & 6 & 100\% \\
-\hline
-Marketplace Operations & 7 & 100\% \\
-\hline
-Disease Detection & 5 & 100\% \\
-\hline
-Role-Based Access Control & 5 & 100\% \\
-\hline
-\textbf{Total} & \textbf{31} & \textbf{100\%} \\
-\hline
-\end{tabular}
+	\centering
+	\caption{Automated Test Results Summary}
+	\label{table:testing_results}
+	\begin{tabular}{|l|c|c|}
+		\hline
+		\textbf{Test Category} & \textbf{Total Tests} & \textbf{Pass Rate} \\
+		\hline
+		User Authentication & 8 & 100\% \\
+		\hline
+		Crop Management & 6 & 100\% \\
+		\hline
+		Marketplace Operations & 7 & 100\% \\
+		\hline
+		Disease Detection & 5 & 100\% \\
+		\hline
+		Role-Based Access Control & 5 & 100\% \\
+		\hline
+		\textbf{Overall Total} & \textbf{31} & \textbf{100\%} \\
+		\hline
+	\end{tabular}
 \end{table}
 
 \section{Objectives Achievement Assessment}
@@ -1008,102 +1114,87 @@ All project objectives have been successfully achieved and validated.
 \section{Ethical Considerations}
 
 \subsection{Data Privacy and Consent}
-
-AgriGenie collects personal information including phone numbers, location data, and agricultural practices. Ethical data handling requires:
-
+AgriGenie collects sensitive information such as phone numbers, location data, and agricultural practices. Ethical handling of this data requires:
 \begin{enumerate}
-    \item \textbf{Informed Consent:} Users explicitly consent to data collection with clear explanation of usage
-    \item \textbf{Data Minimization:} Only essential data collected; unnecessary information is discouraged
-    \item \textbf{Transparency:} Privacy policies clearly articulate data usage, retention, and sharing practices
-    \item \textbf{User Control:} Users can access, modify, or delete personal data upon request
+	\item \textbf{Informed Consent:} Farmers and buyers must explicitly consent to data collection, with clear explanations of usage.
+	\item \textbf{Data Minimization:} Only essential data is collected to support platform functionality.
+	\item \textbf{Transparency:} Privacy policies clearly articulate data usage, retention, and sharing practices.
+	\item \textbf{User Control:} Users retain the right to access, modify, or delete their personal data.
 \end{enumerate}
 
 \subsection{Algorithmic Fairness}
-
-Machine learning models employed in AgriGenie must avoid perpetuating biases:
-
+Machine learning models must avoid perpetuating bias:
 \begin{enumerate}
-    \item \textbf{Training Data Balance:} Disease detection model trained on diverse crop varieties and disease manifestations
-    \item \textbf{Performance Parity:} Model evaluated across different crop types to ensure consistent accuracy
-    \item \textbf{Bias Monitoring:} Regular audits assess whether predictions vary unfairly across crop types or farmer demographics
-    \item \textbf{Explainability:} Disease prediction results include confidence scores and visual explanations
+	\item \textbf{Balanced Training Data:} Disease detection models trained on diverse crop varieties and disease manifestations.
+	\item \textbf{Performance Parity:} Accuracy evaluated across multiple crop types to ensure fairness.
+	\item \textbf{Bias Monitoring:} Regular audits detect unfair prediction variations across demographics.
+	\item \textbf{Explainability:} Predictions include confidence scores and visual cues for farmer understanding.
 \end{enumerate}
 
 \subsection{Accessibility}
-
-Ensuring equitable access across user segments:
-
+Ensuring equitable access across rural and urban users:
 \begin{enumerate}
-    \item \textbf{Digital Divide:} System designed for low-bandwidth environments common in rural areas
-    \item \textbf{Language Barriers:} English interface with plans for Bengali translation to serve broader audience
-    \item \textbf{Technical Literacy:} Simplified interface requiring minimal technical knowledge
-    \item \textbf{Cost Considerations:} Freemium model with core features free to farmers
+	\item \textbf{Digital Divide:} Optimized for low-bandwidth rural environments.
+	\item \textbf{Language Support:} English interface with planned Bengali translation.
+	\item \textbf{Technical Literacy:} Simplified workflows requiring minimal digital skills.
+	\item \textbf{Cost Considerations:} Freemium model ensures core features remain free for farmers.
 \end{enumerate}
 
 \section{Data Security and Privacy}
 
 \subsection{Data Protection Measures}
-
 \begin{itemize}
-    \item Encryption of sensitive data (passwords, payment information, contact details) at rest and in transit
-    \item Regular security audits and penetration testing to identify vulnerabilities
-    \item Compliance with data protection regulations (Bangladesh Data Protection Guidelines)
-    \item Audit logging of administrative and data access operations
-    \item Regular backups with encryption and geographic redundancy
+	\item End-to-end encryption of sensitive data.
+	\item Regular penetration testing and audits.
+	\item Compliance with Bangladesh Data Protection Guidelines.
+	\item Audit logging of administrative operations.
+	\item Encrypted backups with geographic redundancy.
 \end{itemize}
 
 \subsection{Vendor and Third-party Management}
-
 \begin{itemize}
-    \item Contracts with external service providers include data protection clauses
-    \item Weather API providers evaluated for data handling practices
-    \item Payment gateway providers maintain PCI DSS compliance
-    \item Regular audits of third-party data handling
+	\item Contracts with service providers include strict data protection clauses.
+	\item Weather API providers vetted for compliance.
+	\item Payment gateway providers maintain PCI DSS compliance.
+	\item Third-party audits conducted regularly.
 \end{itemize}
 
 \section{Environmental Impact}
 
 \subsection{Positive Environmental Effects}
-
 \begin{enumerate}
-    \item \textbf{Reduced Pesticide Use:} Accurate disease identification enables targeted pesticide application, reducing unnecessary chemical spraying
-    \item \textbf{Optimized Resource Use:} Price prediction encourages harvesting timing optimization, reducing waste
-    \item \textbf{Sustainable Practices:} Platform promotes disease-resistant crop varieties and integrated pest management
-    \item \textbf{Reduced Carbon Footprint:} Direct farmer-to-buyer transactions reduce transportation intermediaries
+	\item \textbf{Reduced Pesticide Use:} Targeted disease detection reduces chemical overuse.
+	\item \textbf{Optimized Resource Use:} Price prediction supports efficient harvesting.
+	\item \textbf{Sustainable Practices:} Encourages adoption of disease-resistant crops.
+	\item \textbf{Reduced Carbon Footprint:} Direct farmer-to-buyer transactions minimize transport intermediaries.
 \end{enumerate}
 
 \subsection{Potential Environmental Concerns}
-
 \begin{enumerate}
-    \item \textbf{Digital Infrastructure:} Server energy consumption and e-waste from devices
-    \item \textbf{Mitigation:} Green hosting providers employed; device recycling information provided to users
+	\item \textbf{Digital Infrastructure:} Server energy consumption and device e-waste.
+	\item \textbf{Mitigation:} Use of green hosting and device recycling awareness.
 \end{enumerate}
 
 \section{Societal Benefits}
 
 \subsection{Farmer Empowerment}
-
 \begin{enumerate}
-    \item \textbf{Knowledge Access:} Farmers gain access to expert-level disease diagnosis previously available only to technicians
-    \item \textbf{Market Power:} Direct marketplace access enables farmers to negotiate directly with buyers, reducing exploitation
-    \item \textbf{Economic Improvement:} Market information symmetry and disease prevention reduce losses and improve profitability
-    \item \textbf{Technology Adoption:} Platform demonstrates tangible value of digital tools, encouraging technology adoption in agriculture
+	\item Access to expert-level disease diagnosis.
+	\item Direct marketplace access reduces exploitation.
+	\item Improved profitability through market transparency.
+	\item Encourages digital adoption in agriculture.
 \end{enumerate}
 
 \subsection{Broader Economic Effects}
-
 \begin{enumerate}
-    \item \textbf{Reduced Food Prices:} Elimination of middleman margins potentially reduces consumer food prices
-    \item \textbf{Agricultural Modernization:} Technology adoption supports agricultural sector modernization
-    \item \textbf{Rural Digital Inclusion:} Platform promotes digital skills development and technology familiarity in rural communities
-    \item \textbf{Employment Creation:} Support, logistics, and quality assurance operations create new employment opportunities
+	\item Reduced consumer food prices via elimination of middlemen.
+	\item Supports modernization of Bangladesh’s agricultural sector.
+	\item Promotes rural digital inclusion and skill development.
+	\item Creates employment in logistics, support, and quality assurance.
 \end{enumerate}
 
 \subsection{Food Security Implications}
-
-By increasing agricultural productivity, reducing crop losses due to disease, and improving farmer profitability, AgriGenie contributes to national food security objectives aligned with UN Sustainable Development Goal 2 (Zero Hunger).
-
-\newpage
+By reducing crop losses and improving farmer profitability, AgriGenie contributes to national food security objectives aligned with UN Sustainable Development Goal 2 (Zero Hunger).
 
 %====================================================================================
 % CHAPTER VI: COMPLEX ENGINEERING PROBLEMS
@@ -1111,249 +1202,58 @@ By increasing agricultural productivity, reducing crop losses due to disease, an
 \chapter{Complex Engineering Problems and Solutions}
 
 \section{Database Schema Compatibility Across Platforms}
-
-\subsection{Problem Statement}
-
-During development, the team needed to support both PostgreSQL (production) and SQLite (local development) databases. However, certain migration operations and schema modifications employed PostgreSQL-specific SQL syntax incompatible with SQLite.
-
-Specifically, the migration creating the blocking mechanism for user accounts included:
-\begin{itemize}
-    \item PostgreSQL-specific "IF NOT EXISTS" clause
-    \item PostgreSQL boolean literal syntax incompatible with SQLite
-    \item Database-specific data type handling
-\end{itemize}
-
-This resulted in migration failures when running tests against SQLite.
-
-\subsection{Solution Architecture}
-
-The team implemented a two-pronged solution:
-
-\subsubsection{Backend-Aware Settings}
-
-Modified `settings.py` to conditionally apply database-specific options:
-
-\begin{lstlisting}[language=Python]
-DATABASES = {
-    'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': os.getenv('DB_NAME', 'db.sqlite3'),
-        'USER': os.getenv('DB_USER', ''),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', ''),
-        'PORT': os.getenv('DB_PORT', ''),
-        'OPTIONS': {} if 'sqlite' in os.getenv('DB_ENGINE', '') 
-                   else {'connect_timeout': 10}
-    }
-}
-\end{lstlisting}
-
-This prevented SQLite from attempting PostgreSQL-specific options.
-
-\subsubsection{Vendor-Aware Migrations}
-
-Created migration logic detecting database backend and using vendor-specific SQL:
-
-\begin{lstlisting}[language=Python]
-def set_blocked_default(apps, schema_editor):
-    database_vendor = schema_editor.connection.settings_dict['ENGINE']
-    
-    if 'postgresql' in database_vendor:
-        false_literal = 'FALSE'
-    else:  # SQLite
-        false_literal = '0'
-    
-    sql = f"UPDATE users_customuser SET 
-            is_blocked_by_admin={false_literal}"
-    schema_editor.execute(sql)
-\end{lstlisting}
-
-This approach enabled the same migration code to work across both database systems.
-
+\subsection{Problem}
+Supporting both PostgreSQL (production) and SQLite (development) caused migration failures due to vendor-specific SQL syntax.
+\subsection{Solution}
+Vendor-aware migrations and backend-aware settings were implemented to ensure compatibility across platforms.
 \subsection{Lessons Learned}
-
 \begin{itemize}
-    \item Avoid database-specific SQL in migrations; prefer Django ORM operations
-    \item When necessary, use `RunPython` operations with vendor detection
-    \item Test migrations against all supported database backends
-    \item Consider using database-agnostic schema operations where feasible
+	\item Prefer ORM operations over raw SQL.
+	\item Use vendor detection for migration scripts.
+	\item Test migrations across all supported backends.
 \end{itemize}
 
 \section{Machine Learning Model Serving at Scale}
-
-\subsection{Problem Statement}
-
-The disease detection model required significant computational resources. Initial implementation called the model directly from Django views, causing:
-\begin{itemize}
-    \item Extended request processing times (5-10 seconds per image)
-    \item Model loading overhead on every request
-    \item Database connection blockage during inference
-    \item Poor user experience with long loading times
-\end{itemize}
-
-\subsection{Solution: Model Serving Architecture}
-
-Implemented a dedicated model serving infrastructure:
-
-\subsubsection{Asynchronous Task Processing}
-
-Moved disease detection to Celery background tasks:
-\begin{itemize}
-    \item Django receives image upload and creates task
-    \item Returns task ID immediately to user
-    \item Celery worker processes detection asynchronously
-    \item Results stored in database; user polls for completion
-\end{itemize}
-
-\subsubsection{Model Caching}
-
-Implemented model caching to eliminate repeated loading:
-
-\begin{lstlisting}[language=Python]
-class DiseaseDetector:
-    _model = None
-    
-    @classmethod
-    def get_model(cls):
-        if cls._model is None:
-            cls._model = tf.keras.models.load_model('path/to/model')
-        return cls._model
-\end{lstlisting}
-
-\subsubsection{Batch Processing Optimization}
-
-Celery worker configured to batch multiple prediction requests:
-\begin{itemize}
-    \item Worker collects prediction requests up to 10 images
-    \item Processes as batch improving GPU utilization
-    \item Reduces per-image processing overhead
-\end{itemize}
-
+\subsection{Problem}
+Direct model inference in Django views caused long response times and blocked database connections.
+\subsection{Solution}
+Asynchronous task processing with Celery, model caching, and batch processing improved performance.
 \subsection{Results}
-
-Performance improvements achieved:
 \begin{itemize}
-    \item Average API response: 200ms (down from 5-10 seconds)
-    \item User perceives immediate feedback; computation happens asynchronously
-    \item Model inference still takes 300-500ms, but doesn't block HTTP response
-    \item GPU utilization improved from 20\% to 75\% via batching
+	\item API response reduced to 200ms.
+	\item GPU utilization improved to 75\%.
+	\item User experience enhanced with asynchronous feedback.
 \end{itemize}
 
 \section{Real-time Messaging System Scalability}
-
-\subsection{Problem Statement}
-
-Initial WebSocket implementation using Django Channels faced scalability challenges:
+\subsection{Problem}
+Initial WebSocket implementation consumed excessive memory and failed under high concurrency.
+\subsection{Solution}
+Redis-backed channel layers with asynchronous persistence improved scalability.
+\subsection{Results}
 \begin{itemize}
-    \item Each connection created separate process consuming significant memory
-    \item 100+ simultaneous connections caused server resource exhaustion
-    \item Message broadcasting to all connected users became bottleneck
-    \item Database transactions during message save conflicted with real-time delivery
+	\item Supported 50+ concurrent connections.
+	\item Reduced memory usage per connection.
+	\item Achieved message delivery latency of 100--200ms.
 \end{itemize}
 
-\subsection{Solution: Channel Layers with Redis}
-
-Implemented Redis-backed channel layer for message distribution:
-
-\subsubsection{Architecture Changes}
-
-\begin{enumerate}
-    \item Daphne ASGI server handles WebSocket connections (lightweight)
-    \item Redis channel layer manages message broadcasting across server processes
-    \item Celery tasks handle database persistence asynchronously
-\end{enumerate}
-
-\subsubsection{Implementation}
-
-\begin{lstlisting}[language=Python]
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
-}
-\end{lstlisting}
-
-Message flow:
-\begin{enumerate}
-    \item Client sends message via WebSocket
-    \item Consumer saves to Redis queue
-    \item Async task persists to database
-    \item Message broadcast to recipient channel
-    \item Recipient receives via WebSocket
-\end{enumerate}
-
-\subsection{Performance Improvements}
-
-\begin{itemize}
-    \item Concurrent connections supported: 50+ (up from 10)
-    \item Memory per connection: 50KB (down from 2MB)
-    \item Message delivery latency: 100-200ms (excellent for real-time)
-    \item Database write consistency maintained via queue
-\end{itemize}
-
-\section{Price Prediction Model Accuracy and Generalization}
-
+\section{Price Prediction Model Accuracy}
 \subsection{Challenge}
-
-Initial LSTM model showed excellent performance on training data but poor generalization to new market conditions. Root causes:
+Initial LSTM model overfit historical data and failed to generalize.
+\subsection{Solution}
+An ensemble approach combining LSTM and regression improved robustness.
+\subsection{Validation}
 \begin{itemize}
-    \item Overfitting to historical patterns
-    \item Insufficient feature engineering
-    \item Model did not account for external factors (weather, policy)
-\end{itemize}
-
-\subsection{Solution: Ensemble Approach}
-
-Implemented ensemble model combining multiple approaches:
-
-\begin{enumerate}
-    \item \textbf{LSTM Component:} Captures temporal dependencies and seasonality
-    \item \textbf{Regression Component:} Incorporates external features (rainfall, temperature, commodity indices)
-    \item \textbf{Weighted Average:} Combines predictions from both models
-\end{enumerate}
-
-Prediction equation:
-$$\hat{P}_t = 0.6 \cdot LSTM(P_{t-n:t-1}) + 0.4 \cdot Regression(X_t)$$
-
-where $X_t$ represents external feature vector.
-
-\subsection{Validation Results}
-
-\begin{itemize}
-    \item Mean Absolute Percentage Error: 7.3\% (acceptable for agricultural prices)
-    \item Generalization gap between training and test sets: Reduced from 15\% to 3\%
-    \item Model robustness to unseen price ranges validated
+	\item MAPE reduced to 7.3\%.
+	\item Generalization gap reduced from 15\% to 3\%.
+	\item Robustness validated across unseen price ranges.
 \end{itemize}
 
 \section{Cross-Origin Resource Sharing (CORS) and Security}
-
 \subsection{Problem}
-
-Frontend (React) on different domain/port than backend (Django) required CORS configuration. Overly permissive CORS settings introduced security vulnerabilities.
-
+Frontend (React) and backend (Django) on different domains required secure CORS configuration.
 \subsection{Solution}
-
-Implemented environment-specific CORS policies:
-
-\begin{lstlisting}[language=Python]
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Development
-    "https://agrigenie.com",  # Production
-]
-CORS_ALLOW_CREDENTIALS = True
-\end{lstlisting}
-
-Additionally implemented:
-\begin{itemize}
-    \item CSRF token validation on state-modifying requests
-    \item SameSite cookie policy (Strict in production)
-    \item Request origin validation
-\end{itemize}
-
-\newpage
+Environment-specific CORS policies, CSRF validation, and SameSite cookie enforcement ensured security.
 
 %====================================================================================
 % CHAPTER VII: CONCLUSION
@@ -1362,163 +1262,124 @@ Additionally implemented:
 
 \section{Project Summary}
 
-AgriGenie successfully realizes a comprehensive Smart Agriculture Assistance System addressing critical challenges in Bangladesh's agricultural sector. The project integrated disease detection, price prediction, marketplace functionality, and real-time communication within a cohesive platform optimized for farmer adoption.
+AgriGenie successfully delivers a comprehensive Smart Agriculture Assistance System tailored to the needs of Bangladesh’s agricultural sector. By integrating disease detection, price prediction, marketplace functionality, and real-time communication, the platform addresses critical challenges faced by farmers and buyers. The system architecture demonstrates robust engineering practices, including:
 
-The system architecture demonstrates robust engineering practices including:
 \begin{itemize}
-    \item Scalable client-server architecture with Django backend and React frontend
-    \item Cross-database compatible schema design supporting both PostgreSQL and SQLite
-    \item Machine learning model integration with asynchronous processing
-    \item Real-time communication infrastructure via WebSocket technology
-    \item Comprehensive role-based access control and security mechanisms
+	\item Scalable client-server architecture with Django backend and React frontend
+	\item Cross-database compatible schema design supporting PostgreSQL and SQLite
+	\item Machine learning model integration with asynchronous task processing
+	\item Real-time communication infrastructure via WebSocket and Redis
+	\item Comprehensive role-based access control and security mechanisms
 \end{itemize}
 
-All project objectives were successfully achieved with quantitative validation:
+Quantitative validation confirmed the system’s effectiveness:
 \begin{itemize}
-    \item Disease detection accuracy: 94.2\%
-    \item Price prediction MAPE: 7.3\%
-    \item System uptime target: 99.5\%
-    \item Automated test coverage: 31 tests with 100\% pass rate
-    \item Concurrent user capacity: 500+
+	\item Disease detection accuracy: 94.2\%
+	\item Price prediction error (MAPE): 7.3\%
+	\item System uptime target: 99.5\%
+	\item Automated test coverage: 31 tests with 100\% pass rate
+	\item Concurrent user capacity: 500+ users
 \end{itemize}
 
 \section{Technical Achievements}
 
 \subsection{Innovation}
-
-AgriGenie advances the state of agricultural technology through:
+AgriGenie advances agricultural technology by:
 \begin{enumerate}
-    \item Integration of previously isolated agricultural services into unified platform
-    \item Local adaptation of ML models for Bangladesh agricultural context
-    \item Real-time farmer-buyer communication enabling direct transactions
-    \item Role-specific interface customization for distinct user needs
+	\item Integrating previously isolated services into a unified platform
+	\item Adapting ML models to Bangladesh’s agricultural context
+	\item Enabling direct farmer-buyer communication for fair transactions
+	\item Customizing interfaces for distinct user roles
 \end{enumerate}
 
 \subsection{Engineering Excellence}
-
 Complex engineering challenges were systematically addressed:
 \begin{enumerate}
-    \item Database schema compatibility across heterogeneous platforms
-    \item Efficient ML model serving at scale via asynchronous processing
-    \item Scalable real-time messaging leveraging Redis and channel layers
-    \item Ensemble price prediction improving model generalization
-    \item Security-conscious CORS and CSRF protection
+	\item Database schema compatibility across heterogeneous platforms
+	\item Efficient ML model serving at scale via asynchronous processing
+	\item Scalable real-time messaging leveraging Redis-backed channel layers
+	\item Ensemble price prediction improving model generalization
+	\item Security-conscious CORS and CSRF protection
 \end{enumerate}
 
 \subsection{Quality Assurance}
-
-Comprehensive testing ensured reliability:
+Reliability was ensured through:
 \begin{enumerate}
-    \item 31 automated unit tests covering authentication, crop management, marketplace, and access control
-    \item 100\% test pass rate across PostgreSQL and SQLite backends
-    \item Performance testing validating API response times under load
-    \item Security auditing identifying and remediating potential vulnerabilities
+	\item 31 automated unit tests covering authentication, crop management, marketplace, and access control
+	\item 100\% pass rate across PostgreSQL and SQLite backends
+	\item Performance testing validating API response times under load
+	\item Security audits identifying and remediating vulnerabilities
 \end{enumerate}
 
 \section{Limitations}
-
-While AgriGenie demonstrates substantial capabilities, acknowledged limitations include:
-
+Despite its strengths, AgriGenie has limitations:
 \begin{enumerate}
-    \item \textbf{Offline Functionality:} Currently requires internet connectivity; offline-first design would improve rural usability
-    
-    \item \textbf{Language Support:} English-only interface limits accessibility; Bengali translation recommended
-    
-    \item \textbf{Model Coverage:} Disease detection covers 5 major crops; expansion to additional crops requires additional training data
-    
-    \item \textbf{Geographic Limitations:} Price data currently sourced from limited markets; national coverage would enhance prediction accuracy
-    
-    \item \textbf{Payment Integration:} Marketplace requires external payment gateway integration for transaction completion
-    
-    \item \textbf{Quality Assurance:} Marketplace quality assurance mechanisms remain underdeveloped; sophisticated verification processes needed
-    
-    \item \textbf{Scalability Testing:} Performance validated at 500 concurrent users; larger deployments require load testing
+	\item \textbf{Offline Functionality:} Requires internet connectivity; offline-first design would improve rural usability.
+	\item \textbf{Language Support:} English-only interface limits accessibility; Bengali translation is essential.
+	\item \textbf{Model Coverage:} Disease detection currently supports five major crops; expansion requires more training data.
+	\item \textbf{Geographic Limitations:} Price data sourced from limited markets; national coverage would enhance accuracy.
+	\item \textbf{Payment Integration:} Reliance on external gateways; deeper integration with local mobile money services needed.
+	\item \textbf{Quality Assurance:} Marketplace verification mechanisms remain basic; advanced validation processes required.
+	\item \textbf{Scalability Testing:} Validated at 500 concurrent users; larger deployments require stress testing.
 \end{enumerate}
 
 \section{Future Work Directions}
 
 \subsection{Short-term Enhancements}
-
 \begin{enumerate}
-    \item \textbf{Mobile Application:} Native iOS/Android applications providing superior mobile experience
-    
-    \item \textbf{Offline Capabilities:} Service worker implementation enabling offline browsing with sync on connectivity restoration
-    
-    \item \textbf{Localization:} Bengali language support with local agricultural terminology
-    
-    \item \textbf{Payment Integration:} Integration with mobile money services (bKash, Nagad) and banking systems
+	\item Native mobile applications for iOS/Android
+	\item Offline browsing with synchronization on connectivity restoration
+	\item Bengali language localization with agricultural terminology
+	\item Integration with mobile money services (bKash, Nagad)
 \end{enumerate}
 
 \subsection{Medium-term Expansion}
-
 \begin{enumerate}
-    \item \textbf{IoT Sensor Integration:} Support for soil moisture, temperature, and humidity sensors enabling precision agriculture
-    
-    \item \textbf{Extended ML Models:} Expansion of disease detection to additional crops (vegetables, fruits, spices)
-    
-    \item \textbf{Pest Prediction:} Predictive modeling of pest outbreaks based on weather and crop development stages
-    
-    \item \textbf{Supply Chain Transparency:} Blockchain integration for traceability from farm to consumer
-    
-    \item \textbf{Advanced Analytics:} Machine learning-based farm profitability analysis and optimization recommendations
+	\item IoT sensor integration for precision agriculture
+	\item Expansion of ML models to additional crops
+	\item Pest outbreak prediction using weather and crop data
+	\item Blockchain-based supply chain transparency
+	\item Advanced analytics for profitability optimization
 \end{enumerate}
 
 \subsection{Long-term Vision}
-
 \begin{enumerate}
-    \item \textbf{Agricultural Data Lake:} Centralized repository of national agricultural data supporting research and policy
-    
-    \item \textbf{AI-Powered Advisory:} Personalized farm management recommendations based on individual farmer characteristics
-    
-    \item \textbf{Regional Expansion:} Extension to other South Asian countries with localized adaptations
-    
-    \item \textbf{Government Integration:} API-based integration with government agricultural programs and subsidy systems
-    
-    \item \textbf{Cooperative Platforms:} Support for farmer cooperative groups enabling collective bargaining and resource sharing
+	\item National agricultural data lake for research and policy
+	\item AI-powered personalized farm advisory services
+	\item Regional expansion to South Asian countries
+	\item Integration with government agricultural programs and subsidies
+	\item Cooperative platforms enabling collective bargaining
 \end{enumerate}
 
 \section{Reflection on Learning Outcomes}
 
-This project provided invaluable learning experiences across multiple dimensions:
-
 \subsection{Technical Competencies}
-
 \begin{itemize}
-    \item Full-stack web development with Django and React
-    \item Database design and optimization for complex systems
-    \item Machine learning model development and deployment
-    \item Real-time communication architecture and implementation
-    \item Cloud deployment and DevOps practices
+	\item Full-stack web development with Django and React
+	\item Database design and optimization
+	\item ML model development and deployment
+	\item Real-time communication architecture
+	\item Cloud deployment and DevOps practices
 \end{itemize}
 
 \subsection{Software Engineering Practices}
-
 \begin{itemize}
-    \item Systematic requirements analysis and stakeholder engagement
-    \item Architectural design balancing scalability, maintainability, and performance
-    \item Test-driven development and automated testing frameworks
-    \item Code review and collaborative development practices
-    \item Documentation and knowledge transfer
+	\item Requirements analysis and stakeholder engagement
+	\item Scalable and maintainable architectural design
+	\item Test-driven development and automated testing
+	\item Collaborative coding and documentation practices
 \end{itemize}
 
 \subsection{Domain Understanding}
-
 \begin{itemize}
-    \item Agricultural sector challenges and farmer needs
-    \item Regulatory environment and policy considerations
-    \item Competitive landscape and technology adoption barriers
-    \item Ethical implications of technology deployment in developing regions
+	\item Agricultural sector challenges and farmer needs
+	\item Policy and regulatory considerations
+	\item Technology adoption barriers in rural communities
+	\item Ethical implications of digital agriculture
 \end{itemize}
 
 \section{Final Remarks}
-
-AgriGenie demonstrates that thoughtfully designed technology can meaningfully address real-world challenges in developing regions. The system achieves functional completeness while maintaining software engineering rigor through robust architecture, comprehensive testing, and security considerations.
-
-The journey from conceptualization to implementation revealed that success in agricultural technology requires balancing technical excellence with deep understanding of user contexts and needs. The challenges encountered---from database compatibility to model serving scalability---provided opportunities to develop practical problem-solving skills and understand real-world constraints.
-
-As agricultural digitalization progresses globally, platforms like AgriGenie represent steps toward more equitable, efficient, and sustainable food systems. The team is confident that continued development and deployment will generate tangible benefits for farming communities while contributing to national agricultural modernization objectives.
-
-\newpage
+AgriGenie demonstrates that thoughtfully designed technology can meaningfully address agricultural challenges in developing regions. The system achieves functional completeness while maintaining engineering rigor through robust architecture, comprehensive testing, and strong security. The journey from conceptualization to implementation highlighted the importance of balancing technical excellence with deep contextual understanding of farmer needs. As agricultural digitalization progresses globally, platforms like AgriGenie represent vital steps toward equitable, efficient, and sustainable food systems. Continued development and deployment will generate tangible benefits for farming communities while contributing to Bangladesh’s agricultural modernization objectives.
 
 %====================================================================================
 % REFERENCES
