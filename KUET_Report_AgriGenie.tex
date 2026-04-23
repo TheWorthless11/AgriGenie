@@ -28,12 +28,24 @@
 \usepackage{xcolor}
 \usepackage{amsmath}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,fit,shapes.geometric}
+\usetikzlibrary{arrows.meta,positioning,fit,shapes.geometric,calc}
 \usepackage{cite}
 \usepackage{titlesec}
 \renewcommand{\contentsname}{Contents}
 \usepackage[colorlinks=false, pdfborder={0 0 0}]{hyperref}
+\usepackage{pdflscape}
+\usepackage{msc}
+\usepackage{pgfgantt}
+\setlength{\headheight}{15pt}
 
+% Define TikZ styles once
+\tikzset{
+	step/.style={draw, rounded corners=2pt, align=center, text width=4cm, minimum height=1cm, fill=blue!8},
+	decision/.style={draw, diamond, aspect=2, align=center, text width=3cm, minimum height=1cm, fill=orange!12},
+	line/.style={->, thick},
+	entity/.style={draw, rounded corners=2pt, align=center, text width=3.2cm, minimum height=1.0cm, fill=blue!8},
+	relation/.style={draw, rounded corners=2pt, align=center, text width=2.4cm, minimum height=0.9cm, fill=orange!12}
+}
 \titleformat{\chapter}
 {\normalfont\bfseries\large}
 {CHAPTER \Roman{chapter}}
@@ -269,354 +281,276 @@
 	\pagenumbering{arabic}
 	\setcounter{page}{1}
 
+%==================================================================================== % CHAPTER I: INTRODUCTION
+
 %====================================================================================
-% CHAPTER I: INTRODUCTION
-%====================================================================================
+
 \chapter{Introduction}
 
 \section{Introduction}
 
-For a time agriculture has been very important to Bangladeshs economy.. The people who work in this area have a hard time using new technology. Farmers, those in rural areas do not have access to good information about their crops the market and the weather. This makes it hard for farmers to make decisions. AgriGenie is a project that wants to help farmers by giving them a tool that's easy to use and has many features.
+Agriculture is very important for Bangladeshs economy. It helps with food security, jobs and rural livelihoods.. Farmers, especially small ones in rural areas face many challenges. They struggle to use technologies and get timely information. They do not know much about crop diseases. They also face fluctuating market prices, unpredictable weather and limited access to buyers. These problems reduce their productivity and profitability.
 
-The idea of AgriGenie is to use technology to help farmers. This is also called precision agriculture or smart farming.. The tools that are available now are either too expensive or they only do one thing. AgriGenie wants to change this by making a tool that's affordable and does many things.
+To solve these problems we introduce AgriGenie. It is an agriculture assistance platform. It combines services into one easy-to-use system. AgriGenie has crop disease detection, weather support, market price forecasting and a farmer-buyer marketplace. It promotes precision agriculture and sustainable farming.
 
-We think that using technology in agriculture does not have to be complicated. We can use the internet and special computer programs to help farmers make decisions. This is good for the farmers. It is also good for the environment. AgriGenie is trying to help the United Nations achieve some of its goals like ending hunger and helping people have lives.
+Unlike tools that are expensive or limited AgriGenie is affordable and multifunctional. It uses web technologies and artificial intelligence. It helps achieve the United Nations Sustainable Development Goal (SDG 2: Zero Hunger).
 
 \section{Problem Statement}
 
-A lot of people in Bangladesh work in agriculture.. This area has many problems. Here are some of them:
+Bangladeshs agriculture sector has problems many problems. Some of them are given below:
 
 \begin{enumerate}
-
-\item \textbf{Disease Management:} Farmers do not have a way to find out if their crops are sick. When crops get sick farmers use many chemicals, which is bad for the environment.
-
-\item \textbf{Price Information:} Farmers do not know how much their crops are worth. This means that other people can take advantage of them and pay them little.
-
-\item \textbf{Weather:} Farmers need to know what the weather will be like.. They do not have a good way to get this information.
-
-\item \textbf{Market Access:} Small farmers have a time selling their crops directly to buyers. They have to sell to people who take a big cut.
-
-\item \textbf{Knowledge:} Farmers need to know how to grow their crops.. This information is not easy to find.
-
+	
+	\item \textbf{Disease Management:} Farmers lack tools to detect crop diseases early. They use many chemicals, which harm the yield and environment.
+	
+	\item \textbf{Price Information:} Farmers do not have access to market prices. Intermediaries take advantage of them.
+	
+	\item \textbf{Weather Forecasting:} Farmers struggle to predict weather extremes like floods and droughts. This leads to crop losses.
+	
+	\item \textbf{Market Access:} Small farmers cannot sell directly to buyers. This reduces their profitability.
+	
+	\item \textbf{Knowledge Gap:} Farmers do not have access to best practices and extension services.
+	
 \end{enumerate}
 
-These problems make it hard for farmers to grow their crops well. They also make it hard for farmers to sell their crops for a price. AgriGenie wants to help solve these problems.
+These challenges reduce crop quality, profitability and resilience. AgriGenie aims to solve these issues with a technology-driven solution.
 
 \section{Project Objectives}
 
-AgriGenie has goals. Here are some of them:
+The objectives of AgriGenie are:
 
 \begin{itemize}
-
-\item \textbf{Disease Detection:} We want to make a tool that can look at pictures of crops and tell if they are sick.
-
-\item \textbf{Market Intelligence:} We want to make a tool that can predict how much crops will be worth.
-
-\item \textbf{Direct Sales:} We want to make a platform where farmers can sell their crops directly to buyers.
-
-\item \textbf{User-Friendly:} We want to make sure that our tool is easy to use.
-
-\item \textbf{Big and Strong:} We want to make sure that our tool can handle users.
-
-\item \textbf{Mobile:} We want to make sure that our tool works well on phones.
-
-\item \textbf{Private:} We want to make sure that our tool is safe and private.
-
+	
+	\item To develop an AI-powered tool to identify crop diseases from images.
+	
+	\item To implement a model for price prediction and trend analysis.
+	
+	\item To provide a farmer-buyer marketplace to reduce intermediaries.
+	
+	\item To ensure accessibility with dashboards and intuitive interfaces.
+	
+	\item To design a system for large-scale adoption.
+	
+	\item To optimize for devices to reach rural farmers.
+	
+	\item Incorporate authentication and encryption to protect user data.
+	
 \end{itemize}
 
 \section{Project Scope}
 
-AgriGenie is a big project. Here are some of the things we want to do:
+AgriGenie is a platform that helps farmers in Bangladesh. It has features that are already working well. For example farmers, buyers and administrators can log in securely. See only the information that is relevant to them. The platform uses intelligence to detect diseases in crops like potatoes, tomatoes and peppers. It can identify 15 diseases and even suggest how to treat them. AgriGenie also has a marketplace where farmers can sell their crops directly to buyers. This helps farmers get a price for their crops.
 
-\textbf{What We have done:}
+The platform also has a feature that allows farmers and buyers to chat with each other in time. They can share pictures of their crops. Discuss prices. AgriGenie can even predict what crop prices will be like in the 30 days. It can also warn farmers about weather like floods, droughts and heat waves. This helps farmers take steps to protect their crops.
 
-\begin{itemize}
-
-\item Made a system where users can log in and use our tool.
-
-\item Made a tool that can look at pictures of crops and tell if they are sick.
-
-\item Made a platform where farmers can sell their crops directly to buyers.
-
-\item Made a system where users can talk to each other in time.
-
-\item Made a tool that can predict how much crops will be worth.
-
-\item Made sure that our tool is safe and private.
-
-\end{itemize}
-
-\textbf{How We have done it:}
-
-\begin{itemize}
-
-\item \textbf{Backend:} Used a computer program called Django.
-
-\item \textbf{Frontend:} Used a computer program called React.js.
-
-\item \textbf{Machine Learning:} Used a computer program called TensorFlow.
-
-\item \textbf{Real-time Communication:} Used a computer program called Django Channels.
-
-\item \textbf{APIs:} Used computer programs that can talk to other computer programs.
-
-\item \textbf{Deployment:} Used computer programs that can help us put our tool on the internet.
-
-\item \textbf{Authentication:} Used computer programs that can help us keep our tool safe and private.
-
-\end{itemize}
+From a point of view AgriGenie uses modern technology to make sure it can handle a lot of users. The backend is built using Django and the frontend uses Bootstrap. The platform uses intelligence and machine learning to detect diseases and predict prices. It also uses APIs to get weather data and authenticate users.
 
 \section{Novelty and Innovation}
 
-AgriGenie is a new and innovative project. Here are some of the things that make it special:
+AgriGenie is different from other agricultural platforms because it offers a complete solution. It helps farmers detect diseases, get market information and sell their crops directly to buyers. The platform uses models that're specific to Bangladesh. This means it can detect diseases that're common in this region more accurately.
 
-\begin{enumerate}
+AgriGenie is also designed to be easy to use. The dashboards are simple.It can be used on mobile phones. This makes it easy for farmers with technical knowledge to use the platform. The platform also allows farmers and buyers to communicate with each other in time. This helps them negotiate prices and make deals without needing intermediaries.
 
-\item \textbf{in One:} AgriGenie is a tool that does many things. It can look at pictures of crops. Tell if they are sick. It can predict how much crops will be worth. It can help farmers sell their crops directly to buyers.
+AgriGenie can even be used offline. This means farmers in areas can still use some of the features even if they do not have internet access. Overall AgriGenie is a platform that addresses many of the challenges faced by farmers in Bangladesh and South Asia. It helps farmers detect diseases predict prices and get information about the weather. This makes it an useful tool for farmers in this region. AgriGenie is a platform in the field of smart farming. It is a digital platform that integrates multiple modules to support farmers in Bangladesh.
 
-\item \textbf{Local:}AgriGenie is made for farmers in Bangladesh and South Asia. It uses computer programs that are trained on local crops and diseases.
 
-\item \textbf{User-Friendly:} AgriGenie is made to be easy to use. It has an interface that is easy to understand.
+\section{Unfamiliarity of the Problem \& Solution}
 
-\item \textbf{time Communication:} AgriGenie has a special system that allows users to talk to each other in real time.
+Most agricultural platforms are either specialized or expensive. They are inaccessible to smallholder farmers in Bangladesh. Current solutions lack integration between crop disease management, market intelligence, weather alerts and direct farmer-buyer communication.
 
-\item \textbf{Offline:} AgriGenie can work when the internet is not available.
-
-\end{enumerate}
-
-These things make AgriGenie a special and innovative project.
+AgriGenie combines these features into a system tailored to Bangladesh. It uses datasets for disease detection and integrates price prediction using genetic algorithms.
 
 \section{Project Planning and Work Distribution}
 
-We worked hard to plan and divide the work for AgriGenie. Here is what we did:
+The project was developed by two members. The work divided into these two members are descriped below:
 
 \textbf{Mahhia Kamal Mim (Roll: 2107081):}
 
 \begin{itemize}
-
-\item Made the database and the backend of the tool.
-
-\item Made the system where users can log in and use our tool.
-
-\item Made the platform where farmers can sell their crops directly to buyers.
-
-\item Made sure that our tool is safe and private.
-
-\item Put our tool on the internet.
-
-\item Tested our tool to make sure it works well.
-
+	
+	\item Backend development and database design.
+	
+	\item User authentication and security implementation.
+	
+	\item Marketplace module development.
+	
+	\item Deployment and testing.
+	
 \end{itemize}
 
 \textbf{Shaila Akter (Roll: 2107084):}
 
 \begin{itemize}
-
-\item Made the frontend of the tool.
-
-\item Made the interface that users see when they use our tool.
-
-\item Made the system where users can talk to each other in time.
-
-\item Made the tool that can predict how much crops will be worth.
-
-\item Made sure that our tool works well on phones.
-
-\item Tested our tool to make sure it works well.
-
+	
+	\item Frontend development and user interface design.
+	
+	\item Real-time communication module.
+	
+	\item Price prediction model integration.
+	
+	\item optimization and testing.
+	
 \end{itemize}
-
-We worked together to make sure that our tool is good and works well.
 
 \section{Project Applications}
 
-AgriGenie can be used in ways. Here are some of them:
+AgriGenie is really useful for people who work in agriculture. For farmers AgriGenie is a great tool. It can detect diseases in plants using intelligence. This means it can identify 15 diseases in potatoes, tomatoes and peppers. So farmers can take action early. They do not have to use bad chemicals. AgriGenie also gives farmers information about the market. They can see what prices will be like for potatoes, tomatoes and rice for the 30 days. This helps farmers decide when to sell their crops.
 
-\begin{enumerate}
+AgriGenie also helps with farm management. It sends weather alerts to farmers. It checks the health of crops and tracks orders. This means farmers can run their farms smoothly. They can also prepare for weather.
 
-\item \textbf{Individual Farmer:} A farmer can use AgriGenie to look at pictures of their crops and find out if they are sick.
+The system also helps farmers sell their crops directly to buyers. This is done through a marketplace. So farmers do not have to rely on middlemen. They can get prices for their crops. Agricultural extension services also benefit from AgriGenie. They use the disease detection and weather alert modules to give farmers advice. This is especially helpful for farmers in areas.
 
-\item \textbf{Farm Management:} A farmer can use AgriGenie to manage their farm and make decisions.
+For government agencies AgriGenie provides information. They can see how healthy crops are. They can track market trends. See what is happening in different areas. This information helps the government make decisions. It also helps them prepare for disasters. AgriGenie also helps people who do research. It gives them data on crop diseases, weather and market changes. This data can be used to make artificial intelligence models. It can also be used to learn more about agriculture.
 
-\item \textbf{Direct Market Access:} A farmer can use AgriGenie to sell their crops to buyers.
-
-\item \textbf{Extension Worker:} An extension worker can use AgriGenie to help farmers and give them advice.
-
-\item \textbf{Government:} The government can use AgriGenie to monitor crops and make decisions.
-
-\item \textbf{Research:} A researcher can use AgriGenie to study crops and find out things.
-
-\end{enumerate}
-
-AgriGenie can be used in ways to help farmers and make their lives better.
+AgriGenie helps people, including farmers, buyers, extension workers, government bodies and researchers. It shows that AgriGenie is an useful tool for smart farming. It helps increase productivity, sustainability and resilience in Bangladesh’s sector. AgriGenie is good for farmers and for the country as a whole. It makes AgriGenie a great solution for agriculture, in Bangladesh.
 
 \section{Organization of the Report}
 
-This report is divided into parts. Here is what each part is about:
+The report is structured as follows:
 
-\textbf{Chapter I (Current):} This part introduces AgriGenie and talks about the problems it solves.
-
-\textbf{Chapter II:} This part talks about tools that are, like AgriGenie and how they are different.
-
-\textbf{Chapter III:} This part talks about how AgriGenie was made and what technology was used.
-
-\textbf{Chapter IV:} This part talks about how AgriGenie was implemented and what features it has.
-
-\textbf{Chapter V:} This part talks about the considerations of AgriGenie and how it can be used in a good way.
-
-\textbf{Chapter VI:} This part talks about the challenges that were faced while making AgriGenie and how they were overcome.
-
-\textbf{Chapter VII:} This part concludes the report and talks about what was learned and what can be done in the future.
+\begin{itemize}
+	
+	\item \textbf{Chapter I:} Introduction, problem statement, objectives, scope, novelty, planning and applications.
+	
+	\item \textbf{Chapter II:} Review of works and comparative analysis.
+	
+	\item \textbf{Chapter III:} Methodology, system design and framework.
+	
+	\item \textbf{Chapter IV:} Implementation, setup, results and discussions.
+	
+	\item \textbf{Chapter V:} Societal, environmental and legal considerations.
+	
+	\item \textbf{Chapter VI:} Complex engineering. Activities.
+	
+	\item \textbf{Chapter VII:} Conclusions, limitations and future work.
+	
+\end{itemize}
 
 \newpage
 
 %====================================================================================
-
-% CHAPTER II: WORKS
-
+% CHAPTER II: RELATED WORKS
 %====================================================================================
-
 \chapter{Related Works}
 
 \section{Overview of Agricultural Technology Platforms}
 
-The Agricultural Technology sector has seen a lot of growth. Many digital solutions are available to help farmers. This chapter looks at existing platforms and systems. It helps us understand what AgriGenie does.
+The agricultural technology sector has seen a lot of growth in the few years. Many digital platforms have come up to help farmers manage diseases, get access to markets and make decisions.. Most of these solutions are either very specialized or only work in certain areas, which means they do not work very well in Bangladesh. This part of the book looks at some of the known platforms and systems talks about what they are good and bad at and shows the problems that AgriGenie is trying to solve. AgriGenie is trying to fill the gap that exists in the agricultural technology sector in Bangladesh. The agricultural technology sector needs something like AgriGenie to help the farmers, in Bangladesh.
 
 \section{Disease Detection and Diagnosis Systems}
 
 \subsection{PlantVillage Platform}
 
-PlantVillage is a website. It helps farmers identify plant diseases. Farmers upload pictures of plants. Experts then tell them what is wrong and how to fix it. PlantVillage is good. It has some problems. It relies on experts being available. This means it can take a time to get answers. It also does not work in time.
+PlantVillage is a known platform. It helps farmers upload pictures of their crops to get help with disease diagnosis. Disease experts in farming then look at these pictures. Give advice according to that. These experts are good at sharing knowledge. However PlantVillage has some problems. It takes a time to get answers because real people have to look at each picture. PlantVillage does not have a way to automatically detect problems in time. Another issue is that the pictures and data used to train PlantVillage are not specifically about crops grown in Bangladesh. This makes it less useful for farmers in Bangladesh. The platform relies on experts for disease diagnosis. These experts provide feedback and recommendations to farmers.
+
+PlantVillage is used for knowledge dissemination. However it needs to improve its support, for Bangladeshi crops.
 
 \subsection{AI-Based Detection Systems}
 
-Some new systems use artificial intelligence to identify diseases. Kumar and his team used a kind of artificial intelligence called CNN. They were able to identify diseases 94 percent of the time.. They only tested it on crops from India. They did not think about how it would work in places with resources.
+People have been studying how artificial intelligence can help find diseases in plants. For example Kumar and his team used a kind of computer program called convolutional neural networks to figure out what was wrong with crops. They were able to do this about 94\% of the time. This is a start but these programs were only tested with information from India and they do not work well in places with limited resources. Artificial intelligence for plant disease detection is still a thing. Most systems that use intelligence for plant disease detection only look at finding the disease and do not tell farmers what to do to make the plants healthy again or work with the other tools that farmers use to take care of their farms. Artificial intelligence for plant disease detection needs to be able to do more, than just detect diseases.
 
 \subsection{Limitations in Existing Approaches}
 
-There are some problems with disease detection systems.
+Existing disease detection platforms face several limitations. Such as:
 \begin{itemize}
-\item They are not trained on crops from Bangladesh.
-
-\item They do not give treatment recommendations.
-
-\item They do not use weather data or crop management systems.
-
-\item They do not work well with types of leaves and photography.
+	\item Lack of training on crops and diseases prevalent in Bangladesh.
+	\item Absence of treatment recommendations alongside detection.
+	\item No integration with weather data or farm management systems.
+	\item Limited adaptability to diverse leaf types and image quality in rural settings.
 \end{itemize}
+
+AgriGenie addresses these gaps by detecting 15 plant diseases across potato, tomato, and pepper crops, providing confidence scores, classifying disease types (fungal, bacterial, viral, pest) and offering treatment recommendations. It also integrates disease history tracking and weather-aware alerts, making it more comprehensive than existing systems.
+
 \section{Agricultural Price Prediction Systems}
 
 \subsection{Agri-market Platforms}
 
-There are platforms like e-NAM in India. They collect price data. They are not good at predicting prices. Harsha and his team used a kind of prediction called ARIMA. They were able to predict prices with an error of 8.2 percent.
+There are platforms like Indias e-NAM that gather and share price information. However they do not have the ability to predict what will happen in the future. Some people like Harsha have used models called ARIMA to try and guess what crop prices will be. They were able to get pretty close with an error of 8.2\%.. These models have a hard time dealing with big changes in the market and unexpected events. Indias e-NAM and other platforms like it need to be able to handle these surprises to really help people understand what will happen with crop prices.
 
 \subsection{Machine Learning Approaches}
 
-Akter and her team compared ways to predict prices. They used ARIMA, exponential smoothing and LSTM neural networks. The LSTM models were the best. They had an error of 6.5 percent.. They needed a lot of data and computer power.
+Akter and others compared three methods for predicting prices: ARIMA, exponential smoothing and LSTM neural networks. They found that LSTM models made mistakes 6.5\% of the time.. These methods need a lot of data and computer power, which many small farmers do not have.
+
+AgriGenie is different. It uses an algorithm to predict crop prices for the next 30 days. It also finds trends in price changes and tells farmers when to sell. AgriGenie uses price data and shows trends with charts making it easy for farmers to understand and use the predictions.
 
 \section{Agricultural Marketplaces}
 
 \subsection{Direct-to-Consumer Platforms}
 
-There are platforms like Direct2Farm and FarmDrive in Africa. They help farmers sell their produce directly to consumers.. They have some problems. They are limited to regions. They have trouble making sure the produce is quality.
+There are platforms like Direct2Farm and FarmDrive in Africa. These platforms let farmers sell their produce directly to the people who will eat it. This is a thing because it helps cut out the people in the middle.. Direct2farm and FarmDrive have some problems. They have to figure out how to make sure product quality. They also have to make sure they can work in different areas.. They have to find a way to help farmers and buyers trust each other when they use Direct2Farm and FarmDrive.
 
 \subsection{Challenges in Existing Marketplaces}
 
-There are some challenges with current marketplaces.
+Current marketplaces have some issues. They often lack:
+\begin{enumerate}
+	\item Mechanisms for crop quality verification.
+	\item Coverage across diverse geographic regions.
+	\item Real-time communication between farmers and buyers.
+	\item Trust-building features such as ratings and reviews.
+\end{enumerate}
 
-1. They do not have ways to verify quality.
-
-2. They do not cover areas well.
-
-3. They do not have real-time communication.
-
-4. They have trouble building trust between farmers and consumers.
+AgriGenie addresses these challenges by integrating a farmer–buyer marketplace with quality grading (A, B, C), buyer ratings and real-time WebSocket-based chat. This ensures transparency, trust and fair pricing.
 
 \section{Comprehensive Agricultural Platforms}
 
-\subsection{ICRISATs Digital Advisory Services}
+\subsection{ICRISAT’s Digital Advisory Services}
 
-ICRISAT provides advice to farmers through SMS.. It is limited to certain regions. It is not very user-friendly.
+ICRISAT gives farmers advice by sending them messages on their phones. This helps farmers a bit.. Icrisat only does this in some areas. Also farmers cannot talk back to ICRISAT through these messages.. The way ICRISAT does, is not very easy for people to use who are used to modern technology. ICRISAT services are just not very good for farmers who like to use their phones and computers a lot.
 
 \subsection{Regional Context: Bangladesh-Specific Systems}
 
-There are not agricultural technology platforms in Bangladesh. Most of them are adapted from solutions. They do not take into account culture and language.
+Bangladesh does not have agricultural technology platforms yet. Most solutions available now are taken from other countries. They do not think about the crops we grow here or how we grow them or even if they can be used in our language. This means we need a solution that is made for Bangladesh. It should understand our farming needs. Be easy to use for local farmers. We need a platform that helps farmers, in Bangladesh. The platform should support crops. It also needs to consider practices here. Language support is also important.
 
 \section{Research Gap and Novelty of AgriGenie}
 
-AgriGenie fills some gaps.
-
-1. \textbf{Platform:} It combines disease detection, price prediction, marketplace and real-time communication.
-
-2. \textbf{Adapted to conditions:} The disease detection model is trained on local crops and diseases.
-
-3. \textbf{Real-time communication:} It uses WebSocket-based messaging for interaction.
-
-4. \textbf{Scalable:} It uses web technologies for scalability and feature richness.
-
-5. \textbf{Customized:} It has interfaces, for farmers, buyers and administrators.
-
-6. \textbf{Comprehensive:} It integrates disease diagnosis, price guidance and marketplace access.
+AgriGenie fills critical gaps in existing agricultural technology. For example:
+\begin{enumerate}
+	\item \textbf{Integrated Platform:} Combines disease detection, price prediction, marketplace access and real-time communication.
+	\item \textbf{Localized Models:} Trained on crops and diseases relevant to Bangladesh.
+	\item \textbf{Real-Time Communication:} Enables farmer–buyer interaction through WebSocket-based messaging.
+	\item \textbf{Scalability:} Built on modern web technologies (Django, TensorFlow, Celery, Redis) for extensibility.
+	\item \textbf{Role-Based Interfaces:} Provides customized dashboards for farmers, buyers and administrators.
+	\item \textbf{Comprehensive Functionality:} Integrates disease diagnosis, price forecasting, weather alerts and marketplace transactions.
+\end{enumerate}
 
 \section{Comparative Analysis Table}
 
-The following table compares AgriGenie with platforms:
+The following table compares AgriGenie with existing platforms.
 
-\begin{table}[h]
-	
+\begin{table}[H]
 	\centering
-	
 	\caption{Comparative Analysis of Agricultural Technology Platforms}
-	
 	\label{table:comparative_analysis}
-	
-	\begin{tabular}{|l|c|c|c|c|c|c|}
-		
-		\hline
-		
-		\textbf{Feature} & \textbf{AgriGenie} & \textbf{PlantVillage} & \textbf{e-NAM} & \textbf{Direct2Farm} & \textbf{ICRISAT Advisory} \\
-		
-		\hline
-		
-		Disease Detection & $\checkmark$ & $\checkmark$ & $\times$ & $\times$ & $\checkmark$ \\
-		
-		\hline
-		
-		Real-time Prediction & $\checkmark$ & $\times$ & $\checkmark$ & $\times$ & $\times$ \\
-		
-		\hline
-		
-		Direct Marketplace & $\checkmark$ & $\times$ & $\times$ & $\checkmark$ & $\times$ \\
-		
-		\hline
-		
-		Real-time Communication & $\checkmark$ & $\checkmark$ & $\times$ & $\checkmark$ & $\times$ \\
-		
-		\hline
-		
-		Mobile Responsive & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
-		
-		\hline
-		
-		Local Language Support & $\checkmark$ & $\times$ & $\checkmark$ & $\times$ & $\times$ \\
-		
-		\hline
-		
-		Offline Capability & $\times$ & $\times$ & $\times$ & $\times$ & $\checkmark$ \\
-		
-		\hline
-		
-		Regional Integration & Bangladesh & Global & India & Africa & Global \\
-		
-		\hline
-		
-	\end{tabular}
-	
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{|l|c|c|c|c|c|}
+			\hline
+			\textbf{Feature} & \textbf{AgriGenie} & \textbf{PlantVillage} & \textbf{e-NAM} & \textbf{Direct2Farm} & \textbf{ICRISAT Advisory} \\
+			\hline
+			Disease Detection & $\checkmark$ (15 diseases) & $\checkmark$ & $\times$ & $\times$ & $\checkmark$ \\
+			\hline
+			Treatment Recommendations & $\checkmark$ & $\times$ & $\times$ & $\times$ & $\times$ \\
+			\hline
+			Price Prediction & $\checkmark$ (30-day GA model) & $\times$ & $\times$ & $\times$ & $\times$ \\
+			\hline
+			Direct Marketplace & $\checkmark$ & $\times$ & $\times$ & $\checkmark$ & $\times$ \\
+			\hline
+			Real-time Communication & $\checkmark$ (WebSocket chat) & $\times$ & $\times$ & $\times$ & $\times$ \\
+			\hline
+			Quality Verification & $\checkmark$ (grading + ratings) & $\times$ & $\times$ & $\times$ & $\times$ \\
+			\hline
+			Mobile Responsive & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+			\hline
+			Local Language Support & $\checkmark$ (Bangla) & $\times$ & $\times$ & $\times$ & $\times$ \\
+			\hline
+			Offline Capability & $\checkmark$ (limited features) & $\times$ & $\times$ & $\times$ & $\times$ \\
+			\hline
+			Regional Integration & Bangladesh & Global & India & Africa & Global \\
+			\hline
+		\end{tabular}
+	}
 \end{table}
 
-This table shows that AgriGenie is unique. It combines features in one platform. It is optimized for the context of Bangladesh.
-
-\newpage
+This analysis shows that AgriGenie is different from others. It combines useful features. These features include detecting diseases suggesting treatments, predicting prices connecting to a marketplace and communicating in time. All these are put together in one platform. This platform is designed to work in Bangladesh. The AgriGenie platform is optimized for the context. It provides a solution for farmers, in Bangladesh.
 
 %====================================================================================
 % CHAPTER III: METHODOLOGY
@@ -625,7 +559,17 @@ This table shows that AgriGenie is unique. It combines features in one platform.
 
 \section{System Architecture Overview}
 
-AgriGenie follows a client-server architecture with clear separation between frontend and backend components. Figure \ref{fig:system_architecture} illustrates the overall system design:
+AgriGenie is made up of parts that work together. It has a client and a server. The client is what the users see and interact with. The server is what does all the work behind the scenes. This makes AgriGenie easy to use and maintain.
+
+The part that the users see is made with React.js and Bootstrap 5. This means that farmers and buyers and people who manage the system can all use it easily. They can see all the information they need on their computers or phones.
+
+The server part is made with Django 4.2. This is what makes sure everything works properly. It is like the brain of AgriGenie. It makes sure people are who they say they are. It helps with things like managing crops and buying and selling.
+
+All the information is stored in a database called PostgreSQL. This database is very organized. It has lots of sections for different types of information. There are over 38 sections.
+
+AgriGenie also uses some tools to make it work better. It uses computer programs to help detect diseases in crops and to predict prices. It also uses a service that provides weather information. This means that users can get warnings if there is weather coming. AgriGenie can also send messages to users in time.
+
+All these parts work together. They are like layers of a cake. Each layer can be changed without messing up other layers. This makes AgriGenie very flexible. There is a picture that shows how all these parts work together. It is called Figure~\ref{fig:system_architecture}. This picture shows how requests, from users go through the system and how all the parts work together.
 
 \begin{figure}[H]
 	\centering
@@ -666,107 +610,489 @@ AgriGenie follows a client-server architecture with clear separation between fro
 	\label{fig:system_architecture}
 \end{figure}
 
-The architecture comprises:
-
-\begin{enumerate}
-	\item \textbf{Client Layer:} React.js frontend providing user interfaces for farmers, buyers, and administrators
-	\item \textbf{API Gateway:} RESTful API endpoints exposed by Django backend
-	\item \textbf{Business Logic Layer:} Django application with models, views, and services
-	\item \textbf{Data Layer:} PostgreSQL database with normalized schema
-	\item \textbf{External Services:} Integration with ML models, weather APIs, and third-party services
-\end{enumerate}
-
 \section{Database Design}
 
 \subsection{Entity-Relationship Model}
 
-The database schema encompasses the following primary entities:
+The AgriGenie database is made to handle things that happen across many parts. The main part of the AgriGenie database is the \textbf{CustomUser} entity which takes care of who can do what and makes sure only the right people can get in. Farmers can add details to their profiles like how big their land is, what kind of crops they like to grow and how they want to get paid. Buyers can make lists of the crops they want and save the ones they like. All the crops that are for sale are connected to \textbf{MasterCrop} templates so that all the crops are put into the groups. When farmers and buyers leave reviews and ratings for each other it helps build trust between them. The AgriGenie database also helps farmers and buyers make decisions by giving them information about diseases that can hurt their crops and weather that might affect them.
 
-\begin{enumerate}
-	\item \textbf{CustomUser:} Core user entity supporting multiple roles (farmer, buyer, admin, superadmin)
-	\item \textbf{Farmer Profile:} Extended user information specific to farmers (land size, crops, experience level)
-	\item \textbf{Crop:} Represents farmer-listed crop products with quantity, pricing, and availability
-	\item \textbf{MasterCrop:} System-maintained reference data for crop templates
-	\item \textbf{Review:} Buyer feedback on purchased crops, enabling reputation systems
-	\item \textbf{Message:} Real-time messaging between farmers and buyers
-	\item \textbf{WishlistItem:} Farmer-initiated saved products for future reference
-	\item \textbf{SavedCrop:} Buyer-initiated saved crops from marketplace
-	\item \textbf{DiseaseDetectionResult:} Records of disease detection predictions
-	\item \textbf{AdminSettings:} System configuration and global settings
-\end{enumerate}
+Figures~\ref{fig:ER_diagram_overview} through \ref{fig:er6} show pictures of how all the different parts of the AgriGenie database work together. These pictures show how the CustomUser entity and other entities work together for things, like getting into the system using the panel managing farmers helping buyers and using the marketplace and weather services. The AgriGenie database is set up in a way that gets rid of information and makes sure everything is consistent.//
+
+\textbf{Entity-Relationship Diagram : High-Level Overview}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{ER_diagram_overview.png}}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit within page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			line/.style={->, thick},
+			bidir/.style={<->, thick},
+			entity/.style={draw, rounded corners=2pt, align=center, text width=2.8cm, minimum height=1.0cm, fill=blue!8},
+			relation/.style={draw, rounded corners=2pt, align=center, text width=2.4cm, minimum height=0.9cm, fill=orange!12}
+			]
+			
+			% Core Crop entity
+			\node[entity] (crop) at (0,0) {Crop};
+			
+			% Connected entities
+			\node[entity, above left=of crop] (mastercrop) {MasterCrop};
+			\node[entity, above right=of crop] (croplisting) {CropListing};
+			\node[entity, right=of croplisting] (order) {Order};
+			\node[entity, below right=of order] (farmerRating) {FarmerRating};
+			\node[entity, below=of order] (buyerRating) {BuyerRating};
+			
+			\node[entity, left=of crop] (review) {Review};
+			\node[entity, below left=of crop] (cropDisease) {CropDisease};
+			\node[entity, below=of crop] (aiDisease) {AIDiseaseMonitor};
+			\node[entity, below right=of crop] (priceHistory) {PriceHistory};
+			
+			% Farmer side
+			\node[entity, left=of review, xshift=-2.5cm] (farmerProfile) {FarmerProfile};
+			\node[entity, below=of farmerProfile] (weatherAlert) {WeatherAlert};
+			\node[entity, below=of weatherAlert] (irrigationCrop) {IrrigationCrop};
+			\node[entity, right=of irrigationCrop] (irrigationRecord) {IrrigationRecord};
+			\node[entity, below=of irrigationCrop] (irrigationSchedule) {IrrigationSchedule};
+			\node[entity, left=of irrigationCrop] (irrigationCatalog) {IrrigationCropCatalog};
+			
+			% Buyer side
+			\node[entity, right=of buyerRating, xshift=2.5cm] (buyerProfile) {BuyerProfile};
+			\node[entity, above=of buyerProfile] (wishlist) {WishlistItem};
+			\node[entity, below=of buyerProfile] (purchaseRequest) {PurchaseRequest};
+			
+			% User side
+			\node[entity, above=of mastercrop, xshift=-2.5cm] (customUser) {CustomUser};
+			\node[entity, right=of customUser] (chatRoom) {ChatRoom};
+			\node[entity, right=of chatRoom] (chatMessage) {ChatMessage};
+			\node[entity, above=of chatRoom] (userApproval) {UserApproval};
+			\node[entity, above=of userApproval] (notification) {Notification};
+			\node[entity, above=of notification] (activityLog) {ActivityLog};
+			
+			% AI Price Predictor
+			\node[entity, below=of priceHistory, yshift=-2cm] (aiPricePredictor) {AIPricePredictor};
+			\node[entity, right=of aiPricePredictor] (cropPriceData) {CropPriceData};
+			
+			% Connections
+			\draw[line] (crop) -- (mastercrop);
+			\draw[line] (crop) -- (croplisting);
+			\draw[line] (croplisting) -- (order);
+			\draw[line] (order) -- (farmerRating);
+			\draw[line] (order) -- (buyerRating);
+			
+			\draw[line] (crop) -- (review);
+			\draw[line] (crop) -- (cropDisease);
+			\draw[line] (crop) -- (aiDisease);
+			\draw[line] (crop) -- (priceHistory);
+			
+			\draw[line] (farmerProfile) -- (weatherAlert);
+			\draw[line] (farmerProfile) -- (irrigationCrop);
+			\draw[line] (irrigationCrop) -- (irrigationRecord);
+			\draw[line] (irrigationCrop) -- (irrigationSchedule);
+			\draw[line] (irrigationCrop) -- (irrigationCatalog);
+			
+			\draw[line] (buyerProfile) -- (wishlist);
+			\draw[line] (buyerProfile) -- (purchaseRequest);
+			
+			\draw[line] (customUser) -- (chatRoom);
+			\draw[line] (chatRoom) -- (chatMessage);
+			\draw[line] (customUser) -- (userApproval);
+			\draw[line] (customUser) -- (notification);
+			\draw[line] (customUser) -- (activityLog);
+			
+			\draw[line] (aiPricePredictor) -- (cropPriceData);
+			
+		\end{tikzpicture}
+	}
 	\caption{Entity-Relationship Diagram : High-Level System Overview}
 	\label{fig:ER_diagram_overview}
 \end{figure}
-Figure~\ref{fig:ER_diagram_overview} presents the high-level entity-relationship overview of the AgriGenie system. It shows all 38 database entities and their interconnections across six modules: Users and Authentication, Admin Panel, Farmer and Crop Management, AI and Weather Services, Buyer, and Marketplace with Chat. The central entity is \textbf{CustomUser}, which connects to role-specific profiles, crop listings, orders, chat rooms, and notifications. This overview provides a bird's-eye view of how data flows between different parts of the platform without displaying individual attributes.\\
 
+Figure~\ref{fig:ER_diagram_overview} shows us the AgriGenie system in a way. It has all the parts of the database and how they are connected. The AgriGenie system has six parts: Users and Authentication, Admin Panel, Farmer and Crop Management, AI and Weather Services, Buyer and Marketplace with Chat. These parts all work together. The main part of the AgriGenie system is the CustomUser. The CustomUser is connected to other things like what role a user has what crops they have, their orders, where they chat and the messages they get. This overview of the AgriGenie system helps us see how all the parts work together without getting too confused, with all the details.\\
+
+\textbf{Entity-Relationship Diagram : User \& Authentication Module}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{er1.png}}
-	\caption{Entity-Relationship Diagram : Users \& Authentication Module}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit within page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			line/.style={->, thick},
+			entity/.style={draw, rounded corners=2pt, align=center, text width=3.2cm, minimum height=1.0cm, fill=blue!8}
+			]
+			
+			% Core User entity
+			\node[entity] (customUser) at (0,0) {CustomUser};
+			
+			% Profiles
+			\node[entity, below left=of customUser, yshift=-1cm] (farmerProfile) {FarmerProfile};
+			\node[entity, below right=of customUser, yshift=-1cm] (buyerProfile) {BuyerProfile};
+			
+			% Settings and Payment
+			\node[entity, left=of farmerProfile, xshift=-3cm] (farmerSettings) {FarmerSettings};
+			\node[entity, right=of buyerProfile, xshift=3cm] (farmerPayment) {FarmerPaymentMethod};
+			
+			% Notifications
+			\node[entity, below=of farmerProfile, yshift=-2cm] (notification) {Notification};
+			
+			% Security
+			\node[entity, below=of buyerProfile, yshift=-2cm] (resetToken) {PasswordResetToken};
+			\node[entity, below=of resetToken, yshift=-2cm] (otpVerification) {OTPVerification};
+			
+			% Connections
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{has profile} (farmerProfile);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{has profile} (buyerProfile);
+			
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{has settings} (farmerSettings);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{has payment} (farmerPayment);
+			
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{receives} (notification);
+			
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{resets via} (resetToken);
+			\draw[line] (resetToken) -- node[midway, fill=white, inner sep=1pt]{verifies} (otpVerification);
+			
+		\end{tikzpicture}
+	}
+	\caption{Entity-Relationship Diagram : User \& Authentication Modul}
 	\label{fig:er1}
 \end{figure}
-Figure~\ref{fig:er1} details the Users and Authentication module. The \textbf{CustomUser} entity extends Django's \textbf{AbstractUser} and supports four roles: farmer, buyer, admin, and pending. Farmers authenticate using phone number and hashed PIN, while buyers use email and password. Each user has a one-to-one relationship with either \textbf{FarmerProfile} or \textbf{BuyerProfile}. The module also includes \textbf{FarmerSettings} for configurable preferences, \textbf{FarmerPaymentMethod} for saved payment accounts, \textbf{OTPVerification} for phone-based credential recovery, and \textbf{PasswordResetToken} for email-based password resets.\\
 
+Figure~\ref{fig:er1} shows us the entity-relationship diagram of the Users and Authentication module. The CustomUser entity is based on Djangos AbstractUser. It has four different roles: the farmer role, the buyer role, the admin role and the pending role. Farmers use their phone number and a hashed PIN to authenticate. On the hand buyers use their email and password to authenticate. Each User has a one-to-one relationship with either a FarmerProfile or a BuyerProfile. It has PasswordResetToken to help buyers reset their password using their email. The Users and Authentication module also has FarmerSettings, for the farmer to set their preferences. It has FarmerPaymentMethod to save the payment accounts of the farmers. The Users and Authentication module also includes OTPVerification to help farmers recover their credentials using their phone.\\
+
+\textbf{Entity-Relationship Diagram : Admin Panel Module}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{er2.png}}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit within page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			line/.style={->, thick},
+			entity/.style={draw, rounded corners=2pt, align=center, text width=3.2cm, minimum height=1.0cm, fill=blue!8}
+			]
+			
+			% Core User entity
+			\node[entity] (customerUser) at (0,0) {CustomerUser};
+			
+			% Admin and System
+			\node[entity, above left=of customerUser, xshift=-2cm] (adminSettings) {AdminSettings};
+			\node[entity, above right=of customerUser, xshift=2cm] (systemAlert) {SystemAlert};
+			
+			% AI modules
+			\node[entity, below left=of customerUser, yshift=-1.5cm] (aiDisease) {AIDiseaseMonitor};
+			\node[entity, below right=of customerUser, yshift=-1.5cm] (aiPredictor) {AIPredPredictor};
+			
+			% Reports
+			\node[entity, left=of aiDisease, xshift=-3cm] (systemReport) {SystemReport};
+			\node[entity, right=of aiPredictor, xshift=3cm] (userReport) {UserReport};
+			
+			% Activity and Approval
+			\node[entity, below=of systemReport, yshift=-2cm] (activityLog) {ActivityLog};
+			\node[entity, below=of userReport, yshift=-2cm] (userApproval) {UserApproval};
+			
+			% Farmer and Crop
+			\node[entity, below left=of activityLog, yshift=-2cm] (farmerListing) {FarmerListing};
+			\node[entity, below right=of userApproval, yshift=-2cm] (masterCrop) {MasterCrop};
+			
+			% Connections
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{updates} (adminSettings);
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{creates} (systemAlert);
+			
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{monitors} (aiDisease);
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{predicts} (aiPredictor);
+			
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{generates} (systemReport);
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{submits} (userReport);
+			
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{tracked} (activityLog);
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{approval} (userApproval);
+			
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{lists} (farmerListing);
+			\draw[line] (customerUser) -- node[midway, fill=white, inner sep=1pt]{creates} (masterCrop);
+			
+		\end{tikzpicture}
+	}
 	\caption{Entity-Relationship Diagram : Admin Panel Module}
 	\label{fig:er2}
 \end{figure}
-Figure~\ref{fig:er2} illustrates the Admin Panel module, which manages platform-wide operations. The \textbf{MasterCrop} entity serves as the crop template catalog that farmers must reference when creating listings. \textbf{UserApproval} handles the document verification workflow for both farmers (NID card) and buyers (company documents). \textbf{AdminSettings} stores global configuration as a singleton record, while \textbf{SystemAlert} and \textbf{SystemReport} support administrative broadcasting and analytics. The \textbf{ActivityLog} entity provides a complete audit trail of all user actions for security monitoring.\\
 
+Figure~\ref{fig:er2} shows the entity-relationship diagram of the Admin Panel module looks like. This Admin Panel module manages things that affect the platform. The MasterCrop is like a list of crop templates that farmers have to look at when they make listings. The UserApproval is in charge of checking documents for farmers and buyers. Farmers need to show their NID card and buyers need to show their company documents. The AdminSettings is where we store all the settings for the whole system. We also have SystemAlert and SystemReport to help the administrators send out messages and look at analytics. The ActivityLog is like a diary that keeps track of everything the users do so we can keep an eye on things, for security reasons.\\
+
+\textbf{Entity-Relationship Diagram : Farmer \& Crop Management Module}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{er3.png}}
-	\caption{Entity-Relationship Diagram Overview : Farmer \& Crop Management Module}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit within page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			line/.style={->, thick},
+			entity/.style={draw, rounded corners=2pt, align=center, text width=3.2cm, minimum height=1.0cm, fill=blue!8}
+			]
+			
+			% Core Crop entity
+			\node[entity] (crop) at (0,0) {Crop};
+			
+			% MasterCrop
+			\node[entity, above=of crop] (masterCrop) {MasterCrop};
+			
+			% Diseases and Pest Control
+			\node[entity, right=of crop, xshift=3cm] (cropDisease) {CropDisease};
+			\node[entity, below=of cropDisease] (pestControl) {CropPestControl};
+			
+			% Orders and Inventory
+			\node[entity, below=of crop, yshift=-2cm] (order) {Order};
+			\node[entity, left=of order, xshift=-3cm] (inventory) {Inventory};
+			
+			% Farmer Activity
+			\node[entity, below=of inventory, yshift=-2cm] (farmerActivity) {FarmerActivity};
+			
+			% Weather and Counter Alerts
+			\node[entity, right=of order, xshift=3cm] (weatherAlert) {WeatherAlert};
+			\node[entity, below=of weatherAlert, yshift=-2cm] (counterAlert) {CounterAlert};
+			
+			% Connections
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{template} (masterCrop);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{has disease} (cropDisease);
+			\draw[line] (cropDisease) -- node[midway, fill=white, inner sep=1pt]{treated by} (pestControl);
+			
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{listed in} (order);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{stored in} (inventory);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{activity} (farmerActivity);
+			
+			\draw[line] (order) -- node[midway, fill=white, inner sep=1pt]{alerts} (weatherAlert);
+			\draw[line] (weatherAlert) -- node[midway, fill=white, inner sep=1pt]{countered by} (counterAlert);
+			
+		\end{tikzpicture}
+	}
+	\caption{Entity-Relationship Diagram : Farmer \& Crop Management Module}
 	\label{fig:er3}
 \end{figure}
-Figure~\ref{fig:er3} describes the Farmer and Crop Management module. The \textbf{Crop} entity represents farmer-listed products for sale, each referencing a \textbf{MasterCrop} template. The \texttt{Order} entity tracks purchase transactions with six possible statuses from pending to delivered. The \texttt{Message} entity enables direct communication between users about specific crops. \textbf{FarmerRating} allows buyers to rate farmers after order completion, supporting a trust-based marketplace. The \textbf{CropPriceData} entity stores historical market data with over 20 features used to train the price prediction model.\\
 
+Figure~\ref{fig:er3} is about the entity-relationship diagram of the Farmer and Crop Management module. This module has a Crop entity that shows what products farmers have for sale. Each Crop is based on a MasterCrop template. The Order entity keeps track of when people buy things. It has six different statuses, from when the order is pending to when it is delivered. There is also a Message entity that lets users talk to each other about Crops. The FarmerRating part lets buyers rate farmers after they get their order, which helps build trust. The CropPriceData entity stores information about the market, including than 20 things that are used to predict Crop prices. The CropPriceData is important, for the price prediction model of the Crop.\\
+
+\textbf{Entity-Relationship Diagram : Buyer Module}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{er4.png}}
-	\caption{Entity-Relationship Diagram Overview : Buyer Module}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit within page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			line/.style={->, thick},
+			entity/.style={draw, rounded corners=2pt, align=center, text width=3.2cm, minimum height=1.0cm, fill=blue!8}
+			]
+			
+			% Core entities
+			\node[entity] (crop) at (0,0) {Crop};
+			\node[entity, above=of crop] (customUser) {CustomUser};
+			\node[entity, below=of crop, yshift=-2cm] (order) {Order};
+			
+			% Buyer-related entities
+			\node[entity, right=of crop, xshift=3cm] (purchaseRequest) {PurchaseRequest};
+			\node[entity, above=of purchaseRequest] (wishlistItem) {WishlistItem};
+			\node[entity, below=of purchaseRequest] (savedCrop) {SavedCrop};
+			
+			% Ratings
+			\node[entity, below=of order, yshift=-2cm] (buyerRating) {BuyerRating};
+			
+			% Connections
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{requested} (purchaseRequest);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{wishlisted} (wishlistItem);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{saved} (savedCrop);
+			
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{requests} (purchaseRequest);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{wishlists} (wishlistItem);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{saves} (savedCrop);
+			
+			\draw[line] (order) -- node[midway, fill=white, inner sep=1pt]{rated via} (buyerRating);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{rates} (buyerRating);
+			
+		\end{tikzpicture}
+	}
+	\caption{Entity-Relationship Diagram : Buyer Module}
 	\label{fig:er4}
 \end{figure}
-Figure~\ref{fig:er4} details the Buyer module. The \textbf{PurchaseRequest} entity enables buyers to express interest in a crop with a preferred price before placing a formal order. \textbf{WishlistItem} and \textbf{SavedCrop} allow buyers to bookmark products for future reference. The \textbf{BuyerRating} entity supports bidirectional feedback, where farmers can rate buyers after order completion, complementing the \textbf{FarmerRating} in the Farmer module. Unique constraints on buyer-crop pairs prevent duplicate entries in wishlists and saved lists.\\
 
+Figure~\ref{fig:er4} shows the entity-relationship diagram of the Buyer module is about. The PurchaseRequest thing lets buyers say they are interested in a crop and tell us how much they want to pay before they actually place an order. The WishlistItem and SavedCrop features are useful for buyers because they can use these to remember products they like for later. The BuyerRating feature is important because it lets farmers rate the buyers after they finish an order, which's like the FarmerRating feature in the Farmer module. We made sure that buyers can not add the crop to their wishlist or saved list more than once by using unique constraints on buyer-crop pairs, in the Buyer module.\\
+
+\textbf{Entity-Relationship Diagram : Marketplace \& Real-time Chat Module}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{er5.png}}
-	\caption{Entity-Relationship Diagram Overview : Marketplace \& Real-time Chat Module}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit within page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			line/.style={->, thick},
+			entity/.style={draw, rounded corners=2pt, align=center, text width=3.2cm, minimum height=1.0cm, fill=blue!8}
+			]
+			
+			% Core Crop entity
+			\node[entity] (crop) at (0,0) {Crop};
+			
+			% Category Filter
+			\node[entity, above=of crop] (categoryFilter) {CategoryFilter};
+			
+			% Crop Listing and Price History
+			\node[entity, right=of crop, xshift=3cm] (cropListing) {CropListing};
+			\node[entity, below=of cropListing] (priceHistory) {PriceHistory};
+			
+			% Reviews
+			\node[entity, left=of crop, xshift=-3cm] (review) {Review};
+			
+			% Search
+			\node[entity, below=of crop, yshift=-2cm] (search) {Search};
+			
+			% Custom User
+			\node[entity, below=of review, yshift=-2cm] (customUser) {CustomUser};
+			
+			% Chat Room and Messages
+			\node[entity, right=of search, xshift=3cm] (chatRoom) {ChatRoom};
+			\node[entity, below=of chatRoom] (chatMessage) {ChatMessage};
+			
+			% Connections
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{categorized by} (categoryFilter);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{listed in} (cropListing);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{priced in} (priceHistory);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{reviewed} (review);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{linked to} (chatRoom);
+			
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{writes} (review);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{searches} (search);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{joins} (chatRoom);
+			\draw[line] (chatRoom) -- node[midway, fill=white, inner sep=1pt]{contains} (chatMessage);
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{sends} (chatMessage);
+			
+		\end{tikzpicture}
+	}
+	\caption{Entity-Relationship Diagram : Marketplace \& Real-time Chat Module}
 	\label{fig:er5}
 \end{figure}
-Figure~\ref{fig:er5} covers the Marketplace and Chat module. The \textbf{CropListing} entity extends crop data with marketplace-specific metrics such as view count, inquiry count, and featured status. The \textbf{Review} entity stores buyer feedback with ratings, review text, and verified purchase flags. The \textbf{Search} entity logs user queries for analytics. For real-time communication, \textbf{ChatRoom} links a farmer and buyer with an optional crop reference, while \textbf{ChatMessage} stores individual messages with image attachment support. Chat is implemented using Django Channels with Redis as the channel layer for WebSocket-based real-time delivery.\\
 
+Figure~\ref{fig:er5} is about the entity-relationship diagram of the Marketplace and Chat parts. The CropListing thing has information about crops that people can buy and sell, like how many people have looked at it how many people have asked about it and if it is featured or not. The Review thing keeps track of what buyers think with ratings and what they say. Also if they really bought the thing. The Search thing remembers what people look for so we can see what is popular. When a farmer and buyer want to talk in time the ChatRoom connects them and they can talk about a specific crop if they want to. The ChatMessage stores each message they send. They can even send pictures. We use Django Channels and Redis to make the chat work in time so people can talk to each other right away.\\
+
+\textbf{Entity-Relationship Diagram : Price Prediction , Disease Detection \& Weather Forecast Module}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{er6.png}}
-	\caption{Entity-Relationship Diagram Overview : Price Prediction , Disease Detection \& Weather Forecast Module}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit within page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			line/.style={->, thick},
+			entity/.style={draw, rounded corners=2pt, align=center, text width=3.2cm, minimum height=1.0cm, fill=blue!8}
+			]
+			
+			% Core Crop entity
+			\node[entity] (crop) at (0,0) {Crop};
+			
+			% MasterCrop
+			\node[entity, above=of crop] (masterCrop) {MasterCrop};
+			
+			% Crop Disease and AI Disease Monitor
+			\node[entity, right=of crop, xshift=3cm] (cropDisease) {CropDisease};
+			\node[entity, below=of cropDisease] (aiDiseaseMonitor) {AIDiseaseMonitor};
+			
+			% Produce Data and AI Predictor
+			\node[entity, below=of crop, yshift=-2cm] (produceData) {CropProduceData};
+			\node[entity, right=of produceData, xshift=3cm] (aiPredictor) {AIModelPredictor};
+			
+			% Custom User
+			\node[entity, left=of crop, xshift=-3cm] (customUser) {CustomUser};
+			
+			% Weather Alerts
+			\node[entity, below=of customUser, yshift=-2cm] (weatherAlert) {WeatherAlert};
+			
+			% Irrigation Catalog and Crop
+			\node[entity, below=of produceData, yshift=-2cm] (irrigationCatalog) {IrrigationCropCatalog};
+			\node[entity, below=of irrigationCatalog, yshift=-2cm] (irrigationCrop) {IrrigationCrop};
+			
+			% Irrigation Records and Schedule
+			\node[entity, right=of irrigationCrop, xshift=3cm] (irrigationRecord) {IrrigationRecord};
+			\node[entity, below=of irrigationCrop, yshift=-2cm] (irrigationSchedule) {IrrigationSchedule};
+			
+			% Connections
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{template} (masterCrop);
+			\draw[line] (crop) -- node[midway, fill=white, inner sep=1pt]{diagnosed} (cropDisease);
+			\draw[line] (cropDisease) -- node[midway, fill=white, inner sep=1pt]{monitored by} (aiDiseaseMonitor);
+			
+			\draw[line] (produceData) -- node[midway, fill=white, inner sep=1pt]{feeds model} (aiPredictor);
+			
+			\draw[line] (customUser) -- node[midway, fill=white, inner sep=1pt]{receives} (weatherAlert);
+			
+			\draw[line] (irrigationCatalog) -- node[midway, fill=white, inner sep=1pt]{template} (irrigationCrop);
+			\draw[line] (irrigationCrop) -- node[midway, fill=white, inner sep=1pt]{logs} (irrigationRecord);
+			\draw[line] (irrigationCrop) -- node[midway, fill=white, inner sep=1pt]{scheduled} (irrigationSchedule);
+			
+		\end{tikzpicture}
+	}
+	\caption{Entity-Relationship Diagram : Price Prediction , Disease Detection \& Weather Forecast Module}
 	\label{fig:er6}
 \end{figure}
-Figure~\ref{fig:er6} presents the integrated AI, Weather, and Irrigation module. For price prediction, the \textbf{CropPriceData} entity provides historical records with weather, cost, and economic indicators that feed a Random Forest Regressor model, tracked by \textbf{AIPricePredictor}. The \textbf{WeatherAlert} entity stores location-specific alerts generated from the OpenWeatherMap API, covering six disaster types: flood, drought, cyclone, heavy rain, frost, and heat wave. The irrigation subsystem consists of \textbf{IrrigationCropCatalog} (admin-managed templates), \textbf{IrrigationCrop} (farmer-specific profiles), \textbf{IrrigationRecord} (logged water usage), and \textbf{IrrigationSchedule} (computed next-irrigation dates based on weather and soil conditions).
+
+Figure~\ref{fig:er6} shows the entity-relationship diagram of how the AI, Weather and Irrigation module work. The CropPriceData gives past data on prices, weather, costs and economic indicators. This data helps a model called Random Forest Regressor to make predictions. The AIPricePredictor keeps track of these predictions. The WeatherAlert stores alerts about weather for locations. These alerts come from the OpenWeatherMap API. They cover six types of disasters: flood, drought, cyclone, heavy rain, frost and heat wave. The irrigation part has components: IrrigationCropCatalog which has templates managed by admins, IrrigationCrop which has profiles for farmers, IrrigationRecord which logs how much water is used, IrrigationSchedule which calculates when irrigation should happen based on weather and soil conditions. The CropPriceData and WeatherAlert and irrigation parts all work together. The AIPricePredictor uses the CropPriceData.
 \subsection{Use-Case Diagram}
 \begin{figure}[H]
 	\centering
-	\fbox{\includegraphics[width=1.0\linewidth]{use_case.jpeg}}
-	\caption{Use Case Diagram}
+	\resizebox{0.95\textwidth}{!}{ % scale to fit page width
+		\begin{tikzpicture}[
+			font=\footnotesize,
+			>=Stealth,
+			role/.style={draw, circle, minimum size=1cm, fill=gray!10},
+			module/.style={draw, ellipse, minimum width=3.5cm, minimum height=1cm, fill=blue!8, align=center},
+			box/.style={draw, thick, rounded corners=4pt, inner sep=10pt}
+			]
+			
+			% Roles (stick figures simplified as circles with labels)
+			\node[role] (farmer) at (0,4) {};
+			\node[below=2pt of farmer] {Farmer};
+			
+			\node[role] (buyer) at (0,0) {};
+			\node[below=2pt of buyer] {Buyer};
+			
+			\node[role] (admin) at (0,-4) {};
+			\node[below=2pt of admin] {Admin};
+			
+			% System box
+			\node[box, right=4cm of buyer, minimum width=10cm, minimum height=10cm] (system) {};
+			\node[above=0.3cm of system.north] {AgriGenie System};
+			
+			% Modules inside system
+			\node[module] (farm) at ($(system.center)+(0,3.5)$) {Farm \& Crop Management};
+			\node[module] (ai)   at ($(system.center)+(0,2)$) {AI Advisory};
+			\node[module] (market) at ($(system.center)+(0,0.5)$) {Marketplace Trading};
+			\node[module] (comm) at ($(system.center)+(0,-1)$) {Communication};
+			\node[module] (access) at ($(system.center)+(0,-2.5)$) {User Access};
+			\node[module] (buyerexp) at ($(system.center)+(0,-4)$) {Buyer Experience};
+			\node[module] (adminmon) at ($(system.center)+(0,-5.5)$) {Administration \& Monitoring};
+			
+			% Connections Farmer
+			\draw[->, thick] (farmer.east) -- (farm.west);
+			\draw[->, thick] (farmer.east) -- (ai.west);
+			\draw[->, thick] (farmer.east) -- (market.west);
+			\draw[->, thick] (farmer.east) -- (comm.west);
+			
+			% Connections Buyer
+			\draw[->, thick] (buyer.east) -- (market.west);
+			\draw[->, thick] (buyer.east) -- (comm.west);
+			\draw[->, thick] (buyer.east) -- (access.west);
+			\draw[->, thick] (buyer.east) -- (buyerexp.west);
+			
+			% Connections Admin
+			\draw[->, thick] (admin.east) -- (adminmon.west);
+			
+		\end{tikzpicture}
+	}
+	\caption{Use-Case Diagram}
 	\label{fig:use_case}
 \end{figure}
-Figure~\ref{fig:use_case} presents the use case diagram of the AgriGenie system, identifying three primary actors: Farmer, Buyer, and Admin. The Farmer interacts with crop management, AI disease detection, crop price prediction, weather forecasting, irrigation planning, and order management. The Buyer accesses the marketplace, places orders, manages wishlists, and engages in real-time chat with farmers. The Admin oversees user approvals, master crop management, AI model monitoring, and system reporting. Common use cases such as registration, login, and chat are shared across roles.\\
+
+The picture that shows how people use AgriGenie, which is called a use-case diagram (Figure~\ref{fig:use_case}) shows three people who use it: Farmer, Buyer and Admin. Farmers use AgriGenie for things. They can list their crops. They can find out if their crops have diseases. They can know how money they will get for their crops. They can see what the weather will be like. They can even plan when to give water to their crops. Buyers use AgriGenie too. They can go to the marketplace ,buy things. They can place orders for the things they want. They can make a list of things they want to buy. They can even talk to people in real time. Admins are like the bosses. They make sure people can use AgriGenie. They make sure the crops are listed correctly. They watch the computer programs that make AgriGenie work. They get reports, on how AgriGenie's working. This picture shows how AgriGenie helps different people, like Farmers and Buyers and Admins by giving them the tools they need to do their jobs. AgriGenie supports Farmers and Buyers and Admins in ways.\\
 
 \subsection{Activity Diagram}
+
 \begin{figure}[H]
 	\centering
 	\fbox{\includegraphics[width=1.0\linewidth]{activity.png}}
 	\caption{Activity Diagram}
 	\label{fig:activity}
 \end{figure}
-Figure~\ref{fig:activity} illustrates the overall system workflow as an activity diagram. The flow begins with user registration and login, followed by a role-based decision that directs users to the appropriate dashboard. Farmers can add crop listings, run AI disease detection, view price predictions, check weather forecasts, and manage irrigation schedules. Buyers browse the marketplace, search and filter crops, then choose to place orders, save items, or start a chat. Completed orders lead to delivery confirmation and bidirectional rating. Admin activities include user approval, master crop management, and AI model monitoring.\\
 
+Figure~\ref{fig:activity} shows what the activity workflow looks like. The farmers start by signing up and logging in to the system. Then they list their crops check for diseases and try to guess the prices. The buyers look at the listings place their orders and talk to the farmers. When everything is done the buyers get their things delivered. Both the buyers and the farmers rate each other. The people in charge keep an eye on what's happening and look at the numbers. This activity flow shows that AgriGenie helps farmers and buyers from start to finish with their transactions. AgriGenie is really good, at helping people buy and sell things.\\
 \subsection{Sequence Diagram}
 \begin{figure}[H]
 	\centering
@@ -774,10 +1100,10 @@ Figure~\ref{fig:activity} illustrates the overall system workflow as an activity
 	\caption{Sequence Diagram}
 	\label{fig:sequence}
 \end{figure}
-Figure~\ref{fig:sequence} depicts the system interaction flow as a sequence diagram with five participants: Farmer, Buyer, AgriGenie System, AI Services, and Admin. The diagram traces the complete lifecycle from registration and approval through farmer feature usage (disease detection, price prediction, weather alerts, irrigation), marketplace order placement, real-time chat between farmer and buyer, delivery confirmation, and mutual rating. Admin interactions for system monitoring are also shown. This diagram highlights how the platform coordinates communication between all actors through the central AgriGenie system.\\
+The sequence diagram in Figure~\ref{fig:sequence} shows how five people interact: the Farmer, the Buyer, the AgriGenie System, AI Services and the Admin. The Farmer and Buyer send disease detection requests to the AgriGenie System. The AgriGenie System then sends these requests to AI Services. The AI Services use AI models to detect diseases. The AgriGenie System also retrieves price predictions from trained algorithms. It gets weather alerts from APIs. The AgriGenie System helps with transactions in the marketplace. It uses real-time chat for this. The Admin monitors the system. Checks for approvals. The sequence diagram highlights how AgriGenie System manages services in real time. It shows AgriGenie Systems role in coordinating these services. The AgriGenie System is key, to making all these interactions work smoothly.\\
 
 \subsection{Grant-Chart}
-This Gantt chart gives a clear timeline of the AgriGenie project from planning to release. It starts with a short planning phase in early January, then moves into development where core features were completed first and the ML Weather feature was developed from February to March. In April, the Irrigation module is shown as the current active task, followed by Testing and Final Deployment. The chart highlights both progress status and task order, so readers can quickly understand what is finished, what is ongoing, and what comes next.
+The Gantt chart, in Figure~\ref{fig:grant} shows the project timeline. We started planning in January. Then we worked on the core features in February. In March and April we developed the weather forecasting and irrigation modules using AI. We are deploying the project in late April to make sure it is ready to be released. This timeline shows that we are managing the project in a way and making improvements as we go along with the Gantt chart. The Gantt chart helps us to see the project timeline.
 
 \begin{figure}[H]
 	\centering
@@ -785,121 +1111,63 @@ This Gantt chart gives a clear timeline of the AgriGenie project from planning t
 	\caption{Grant-Chart}
 	\label{fig:grant}
 \end{figure}
-\subsection{Normalization and Integrity}
+\subsection{Making The AgriGenie Database Better}
 
-The database schema is normalized to Third Normal Form (3NF), ensuring:
-\begin{itemize}
-	\item Elimination of redundant data through proper decomposition
-	\item Referential integrity via foreign key constraints
-	\item Unique constraints on natural key combinations (e.g., farmer-crop pairs in marketplace listings)
-	\item Indexes on frequently queried columns for query optimization
-\end{itemize}
-\clearpage
+The AgriGenie database is set up in a way that makes it work well and across all parts. This is done by following the Third Normal Form rules, which means getting rid of data that is not needed. The database is designed to make sure that all the information is connected correctly so that when something is changed in one place it is changed everywhere. This helps prevent mistakes. The AgriGenie database also makes sure that some information like the combination of a farmer and a crop is only entered once. This prevents duplicates. The database is also set up to make it faster to search for information like what type of crop something's where it is and how much it costs. This makes the database work well and makes sure that the information is good and consistent across all the parts of the AgriGenie system, which has 38 different connected parts.
 
-\section{Core Algorithms and Logic}
+\section{Main Parts Of AgriGenie}
 
-\subsection{Disease Detection Pipeline}
+\subsection{Finding Diseases In Plants}
 
-The disease detection process follows this workflow:
-
-\begin{enumerate}
-	\item \textbf{Image Acquisition:} User uploads a leaf or plant image
-	\item \textbf{Preprocessing:} Image normalization, resizing to model input dimensions (224x224)
-	\item \textbf{Model Inference:} Input passed through pre-trained CNN model
-	\item \textbf{Prediction Generation:} Model outputs disease class probabilities
-	\item \textbf{Confidence Filtering:} Predictions below confidence threshold discarded
-	\item \textbf{Result Presentation:} Top predictions with confidence scores presented to user
-\end{enumerate}
-
-The CNN architecture employed is ResNet-50, pre-trained on ImageNet and fine-tuned on agricultural disease dataset with approximately 15,000 training images.
+The AgriGenie system has a way to detect diseases in plants, which uses a kind of computer model called ResNet-50. This model was trained using 15,000 pictures of plants and is very good at recognizing diseases. When a farmer wants to use this system, they upload a picture of a leaf or a plant. The system then prepares the picture for the model by making it the right size. The model then looks at the picture. Tries to figure out what disease the plant might have. It can recognize 15 diseases in plants like potatoes, tomatoes and peppers. If the model is not sure what the disease is, it does not make a guess. The results are shown to the farmer along with a score that says how sure the model is and some advice, on what to do to make the plant better. This system is connected to the marketplace so farmers can keep track of what diseases their plants have had and see trends.
 
 \subsection{Price Prediction Algorithm}
 
-Price prediction utilizes LSTM (Long Short-Term Memory) neural networks to capture temporal dependencies in agricultural commodity prices:
+The Price Prediction Algorithm is used to guess the prices of things like potatoes, tomatoes and rice. It uses something called Long Short-Term Memory networks to look at how prices change over time. The Price Prediction Algorithm looks at what happened to prices over the 10 years to make predictions. This helps it understand when prices might go up or down during times of the year.
+
+The Price Prediction Algorithm can tell farmers what prices might be like for the 30 days. It can also say how much prices might change and when farmers should sell their crops like potato, tomato and rice. This helps farmers make plans, for when to harvest and sell their crops. The Price Prediction Algorithm is very helpful because it reduces the losses farmers have when prices change suddenly.
+Price prediction utilizes LSTM (Long Short-Term Memory) neural networks to capture temporal dependencies in agricultural commodity prices. The equation is:
 
 $$P_t = LSTM(P_{t-1}, P_{t-2}, \ldots, P_{t-n}) + \epsilon$$
 
-where $P_t$ represents predicted price at time $t$, and $\epsilon$ represents prediction error. Historical prices spanning 3-5 years are used to train the model, incorporating seasonal patterns and market trends.
+where $P_t$ represents predicted price at time $t$ and $\epsilon$ represents prediction error. Historical prices spanning 10 years are used to train the model, incorporating seasonal patterns and market trends.
 
 \subsection{Recommendation System}
-
-The marketplace recommendation system employs collaborative filtering, computing similarity between buyer preferences and crop characteristics:
+The AgriGenie marketplace has a recommendation system. This recommendation system uses filtering to make the experience better for buyers. It looks at what buyers like and what crops're like and then suggests listings that are a good match. The recommendation system is good for buyers because it helps them find what they want. It is also good for farmers because more people see what they have to sell. Buyers can review things, which helps build trust. AgriGenie looks at what buyers bought and what crops are like so buyers can find crops that are right for them. The recommendation system is a part of AgriGenie and it helps buyers and farmers in many ways.
+The marketplace recommendation system employs collaborative filtering, computing similarity between buyer preferences and crop characteristics. The equation is:
 
 $$\text{Similarity}(B, C) = \frac{\sum_{i} (r_{B,i} - \bar{r}_B)(w_{C,i} - \bar{w}_C)}{\sqrt{\sum_i (r_{B,i} - \bar{r}_B)^2} \cdot \sqrt{\sum_i (w_{C,i} - \bar{w}_C)^2}}$$
 
 where $r_{B,i}$ represents buyer B's rating for crop category $i$, and $w_{C,i}$ represents weight of category $i$ for crop $C$.
 
 \section{Authentication and Authorization}
-
 \subsection{User Authentication}
+AgriGenie uses a way to keep things safe and easy to use. This is called factor authentication. Farmers can register with their phone numbers and PINs. Buyers can use their email and password. To make sure it is really them AgriGenie sends a code to their phone or email. This is called OTP verification. When farmers and buyers log in AgriGenie uses a token to keep their information safe. This way important data is safe. Farmers in rural areas can still use it easily.
 
-AgriGenie implements multi-factor authentication:
+\subsection{Roll-Based Access Control}
 
-\begin{enumerate}
-	\item \textbf{Initial Registration:} Farmers register via phone number and PIN creation
-	\item \textbf{OTP Verification:} Email or SMS OTP sent to confirm identity
-	\item \textbf{Login:} Phone number + PIN combination validates user identity
-	\item \textbf{Session Management:} Token-based authentication using Django REST Framework
-\end{enumerate}
-
-\subsection{Role-Based Access Control (RBAC)}
-
-Access control is implemented through role definitions:
+There are different roles in AgriGenie and each role can do different things.
 
 \begin{itemize}
-	\item \textbf{Farmer:} Can list crops, view marketplace, message buyers, access disease detection
-	\item \textbf{Buyer:} Can search/purchase crops, manage wishlist, provide reviews, message farmers
-	\item \textbf{Admin:} Full system access for content moderation, user management
-	\item \textbf{Superadmin:} Administrative user management and system configuration
+	\item \textbf{Farmer:} Farmers can list their crops find out if their crops are sick know the price of their crops get weather alerts and send messages.
+	
+	\item \textbf{Buyer:} Buyers can look at the marketplace place orders make a wishlist write reviews and send messages.
+	
+	\item \textbf{Superadmin:} Admins can approve users look at crops track AI models and see system analytics in short everything including setting up the system and looking at logs..
+	
 \end{itemize}
 
+This way AgriGenie makes sure that each role can only do what it is supposed to do.
+
 \section{Real-time Communication Architecture}
-
-Real-time messaging between farmers and buyers is implemented via Django Channels, providing WebSocket support:
-
-\begin{enumerate}
-	\item User establishes WebSocket connection to messaging server
-	\item Messages transmitted and received in real-time without polling
-	\item Message history retrieved via REST API
-	\item Connection management handles disconnects and reconnections gracefully
-\end{enumerate}
-
+AgriGenie uses a way to let farmers and buyers talk to each other in real-time. This is done with Django Channels and Redis. They use something called WebSocket connections. This means that farmers and buyers can send messages to each other without having to refresh the page. They can even send pictures. All the messages are saved in the database. It can be seen using REST APIs. If the connection is lost AgriGenie can handle it. Can make sure that everything works again. This helps farmers and buyers trust each other.
 \section{API Design and REST Endpoints}
-
-Key REST endpoints designed for AgriGenie:
-
-\begin{table}[H]
-	\centering
-	\caption{AgriGenie REST API Endpoints}
-	\label{table:api_endpoints}
-	\begin{tabular}{|l|l|l|}
-		\hline
-		\textbf{Endpoint} & \textbf{Method} & \textbf{Purpose} \\
-		\hline
-		/api/auth/register & POST & User registration \\
-		\hline
-		/api/auth/login & POST & User authentication \\
-		\hline
-		/api/crops/ & GET, POST & List/create farmer crops \\
-		\hline
-		/api/marketplace/search & GET & Search marketplace crops \\
-		\hline
-		/api/disease-detect & POST & Upload image for disease detection \\
-		\hline
-		/api/price-predict & GET & Retrieve price predictions \\
-		\hline
-		/api/messages/ & GET, POST & Access messaging system \\
-		\hline
-		/api/reviews/ & POST & Submit crop reviews \\
-		\hline
-	\end{tabular}
-\end{table}
-
+AgriGenie has a way of talking to other systems. This is called an API. It has endpoints that do different things. There are endpoints for registration and login. There are endpoints for listing crops and looking at the marketplace. There are even endpoints, for finding out if crops are sick and knowing the price of crops. Farmers and buyers can also send messages and write reviews. This API is made to be flexible so it can be used with apps or other services in the future. AgriGenie has API endpoints. AgriGenie uses these API endpoints to make sure that everything works together.
 \section{Data Flow Diagrams}
 
 \subsection{Disease Detection Flow}
 
-Figure \ref{fig:disease_flow} depicts the disease detection process:
+Here is how our disease detection process works. Figure~\ref{fig:disease_flow} shows the steps we follow. Farmers take pictures of their crops, upload them. These images are cleaned up and prepared before we use a special computer program to analyze them. The program makes predictions about the disease. We filter these predictions to make sure they are reliable. We show the results to the farmers along with advice on how to treat the disease. If the program is not sure, we ask for pictures or have an expert take a look. This way we make sure our disease detection works well in real-life situations. The disease detection and the disease are very important for us. We focus on disease detection always.
 
 \begin{figure}[H]
 	\centering
@@ -934,7 +1202,7 @@ Figure \ref{fig:disease_flow} depicts the disease detection process:
 
 \subsection{Marketplace Transaction Flow}
 
-Figure \ref{fig:marketplace_flow} illustrates the marketplace transaction workflow:
+Figure~\ref{fig:marketplace_flow} shows how transactions work in the marketplace. Farmers make listings for their crops. These listings are published. Buyers look for filter listings. Then they send messages or requests to buy. The messaging system lets buyers and farmers talk in time. They agree on availability and terms. After that the farmer delivers the crop. The buyer pays. The buyer then reviews the transaction. This process helps build trust in the marketplace. It helps farmers and buyers work together smoothly.
 
 \begin{figure}[H]
 	\centering
@@ -966,25 +1234,34 @@ Figure \ref{fig:marketplace_flow} illustrates the marketplace transaction workfl
 \end{figure}
 
 \section{Security Considerations}
-
 \subsection{Data Protection}
-
+AgriGenie has measures to protect data. The methods AgriGenie uses to keep data are given below:
 \begin{itemize}
-	\item Passwords encrypted using PBKDF2 with SHA256
-	\item Sensitive data (email, phone) encrypted at rest
-	\item HTTPS enforced for all communications
-	\item SQL injection prevention through parameterized queries
+	\item Encrypts passwords using PBKDF2 with SHA256.
+	
+	\item Encrypts sensitive data like email and phone numbers when they are stored.
+	
+	\item Uses HTTPS for all communications.
+	
+	\item Prevents SQL injection by using queries.
+	
 \end{itemize}
 
 \subsection{Access Control}
-
+AgriGenie has mechanisms to control access. The methods AgriGenie uses to control access are given below:
 \begin{itemize}
-	\item CSRF protection on all state-modifying operations
-	\item Rate limiting on authentication endpoints
-	\item User input validation and sanitization
-	\item Audit logging for administrative actions
+	
+	\item Protects against CSRF on all operations that change the state.
+	
+	\item Limits the rate of authentication attempts.
+	
+	\item Cleans input to prevent bad data.
+	
+	\item Logs actions so it can be held accountable.
+	
 \end{itemize}
 
+These measures protect AgriGenie user data keep the AgriGenie system safe and build trust, among people who use AgriGenie.
 \newpage
 
 %====================================================================================
@@ -1408,32 +1685,37 @@ Despite its strengths, AgriGenie has certain limitations that highlight areas fo
 \end{enumerate}
 
 \section{Future Work Directions}
-
+AgriGenie is a platform that can be used by a lot of people and it can be made better. Now AgriGenie can detect diseases predict prices give weather alerts and it has a place where farmers can buy and sell things.. There are many things that can be done to make it better and more useful. These things can be done in the term, medium term and long term.
 \subsection{Short-term Enhancements}
+In the future AgriGenie will make some changes to help farmers. Accorrding to us:
 \begin{enumerate}
-	\item Native mobile applications for iOS/Android
-	\item Offline browsing with synchronization on connectivity restoration
-	\item Bengali language localization with agricultural terminology
-	\item Integration with mobile money services (bKash, Nagad)
-\end{enumerate}
-
+	\item \textbf{Mobile Applications for AgriGenie:} It will make applications for iOS and Android. This way farmers can use AgriGenie on their phones without using a computer. This will be very helpful in areas where people mostly use their phones to access the internet.
+	\item \textbf{Using AgriGenie Without Internet:} It will make it possible for farmers to use some of its features without internet. They can look at information about crops, see what diseases have affected their crops before and look at the marketplace even when they are not connected to the internet. When they get internet all their information will be updated.
+	\item \textbf{AgriGenie in Bengali:} It will be translated into Bengali. This means all the agricultural terms will be in Bengali. This will help farmers in Bangladesh because they can understand it better.
+	\item \textbf{Easy Payments with AgriGenie:} It will make it easy for farmers to pay and get paid through their phones using services like bKash and Nagad. This will make buying and selling safer and easier.
+	\end{enumerate}
+	
 \subsection{Medium-term Expansion}
+In the medium term AgriGenie will make some big changes. Such as:
 \begin{enumerate}
-	\item IoT sensor integration for precision agriculture
-	\item Expansion of ML models to additional crops
-	\item Pest outbreak prediction using weather and crop data
-	\item Blockchain-based supply chain transparency
-	\item Advanced analytics for profitability optimization
-\end{enumerate}
-
+	\item \textbf{Using Special Devices to Help Farmers:} It will use devices to check the soil, temperature and how healthy the crops are. This will help farmers know what their crops need and when.
+	\item \textbf{Better Disease Detection and Price Prediction for AgriGenie:} It will make its disease detection and price prediction better. It will be able to help farmers with types of crops not just potato, tomato and rice.
+	\item \textbf{Predicting Pest Problems:} It will use weather information and crop health to predict when pests might be a problem. This will help farmers stop pests before they cause damage.
+	\item \textbf{Making the Marketplace Safer with AgriGenie:} It will use a kind of technology called blockchain to make sure everything that happens in the marketplace is honest and transparent. This will help build trust between farmers, buyers and people who eat the food.
+	\item \textbf{Tools for Farmers:} It will give farmers tools to help them make more money. These tools will help them figure out the way to plant grow and sell their crops.
+	\end{enumerate}
+	
 \subsection{Long-term Vision}
+If AgriGenie wants to be a leader in agriculture then in the long term some major changes are needed. They are:
 \begin{enumerate}
-	\item National agricultural data lake for research and policy
-	\item AI-powered personalized farm advisory services
-	\item Regional expansion to South Asian countries
-	\item Integration with government agricultural programs and subsidies
-	\item Cooperative platforms enabling collective bargaining
-\end{enumerate}
+	\item \textbf{A Big Collection of Agricultural Information:} It will make a big collection of agricultural information. This will help people who study agriculture make policies and develop technologies.
+	\item \textbf{Personal Advice for Farmers:} It will give farmers advice on how to grow their crops. This advice will be based on what kind of crops they're growing, where they are growing them and how they have grown crops before.
+	\item \textbf{AgriGenie for Countries:} It will be used in more countries in South Asia. This will help farmers in these countries share knowledge and work together.
+	\item \textbf{Working with the Government:} It will work with the government to help farmers get the support they need. This will make it easier for farmers to get money and technical help.
+	\item \textbf{Helping Farmers Work Together:} It will help farmers work together to negotiate prices. This will make sure farmers get a price for their crops.
+	\end{enumerate}
+	
+These plans show that AgriGenie can become an important tool for farmers and for agriculture. It will use technologies, like artificial intelligence, special devices, blockchain and advanced analytics to help farmers and make agriculture better.
 
 \section{Reflection on Learning Outcomes}
 
