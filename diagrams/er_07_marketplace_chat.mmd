@@ -1,0 +1,79 @@
+erDiagram
+    %% ══════════════════════════════════════════
+    %% Marketplace & Chat Module
+    %% ══════════════════════════════════════════
+
+    CropListing {
+        int id PK
+        int crop_id FK
+        boolean is_featured
+        int views_count
+        int inquiry_count
+        int order_count
+        datetime created_at
+        datetime updated_at
+    }
+
+    Review {
+        int id PK
+        int crop_id FK
+        int reviewer_id FK
+        int rating "1-5"
+        string title
+        text review_text
+        boolean verified_purchase
+        int helpful_count
+        datetime created_at
+    }
+
+    Search {
+        int id PK
+        int user_id FK
+        string query
+        int results_count
+        datetime created_at
+    }
+
+    CategoryFilter {
+        int id PK
+        string name UK
+        text description
+    }
+
+    PriceHistory {
+        int id PK
+        int crop_id FK
+        float price
+        date recorded_date
+    }
+
+    ChatRoom {
+        int id PK
+        int farmer_id FK
+        int buyer_id FK
+        int crop_id FK
+        datetime created_at
+        datetime updated_at
+        boolean is_active
+    }
+
+    ChatMessage {
+        int id PK
+        int room_id FK
+        int sender_id FK
+        text content
+        image image
+        boolean is_read
+        datetime created_at
+    }
+
+    Crop ||--o| CropListing : "listed as (1:1)"
+    Crop ||--o{ Review : "reviewed"
+    CustomUser ||--o{ Review : "writes"
+    CustomUser ||--o{ Search : "searches"
+    Crop ||--o{ PriceHistory : "price tracked"
+    CustomUser ||--o{ ChatRoom : "farmer"
+    CustomUser ||--o{ ChatRoom : "buyer"
+    Crop ||--o{ ChatRoom : "discussed in"
+    ChatRoom ||--o{ ChatMessage : "contains"
+    CustomUser ||--o{ ChatMessage : "sends"

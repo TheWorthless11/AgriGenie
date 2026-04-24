@@ -1,0 +1,158 @@
+erDiagram
+    %% ══════════════════════════════════════════
+    %% AI, ML & Weather Features
+    %% ══════════════════════════════════════════
+
+    CropDisease {
+        int id PK
+        int crop_id FK
+        int master_crop_id FK
+        int farmer_id FK
+        string disease_name "e.g. Tomato Early Blight"
+        string disease_type "fungal | bacterial | viral | pest | healthy"
+        float confidence_score "0-100%"
+        image disease_image
+        text treatment_recommendation
+        datetime detected_date
+        string ai_model_used "plant_disease_model (CNN)"
+    }
+
+    AIDiseaseMonitor {
+        int id PK
+        int total_detections
+        int accurate_detections
+        float accuracy_percentage "0-100%"
+        datetime last_updated
+        string model_version
+    }
+
+    CropPriceData {
+        int id PK
+        int year
+        int month
+        string market
+        string commodity
+        string variety
+        float price_per_kg
+        float avg_temp_c
+        float max_temp_c
+        float min_temp_c
+        float rainfall_mm
+        float cumulative_rainfall_mm
+        int flood
+        int drought
+        float yield_per_hectare
+        float production_tonnes
+        float area_hectares
+        float import_tonnes
+        float export_tonnes
+        float fertilizer_cost
+        float seed_cost
+        float labor_cost
+        float fuel_cost
+        float inflation
+        float cpi
+        float lag1_price
+        float lag2_price
+        datetime created_at
+    }
+
+    AIPricePredictor {
+        int id PK
+        int total_predictions
+        int accurate_predictions
+        float accuracy_percentage "0-100%"
+        datetime last_updated
+        string model_version
+        float average_error_percentage
+    }
+
+    WeatherAlert {
+        int id PK
+        int farmer_id FK
+        string alert_type "flood | drought | cyclone | heavy_rain | frost | heat_wave"
+        string location
+        string severity "low | medium | high | critical"
+        text message
+        datetime start_time
+        datetime end_time
+        text recommendation
+        boolean is_active
+        datetime created_at
+    }
+
+    IrrigationCropCatalog {
+        int id PK
+        string name UK
+        string water_requirement "low | medium | high"
+        float base_water_liters
+        float water_per_m2
+        int moisture_threshold "0-100"
+        float retention_factor "0-2"
+        int ideal_moisture "0-100"
+        int irrigation_frequency_days "1-30"
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    IrrigationCrop {
+        int id PK
+        int farmer_id FK
+        string name
+        float area_size
+        string area_unit "m2 | acre | hectare"
+        string water_requirement "low | medium | high"
+        float base_water_liters
+        float water_per_m2
+        int moisture_threshold
+        float retention_factor
+        int ideal_moisture
+        int irrigation_frequency_days
+        datetime created_at
+        datetime updated_at
+    }
+
+    IrrigationRecord {
+        int id PK
+        int crop_id FK
+        int user_id FK
+        date date
+        float water_amount
+        string method "manual | pump | drip | automatic"
+        datetime created_at
+    }
+
+    IrrigationSchedule {
+        int id PK
+        int crop_id FK
+        date next_irrigation_date
+        int frequency_days "1-30"
+        text recommendation
+        datetime updated_at
+    }
+
+    %% ── Disease Detection Relationships ──
+    %% CNN model (plant_disease_model.h5) analyzes leaf images
+    %% Supports 15 PlantVillage classes (tomato, potato, pepper)
+    Crop ||--o{ CropDisease : "diagnosed by AI"
+    MasterCrop ||--o{ CropDisease : "detected on template"
+    CustomUser ||--o{ CropDisease : "farmer detects"
+    AIDiseaseMonitor ||--|| CropDisease : "tracks accuracy"
+
+    %% ── Price Prediction Relationships ──
+    %% RandomForest model uses historical data + weather + seasonal factors
+    CropPriceData ||--o{ AIPricePredictor : "feeds model training"
+
+    %% ── Weather Forecast Relationships ──
+    %% OpenWeatherMap API provides current + 5-day forecast
+    %% Generates disaster alerts (flood, drought, cyclone, frost, heat)
+    CustomUser ||--o{ WeatherAlert : "farmer receives"
+
+    %% ── Irrigation Relationships ──
+    %% Weather-aware irrigation scheduling
+    IrrigationCropCatalog ||--o{ IrrigationCrop : "admin template"
+    CustomUser ||--o{ IrrigationCrop : "farmer manages"
+    IrrigationCrop ||--o{ IrrigationRecord : "has records"
+    CustomUser ||--o{ IrrigationRecord : "farmer logs"
+    IrrigationCrop ||--o| IrrigationSchedule : "has schedule (1:1)"

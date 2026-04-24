@@ -1,0 +1,115 @@
+erDiagram
+    CustomUser {
+        int id PK
+        string username UK
+        string email
+        string password
+        string role "farmer | buyer | admin | pending"
+        string phone_number
+        string location
+        string district
+        string upazila
+        string country
+        string auth_type "pin | password"
+        string pin_hash
+        text preferences
+        image profile_picture
+        text bio
+        boolean is_verified
+        boolean is_blocked_by_admin
+        text blocked_reason
+        datetime blocked_date
+        boolean two_factor_enabled
+        datetime created_at
+        datetime updated_at
+    }
+
+    FarmerProfile {
+        int id PK
+        int user_id FK
+        string farm_name
+        float farm_size
+        string farm_location
+        string soil_type
+        int experience_years
+        string registration_number UK
+        boolean is_approved
+        float rating
+        string approval_status
+    }
+
+    BuyerProfile {
+        int id PK
+        int user_id FK
+        string company_name
+        string business_type
+        string registration_number
+        boolean is_approved
+        float rating
+        float total_spent
+    }
+
+    FarmerSettings {
+        int id PK
+        int user_id FK
+        string quantity_unit
+        string farm_size_unit
+        string default_crop_type
+        string language "en | bn"
+        boolean email_notifications
+        boolean sms_alerts
+        boolean order_updates
+        boolean ai_alerts
+        boolean disease_detection_enabled
+        boolean auto_recommendations
+        string risk_sensitivity
+        datetime updated_at
+    }
+
+    FarmerPaymentMethod {
+        int id PK
+        int user_id FK
+        string method_type "bkash | nagad | bank"
+        string account_name
+        string account_number
+        string bank_name
+        boolean is_active
+        datetime created_at
+    }
+
+    Notification {
+        int id PK
+        int user_id FK
+        string notification_type
+        string title
+        text message
+        boolean is_read
+        datetime created_at
+    }
+
+    OTPVerification {
+        int id PK
+        string phone_number
+        string otp_code
+        string purpose "reset | verify"
+        int attempts
+        boolean is_verified
+        datetime created_at
+        datetime expires_at
+    }
+
+    PasswordResetToken {
+        int id PK
+        int user_id FK
+        string token UK
+        datetime created_at
+        datetime expires_at
+        boolean is_used
+    }
+
+    CustomUser ||--o| FarmerProfile : "has profile"
+    CustomUser ||--o| BuyerProfile : "has profile"
+    CustomUser ||--o| FarmerSettings : "has settings"
+    CustomUser ||--o{ FarmerPaymentMethod : "has payment methods"
+    CustomUser ||--o{ Notification : "receives"
+    CustomUser ||--o{ PasswordResetToken : "resets via"

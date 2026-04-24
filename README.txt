@@ -36,3 +36,7 @@ If startup fails:
 - Make sure Docker Desktop is running.
 - Re-run run_app.bat as normal user first.
 - If needed, right-click run_app.bat and choose "Run as administrator".
+
+
+Remove-Item *.aux, *.log, *.out, *.toc, *.lof, *.lot -ErrorAction SilentlyContinue
+pdflatex KUET_Report_AgriGenie.tex

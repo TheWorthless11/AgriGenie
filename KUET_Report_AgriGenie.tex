@@ -13,11 +13,12 @@
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{setspace}
-\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext}
+\usepackage{newtxmath}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{float}
-\usepackage{hyperref}
 \usepackage{fancyhdr}
 \usepackage{tocloft}
 \usepackage{array}
@@ -26,11 +27,31 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{amsmath}
-\usepackage{amssymb}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,shapes.geometric}
 \usepackage{cite}
+\usepackage{titlesec}
+\renewcommand{\contentsname}{Contents}
+\usepackage[colorlinks=false, pdfborder={0 0 0}]{hyperref}
 
+\titleformat{\chapter}
+  {\normalfont\bfseries\large}
+  {CHAPTER \Roman{chapter}}
+  {1em}
+  {}
+% Center the title
+\renewcommand{\cfttoctitlefont}{\hfill\bfseries\Large}
+\renewcommand{\cftaftertoctitle}{\hfill}
+
+% Space after title (2 blank lines)
+\setlength{\cftbeforetoctitleskip}{0pt}
+\setlength{\cftaftertoctitleskip}{1cm}
+
+% Indentation like template
+\setlength{\cftsecindent}{0.5in}
+
+% Space between entries
+\setlength{\cftbeforesecskip}{4pt}
 %====================================================================================
 % FORMATTING AND SPACING
 %====================================================================================
@@ -39,9 +60,18 @@
 \fancyhf{}
 \rhead{\thepage}
 \renewcommand{\headrulewidth}{0pt}
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[C]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+    \renewcommand{\footrulewidth}{0pt}
+}
 
 % Define new chapter style
 \renewcommand{\chaptername}{CHAPTER}
+
+% Template blank line unit: 12pt text with 1.5 line spacing = 18pt
+\newcommand{\tplblank}{\vspace{18pt}}
 
 %====================================================================================
 % DOCUMENT START
@@ -51,101 +81,163 @@
 %====================================================================================
 % TITLE PAGE
 %====================================================================================
+\newgeometry{left=1.2in,right=1.0in,top=1.2in,bottom=1.0in}
+\begin{titlepage}
 \thispagestyle{empty}
 \begin{center}
-    \vspace*{0.5cm}
-    
-    {\fontsize{14}{16}\selectfont \textbf{KHULNA UNIVERSITY OF ENGINEERING \& TECHNOLOGY}}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Department of Computer Science and Engineering}
-    
-    \vspace{1.5cm}
-    
-    {\fontsize{16}{19}\selectfont \textbf{AgriGenie: Smart Agriculture Assistance System}}
-    
+    \vspace{.5cm}
+    {\fontsize{14}{16}\selectfont \bfseries CSE 3200: System Development Project}
+    \vspace{.2cm}
+
+
+
+    {\fontsize{18}{24}\selectfont \bfseries \textsc{AgriGenie: Smart Agriculture Assistance System}}
+
     \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont A Project Report}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Submitted to the Department of Computer Science and Engineering, \\ 
-    Khulna University of Engineering \& Technology}
-    
-    \vspace{1cm}
-    
-    {\fontsize{12}{14}\selectfont in partial fulfillment of the requirements for the degree of}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Bachelor of Science in Computer Science and Engineering (CSE-3200)}
-    
+
+    {\fontsize{14}{16}\selectfont By}
+
+    \vspace{3cm}
+
+    {\fontsize{14}{16}\selectfont \bfseries Mahhia Kamal Mim}\\[0.15cm]
+    {\fontsize{14}{16}\selectfont Roll: 2107081}
+
+    \vspace{0.45cm}
+    {\fontsize{14}{16}\selectfont \&}
+    \vspace{0.45cm}
+
+    {\fontsize{14}{16}\selectfont \bfseries Shaila Akter}\\[0.15cm]
+    {\fontsize{14}{16}\selectfont Roll: 2107084}
+
+    \vfill
+
+    \IfFileExists{static/images/kuet_logo.png}{
+        \includegraphics[width=1.14in,height=1.0in,keepaspectratio]{static/images/kuet_logo.png}
+    }{
+        \fbox{\parbox[c][1.0in][c]{1.14in}{\centering\footnotesize KUET\\Logo}}
+    }
+
     \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont By}
-    
-    \vspace{0.5cm}
-    
-    {\fontsize{12}{14}\selectfont Mahhia Kamal Mim (Roll: 2107081) \\
-    Shaila Akter (Roll: 2107084)}
-    
-    \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont Supervised by}
-    
-    \vspace{0.3cm}
-    
-    {\fontsize{12}{14}\selectfont Dr. Sk. Md. Masudul Ahsan}
-    
-    \vspace{2cm}
-    
-    {\fontsize{12}{14}\selectfont December, 2023}
-    
-    \vspace{0.5cm}
-    
-    {\fontsize{12}{14}\selectfont Khulna 9203, Bangladesh}
-    
+
+    {\fontsize{12}{14}\selectfont \bfseries Department of Computer Science and Engineering}\\
+    {\fontsize{12}{14}\selectfont \bfseries Khulna University of Engineering \& Technology}\\
+    {\fontsize{12}{14}\selectfont \bfseries Khulna 9203, Bangladesh}\\
+    {\fontsize{12}{14}\selectfont \bfseries December, 2023}
+\end{center}
+\end{titlepage}
+\addcontentsline{toc}{chapter}{Title Page}
+\restoregeometry
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+
+%====================================================================================
+% SECOND PAGE (FORMAL TITLE PAGE TEMPLATE)
+%====================================================================================
+\newgeometry{left=1.2in,right=1.0in,top=1.2in,bottom=1.0in}
+\thispagestyle{plain}
+
+\begin{center}
+
+    {\fontsize{18}{27}\selectfont \bfseries AgriGenie: Smart Agriculture\\Assistance System}
+
+    % 2 blank lines of 12pt text at 1.5 spacing
+    \tplblank\tplblank
+
+    {\fontsize{14}{21}\selectfont By}
+
+    % 3 blank lines of 12pt text at 1.5 spacing
+    \tplblank\tplblank\tplblank
+
+    {\fontsize{14}{21}\selectfont \bfseries Mahhia Kamal Mim}\\[0.1cm]
+    {\fontsize{14}{21}\selectfont Roll: 2107081}
+
+    \vspace{0.7cm}
+    {\fontsize{14}{21}\selectfont \&}
+    \vspace{0.7cm}
+
+    {\fontsize{14}{21}\selectfont \bfseries Shaila Akter}\\[0.1cm]
+    {\fontsize{14}{21}\selectfont Roll: 2107084}
 \end{center}
 
+% 4 blank lines of 12pt text at 1.5 spacing
+\tplblank\tplblank\tplblank\tplblank
+
+\noindent
+\begin{minipage}[t]{0.62\textwidth}
+    {\fontsize{12}{18}\selectfont \bfseries Supervisor:}\\[0.2cm]
+    {\fontsize{12}{18}\selectfont \bfseries Dr. Sk. Md. Masudul Ahsan}\\[0.15cm]
+    {\fontsize{12}{18}\selectfont Professor}\\
+    {\fontsize{12}{18}\selectfont Department of Computer Science and Engineering}\\
+    {\fontsize{12}{18}\selectfont Khulna University of Engineering \& Technology}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.30\textwidth}
+    \vspace{1.05cm}
+    \centering
+    \rule{1.7in}{0.4pt}\\[-0.05cm]
+    {\fontsize{12}{18}\selectfont Signature}
+\end{minipage}
+
+\vfill
+
+\begin{center}
+    {\fontsize{12}{18}\selectfont Department of Computer Science and Engineering}\\
+    {\fontsize{12}{18}\selectfont Khulna University of Engineering \& Technology}\\
+    {\fontsize{12}{18}\selectfont Khulna 9203, Bangladesh}\\
+    {\fontsize{12}{18}\selectfont December, 2023}
+\end{center}
+
+\restoregeometry
 \newpage
 
 %====================================================================================
 % ACKNOWLEDGEMENT
 %====================================================================================
-\chapter*{Acknowledgement}
-\addcontentsline{toc}{chapter}{Acknowledgement}
+\thispagestyle{plain}
+\addcontentsline{toc}{chapter}{Acknowledgment}
 
-In the name of Allah, the Most Gracious and the Most Merciful, we express our gratitude for this opportunity to work on a project that holds genuine significance in bridging technology and agriculture. 
+\vspace*{2cm}
 
-We would like to extend our sincere thanks to our esteemed supervisor, Dr. Sk. Md. Masudul Ahsan, for his invaluable guidance, insightful feedback, and unwavering support throughout the development of this project. His expertise in software engineering and database systems has been instrumental in shaping our work, and his encouragement has motivated us to maintain high standards of quality and innovation.
+\begin{center}
+    {\fontsize{16}{24}\selectfont \bfseries Acknowledgment}
+\end{center}
 
-We are grateful to the Department of Computer Science and Engineering at Khulna University of Engineering \& Technology for providing us with the necessary resources, laboratory facilities, and academic environment to conduct this research effectively. The faculty members have generously shared their knowledge and experience, which has enriched our understanding of system design and implementation principles.
+\vspace{1.2cm}
 
-Special thanks are due to our colleagues and friends who have provided constructive feedback, tested our prototype, and offered suggestions during various phases of development. Their diverse perspectives have helped us identify edge cases and improve the overall user experience of the system.
+\noindent All praise is due to Almighty Allah, whose mercy and blessings enabled us to complete this project successfully. We would like to express our heartfelt gratitude to our respected supervisor, Dr. Sk. Md. Masudul Ahsan, for his continuous guidance, valuable suggestions, and patient encouragement throughout every phase of this work. His feedback helped us improve both the technical quality and academic presentation of this report.
 
-We would also like to acknowledge the agricultural experts and farmers who shared their insights about crop management challenges and agricultural practices, which helped us understand the problem domain better and develop features that genuinely address real-world needs.
+We are also thankful to the Department of Computer Science and Engineering, Khulna University of Engineering \& Technology, for providing the academic environment and facilities required for completing this system development project. In addition, we sincerely acknowledge the support of our teachers, friends, and well-wishers who offered constructive opinions during implementation and testing. Finally, we are deeply grateful to our families for their unwavering inspiration and moral support.
 
-Finally, we express our appreciation to our families for their patience, encouragement, and moral support during the demanding phases of this project. Their belief in our capabilities has been a constant source of motivation.
+\vfill
+
+\begin{flushright}
+    {\fontsize{12}{18}\selectfont \bfseries Authors}
+\end{flushright}
 
 \newpage
 
 %====================================================================================
 % ABSTRACT
 %====================================================================================
-\chapter*{Abstract}
+\thispagestyle{plain}
 \addcontentsline{toc}{chapter}{Abstract}
+
+\vspace*{2cm}
+
+\begin{center}
+    {\fontsize{16}{24}\selectfont \bfseries Abstract}
+\end{center}
+
+\vspace{1.2cm}
 
 Agriculture remains one of the most critical sectors of Bangladesh's economy, directly contributing to food security and livelihood support for millions of rural communities. However, farmers frequently face significant challenges in accessing timely information about crop diseases, market prices, weather patterns, and optimal farming practices. The absence of an integrated platform that bridges the gap between agricultural experts, farmers, and market participants has resulted in inefficiencies that impact both productivity and profitability.
 
-This project presents \textbf{AgriGenie}, a comprehensive Smart Agriculture Assistance System designed to address these multifaceted challenges through modern information technology. AgriGenie is a full-stack web and mobile-friendly application built using Django framework on the backend, React.js on the frontend, and PostgreSQL as the database. The system integrates multiple features including a sophisticated disease detection module powered by machine learning, real-time price prediction algorithms, weather monitoring services, and a marketplace platform that connects farmers directly with buyers.
+This project presents \textbf{AgriGenie}, a smart agriculture assistance platform designed to address these issues through an integrated digital approach. The system combines crop disease detection, weather-aware support, market price analysis, and a farmer-buyer marketplace in a single web-based environment. It was developed using Django for backend services, React-based interfaces for user interaction, and PostgreSQL for reliable data management.
 
-The disease detection subsystem employs a convolutional neural network trained on an extensive dataset of crop images, enabling farmers to receive diagnostic predictions within seconds. The price prediction module utilizes historical agricultural commodity data and market trends to forecast future prices, assisting farmers in making informed selling decisions. The marketplace component facilitates direct farmer-to-buyer transactions, reducing middleman involvement and increasing farmer profit margins. Additionally, the system includes role-based access control with separate dashboards for farmers, buyers, administrators, and super-administrators, ensuring that each user segment receives customized information and tools relevant to their needs.
+The disease detection component allows farmers to upload crop images and receive AI-assisted diagnosis with confidence scores, helping them take early preventive actions. The marketplace module enables direct interaction between farmers and buyers, which reduces dependence on intermediaries and promotes fair pricing. In parallel, the price-analysis component assists users in understanding market trends and planning better selling decisions. Real-time messaging and role-based dashboards further improve usability by providing personalized workflows for farmers, buyers, and administrators.
 
-Technical implementation focuses on scalability, reliability, and user-friendliness. The backend employs Django's Model-View-Template architecture with RESTful API endpoints, ensuring clean separation of concerns and ease of maintenance. The frontend utilizes React.js with responsive design principles to provide seamless experiences across desktop and mobile platforms. Database design incorporates proper normalization, foreign key relationships, and indexing strategies to optimize query performance. The system further implements robust authentication mechanisms including PIN-based and OTP-based verification, ensuring secure access for all user categories.
-
-Throughout the development process, the team encountered and resolved several complex engineering challenges, including cross-database migration compatibility, optimized model serving for disease detection, real-time data synchronization, and comprehensive automated testing across multiple application modules. This report documents the complete journey from conceptualization through implementation, detailing architectural decisions, technical solutions, qualitative and quantitative results, and valuable lessons learned.
+From an engineering perspective, the project emphasizes maintainability, scalability, and practical usability. The architecture separates business logic, database operations, and presentation layers to keep the system extensible. Security and reliability were addressed through role-based access control, validation workflows, and tested registration/authentication paths. During implementation, notable challenges included schema consistency across environments, model-inference integration, and synchronization among multiple modules. These challenges were resolved through migration controls, modular service design, and iterative testing.
 
 AgriGenie represents a meaningful step towards agricultural digitalization in Bangladesh, providing farmers with technology-driven tools to enhance productivity, reduce losses, and access better market opportunities.
 
@@ -158,20 +250,32 @@ AgriGenie represents a meaningful step towards agricultural digitalization in Ba
 %====================================================================================
 % TABLE OF CONTENTS
 %====================================================================================
+\addcontentsline{toc}{chapter}{Contents}
 \tableofcontents
 \newpage
+
+
 
 %====================================================================================
 % LIST OF FIGURES
 %====================================================================================
+\clearpage
+
+\addcontentsline{toc}{chapter}{List of Figures}
 \listoffigures
 \newpage
 
 %====================================================================================
 % LIST OF TABLES
 %====================================================================================
+\clearpage
+\addcontentsline{toc}{chapter}{List of Tables}
 \listoftables
 \newpage
+
+% ADD THIS LINE HERE
+\pagenumbering{arabic}
+\setcounter{page}{1}
 
 %====================================================================================
 % CHAPTER I: INTRODUCTION

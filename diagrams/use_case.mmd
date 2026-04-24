@@ -1,0 +1,29 @@
+flowchart LR
+
+    Farmer((Farmer))
+    Buyer((Buyer))
+    Admin((Admin))
+
+    subgraph AgriGenie[AgriGenie System]
+        UC1[User Access]
+        UC2[Farm & Crop Management]
+        UC3[AI Advisory]
+        UC4[Marketplace Trading]
+        UC5[Communication]
+        UC6[Buyer Experience]
+        UC7[Administration & Monitoring]
+    end
+
+    Farmer --- UC1
+    Farmer --- UC2
+    Farmer --- UC3
+    Farmer --- UC4
+    Farmer --- UC5
+
+    Buyer --- UC1
+    Buyer --- UC4
+    Buyer --- UC5
+    Buyer --- UC6
+
+    Admin --- UC1
+    Admin --- UC7

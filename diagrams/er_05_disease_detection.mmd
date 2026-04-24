@@ -1,0 +1,35 @@
+erDiagram
+    %% ══════════════════════════════════════════
+    %% AI Disease Detection (CNN / plant_disease_model.h5)
+    %% Model: Custom-trained CNN on PlantVillage dataset
+    %% Input: 256x256 leaf image
+    %% Output: 15 disease classes with confidence scores
+    %% ══════════════════════════════════════════
+
+    CropDisease {
+        int id PK
+        int crop_id FK "farmer's crop listing"
+        int master_crop_id FK "admin crop template"
+        int farmer_id FK
+        string disease_name "e.g. Tomato Early Blight"
+        string disease_type "fungal | bacterial | viral | pest | healthy"
+        float confidence_score "0-100 percent"
+        image disease_image "uploaded leaf photo"
+        text treatment_recommendation "AI-generated advice"
+        datetime detected_date
+        string ai_model_used "plant_disease_model (CNN)"
+    }
+
+    AIDiseaseMonitor {
+        int id PK
+        int total_detections
+        int accurate_detections
+        float accuracy_percentage "0-100 percent"
+        datetime last_updated
+        string model_version
+    }
+
+    Crop ||--o{ CropDisease : "diagnosed_by_AI"
+    MasterCrop ||--o{ CropDisease : "detected_on_template"
+    CustomUser ||--o{ CropDisease : "farmer_uploads_image"
+    AIDiseaseMonitor ||--|| CropDisease : "admin_tracks_accuracy"

@@ -1,0 +1,50 @@
+erDiagram
+    %% ══════════════════════════════════════════
+    %% Buyer Module
+    %% ══════════════════════════════════════════
+
+    PurchaseRequest {
+        int id PK
+        int buyer_id FK
+        int crop_id FK
+        float quantity_required
+        float preferred_price
+        string status "pending | accepted | rejected | completed"
+        text message
+        datetime created_at
+        datetime response_date
+    }
+
+    WishlistItem {
+        int id PK
+        int buyer_id FK
+        int crop_id FK
+        datetime added_date
+    }
+
+    SavedCrop {
+        int id PK
+        int buyer_id FK
+        int crop_id FK
+        datetime saved_date
+    }
+
+    BuyerRating {
+        int id PK
+        int farmer_id FK
+        int buyer_id FK
+        int order_id FK
+        int rating "1-5"
+        text review
+        datetime created_at
+    }
+
+    CustomUser ||--o{ PurchaseRequest : "requests"
+    Crop ||--o{ PurchaseRequest : "requested"
+    CustomUser ||--o{ WishlistItem : "wishlists"
+    Crop ||--o{ WishlistItem : "wishlisted"
+    CustomUser ||--o{ SavedCrop : "saves"
+    Crop ||--o{ SavedCrop : "saved"
+    Order ||--o{ BuyerRating : "rated via"
+    CustomUser ||--o{ BuyerRating : "farmer rates"
+    CustomUser ||--o{ BuyerRating : "buyer rated"

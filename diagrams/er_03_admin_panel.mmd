@@ -1,0 +1,142 @@
+erDiagram
+    MasterCrop {
+        int id PK
+        string crop_name UK
+        string crop_type "organic | conventional | hybrid"
+        string category "vegetables | fruits | grains | pulses | spices | cash_crops"
+        text description
+        image generic_image
+        boolean is_active
+        boolean allow_detection
+        int created_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    UserApproval {
+        int id PK
+        int user_id FK
+        string status "pending | approved | rejected"
+        file documents
+        image legal_paper_photo
+        image company_photo
+        string nid_number
+        image nid_card_photo
+        text reason_for_rejection
+        int reviewed_by_id FK
+        datetime reviewed_at
+        datetime created_at
+    }
+
+    AdminSettings {
+        int id PK
+        string site_name
+        image site_logo
+        string default_language
+        string default_timezone
+        boolean auto_approve_new_users
+        boolean maintenance_mode
+        boolean enable_ai_recommendations
+        string ai_model_version
+        boolean enable_disease_detection
+        int session_timeout_minutes
+        int max_login_attempts
+        int password_min_length
+        int updated_by_id FK
+        datetime updated_at
+    }
+
+    SystemAlert {
+        int id PK
+        string title
+        text message
+        string alert_type "maintenance | security | feature | warning | info"
+        boolean is_active
+        boolean all_users
+        int created_by_id FK
+        datetime created_at
+    }
+
+    SystemReport {
+        int id PK
+        string title
+        string report_type
+        int total_users
+        int total_farmers
+        int total_buyers
+        int total_crops_listed
+        int total_orders
+        float total_revenue
+        int active_listings
+        json content
+        int generated_by_id FK
+        datetime generated_at
+    }
+
+    UserReport {
+        int id PK
+        int user_id FK
+        string report_type "bug | feedback | complaint | suggestion"
+        string subject
+        text description
+        string priority "low | medium | high | critical"
+        string status "pending | reviewing | resolved | dismissed"
+        text admin_response
+        int responded_by_id FK
+        datetime created_at
+    }
+
+    AIDiseaseMonitor {
+        int id PK
+        int total_detections
+        int accurate_detections
+        float accuracy_percentage
+        datetime last_updated
+        string model_version
+    }
+
+    AIPricePredictor {
+        int id PK
+        int total_predictions
+        int accurate_predictions
+        float accuracy_percentage
+        datetime last_updated
+        string model_version
+        float average_error_percentage
+    }
+
+    ActivityLog {
+        int id PK
+        int user_id FK
+        string action
+        text description
+        string ip_address
+        text user_agent
+        datetime timestamp
+    }
+
+    FarmerListing {
+        int id PK
+        int farmer_id FK
+        int crop_template_id FK
+        float quantity
+        string unit
+        decimal price_per_unit
+        string location
+        date harvest_date
+        date availability_date
+        string quality_grade
+        boolean is_available
+        text specific_description
+        datetime created_at
+    }
+
+    CustomUser ||--o{ MasterCrop : "creates"
+    CustomUser ||--o| UserApproval : "submits"
+    CustomUser ||--o{ SystemAlert : "creates"
+    CustomUser ||--o{ SystemReport : "generates"
+    CustomUser ||--o{ UserReport : "submits"
+    CustomUser ||--o{ ActivityLog : "logs"
+    CustomUser ||--o{ FarmerListing : "lists"
+    MasterCrop ||--o{ FarmerListing : "template for"
+    SystemAlert }o--o{ CustomUser : "targets (M2M)"

@@ -1,0 +1,38 @@
+flowchart TD
+    Start(( )) --> Register["Register as Farmer or Buyer"]
+    Register --> Login["Login to Dashboard"]
+    Login --> Role{"User Role?"}
+
+    Role -->|Farmer| FD["Farmer Dashboard"]
+    Role -->|Buyer| BD["Buyer Dashboard"]
+    Role -->|Admin| AD["Admin Panel"]
+
+    FD --> F1["Add Crop Listing"]
+    FD --> F2["AI Disease Detection"]
+    FD --> F3["Price Prediction"]
+    FD --> F4["Weather Forecast"]
+    FD --> F5["Irrigation Planner"]
+    FD --> F6["Manage Orders"]
+
+    F1 --> MKT["Marketplace"]
+    F2 --> F2R["View Results & Treatment"]
+    F6 --> CHAT["Real-time Chat"]
+
+    BD --> MKT
+    MKT --> B1["Search & Filter Crops"]
+    B1 --> B2["View Crop Details"]
+    B2 --> B3{"Action?"}
+    B3 -->|Order| ORD["Place Order"]
+    B3 -->|Save| SAVE["Wishlist / Save"]
+    B3 -->|Chat| CHAT
+
+    ORD --> F6
+    ORD --> B4["Confirm Delivery"]
+    B4 --> B5["Rate & Review"]
+
+    AD --> A1["Approve / Block Users"]
+    AD --> A2["Manage Master Crops"]
+    AD --> A3["Monitor AI Models"]
+    AD --> A4["System Reports & Alerts"]
+
+    style Start fill:#000,color:#000

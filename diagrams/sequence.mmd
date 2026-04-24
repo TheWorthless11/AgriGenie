@@ -1,0 +1,57 @@
+sequenceDiagram
+    actor F as Farmer
+    actor B as Buyer
+    participant S as AgriGenie System
+    participant AI as AI Services
+    participant DB as Database
+    actor A as Admin
+
+    %% Registration & Approval
+    F->>S: Register (phone + PIN)
+    B->>S: Register (email + password)
+    S->>DB: Create user accounts
+    S->>A: Notify new approval requests
+    A->>S: Approve / Reject users
+
+    %% Farmer Features
+    F->>S: Add crop listing
+    S->>DB: Save crop + create marketplace listing
+
+    F->>AI: Upload leaf image
+    AI-->>F: Disease name + confidence + treatment
+
+    F->>AI: Request price prediction
+    AI-->>F: Predicted prices (7 days)
+
+    F->>AI: Request weather forecast
+    AI-->>F: Weather data + disaster alerts
+
+    F->>S: Configure irrigation crops
+    S-->>F: Irrigation schedule + water plan
+
+    %% Buyer Flow
+    B->>S: Search marketplace
+    S-->>B: Matching crop listings
+
+    B->>S: Place order on crop
+    S->>DB: Create order (pending)
+    S-->>F: Order notification
+
+    F->>S: Accept order
+    S-->>B: Order accepted notification
+
+    %% Chat
+    B->>S: Start chat with farmer
+    S-->>F: Real-time message (WebSocket)
+    F->>S: Reply
+    S-->>B: Real-time message (WebSocket)
+
+    %% Delivery & Rating
+    B->>S: Confirm delivery
+    B->>S: Rate farmer + write review
+    F->>S: Rate buyer
+    S->>DB: Update ratings
+
+    %% Admin Monitoring
+    A->>S: View system reports
+    S-->>A: User stats, order stats, AI accuracy

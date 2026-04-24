@@ -1,0 +1,48 @@
+erDiagram
+    %% ══════════════════════════════════════════
+    %% AgriGenie ER Overview (Simplified)
+    %% ══════════════════════════════════════════
+
+    %% ── Users & Roles ──
+    CustomUser ||--o| FarmerProfile : "1:1"
+    CustomUser ||--o| BuyerProfile : "1:1"
+
+    %% ── Core Crop Catalog ──
+    MasterCrop ||--o{ Crop : "template"
+    FarmerProfile ||--o{ Crop : "owns"
+    Crop ||--o| CropListing : "1:1"
+
+    %% ── AI: Disease Detection (CNN/ResNet-50) ──
+    Crop ||--o{ CropDisease : "diagnosed_by_AI"
+    AIDiseaseMonitor ||--|| CropDisease : "tracks_accuracy"
+
+    %% ── AI: Price Prediction (RandomForest + historical data) ──
+    CropPriceData ||--o{ AIPricePredictor : "feeds_model"
+
+    %% ── Weather Forecast (OpenWeatherMap API) ──
+    FarmerProfile ||--o{ WeatherAlert : "receives_alerts"
+
+    %% ── Irrigation Management ──
+    IrrigationCropCatalog ||--o{ IrrigationCrop : "template"
+    FarmerProfile ||--o{ IrrigationCrop : "monitors"
+    IrrigationCrop ||--o{ IrrigationRecord : "logs_water"
+    IrrigationCrop ||--o| IrrigationSchedule : "scheduled"
+
+    %% ── Marketplace & Orders ──
+    BuyerProfile ||--o{ Order : "places"
+    BuyerProfile ||--o{ WishlistItem : "saves"
+    BuyerProfile ||--o{ PurchaseRequest : "requests"
+    CropListing ||--o{ Order : "receives"
+    Order ||--o{ FarmerRating : "buyer_rates_farmer"
+    Order ||--o{ BuyerRating : "farmer_rates_buyer"
+    Crop ||--o{ Review : "reviewed"
+    Crop ||--o{ PriceHistory : "price_tracked"
+
+    %% ── Real-time Chat (Django Channels + Redis) ──
+    CustomUser ||--o{ ChatRoom : "participates"
+    ChatRoom ||--o{ ChatMessage : "contains"
+
+    %% ── Admin & Security ──
+    CustomUser ||--o| UserApproval : "submits_docs"
+    CustomUser ||--o{ Notification : "receives"
+    CustomUser ||--o{ ActivityLog : "tracked"

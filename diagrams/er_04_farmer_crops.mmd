@@ -1,0 +1,120 @@
+erDiagram
+    Crop {
+        int id PK
+        int farmer_id FK
+        int master_crop_id FK
+        float quantity
+        string unit "kg | tons | quintals | pieces"
+        float price_per_unit
+        string location
+        date harvest_date
+        date availability_date
+        string quality_grade "A | B | C"
+        float area_size
+        string area_unit "m2 | acre | hectare"
+        text description
+        image crop_image
+        boolean is_available
+        datetime out_of_stock_since
+        datetime created_at
+        datetime updated_at
+    }
+
+    Order {
+        int id PK
+        int crop_id FK
+        int buyer_id FK
+        int farmer_id FK
+        float quantity
+        float total_price
+        string status "pending | accepted | rejected | shipped | delivered | cancelled"
+        datetime order_date
+        date delivery_date
+        text special_requirements
+        boolean is_confirmed_by_buyer
+        datetime confirmation_date
+    }
+
+    CropDisease {
+        int id PK
+        int crop_id FK
+        int master_crop_id FK
+        int farmer_id FK
+        string disease_name
+        string disease_type "fungal | bacterial | viral | pest | healthy"
+        float confidence_score
+        image disease_image
+        text treatment_recommendation
+        datetime detected_date
+        string ai_model_used
+    }
+
+    WeatherAlert {
+        int id PK
+        int farmer_id FK
+        string alert_type "flood | drought | cyclone | heavy_rain | frost | heat_wave"
+        string location
+        string severity "low | medium | high | critical"
+        text message
+        datetime start_time
+        datetime end_time
+        text recommendation
+        boolean is_active
+        datetime created_at
+    }
+
+    Message {
+        int id PK
+        int sender_id FK
+        int recipient_id FK
+        int crop_id FK
+        string subject
+        text message
+        file attachment
+        boolean is_read
+        datetime created_at
+    }
+
+    FarmerRating {
+        int id PK
+        int farmer_id FK
+        int buyer_id FK
+        int order_id FK
+        int rating "1-5"
+        text review
+        datetime created_at
+    }
+
+    CropPriceData {
+        int id PK
+        int year
+        int month
+        string market
+        string commodity
+        string variety
+        float price_per_kg
+        float avg_temp_c
+        float rainfall_mm
+        float yield_per_hectare
+        float production_tonnes
+        float inflation
+        float cpi
+        float lag1_price
+        float lag2_price
+        datetime created_at
+    }
+
+    CustomUser ||--o{ Crop : "owns"
+    MasterCrop ||--o{ Crop : "template"
+    Crop ||--o{ Order : "ordered"
+    CustomUser ||--o{ Order : "buyer"
+    CustomUser ||--o{ Order : "farmer"
+    Crop ||--o{ CropDisease : "detected on"
+    CustomUser ||--o{ CropDisease : "detects"
+    CustomUser ||--o{ WeatherAlert : "receives"
+    CustomUser ||--o{ Message : "sends"
+    CustomUser ||--o{ Message : "receives"
+    Crop ||--o{ Message : "about"
+    Order ||--o{ FarmerRating : "rated via"
+    CustomUser ||--o{ FarmerRating : "farmer"
+    CustomUser ||--o{ FarmerRating : "buyer"
