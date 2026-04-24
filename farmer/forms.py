@@ -1,6 +1,7 @@
 from django import forms
 from farmer.models import Crop, Order, Message, WeatherAlert, CropDisease
 from admin_panel.models import MasterCrop
+from users.models import FarmerProfile
 
 
 class CropForm(forms.ModelForm):
@@ -119,3 +120,32 @@ class CropDiseaseForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Only show master crops that are active and allowed for detection
         self.fields['master_crop'].queryset = MasterCrop.objects.filter(is_active=True, allow_detection=True)
+
+
+class NIDSubmissionForm(forms.ModelForm):
+    """Form for farmers to submit NID number and photo for verification"""
+    class Meta:
+        model = FarmerProfile
+        fields = ('nid_number', 'nid_photo')
+        widgets = {
+            'nid_number': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter your National ID Number',
+                'required': True,
+                'maxlength': '20'
+            }),
+            'nid_photo': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*,.pdf',
+                'required': True,
+                'help_text': 'Upload clear photo of your NID (JPEG, PNG, or PDF)'
+            }),
+        }
+        labels = {
+            'nid_number': 'National ID Number',
+            'nid_photo': 'NID Photo/Document',
+        }
+        help_texts = {
+            'nid_number': 'Enter your complete National ID number',
+            'nid_photo': 'Upload a clear photo of both sides of your NID or the NID document (JPEG, PNG, or PDF)',
+        }

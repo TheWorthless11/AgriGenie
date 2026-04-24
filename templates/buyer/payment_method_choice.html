@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Choose Payment Method - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-success text-white">
+                    <h3 class="mb-0">Payment Method Selection</h3>
+                </div>
+                <div class="card-body p-5">
+                    <!-- Order Summary -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Order Summary</h5>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Crop:</strong> {{ order.crop.crop_name }}</p>
+                                <p><strong>Quantity:</strong> {{ order.quantity }} {{ order.crop.unit }}</p>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <p><strong>Total Amount:</strong> <span class="h4 text-success">৳{{ order.total_price|floatformat:2 }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method Selection -->
+                    <form method="post" id="paymentForm">
+                        {% csrf_token %}
+                        
+                        <h5 class="mb-4">Select Your Payment Method:</h5>
+
+                        <!-- Cash on Delivery Option -->
+                        <div class="payment-option mb-4 p-4 border rounded cursor-pointer" onclick="selectPaymentMethod(this, 'cod')">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="cod_method" value="cod">
+                                <label class="form-check-label w-100" for="cod_method">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-2">💰 Cash on Delivery (COD)</h5>
+                                            <p class="text-muted mb-0">
+                                                Pay 20% (৳<span id="cod_upfront" class="text-success">{{ order.total_price|floatformat:0 }}</span>) now<br>
+                                                Pay remaining 80% (৳<span id="cod_remaining" class="text-warning">{{ order.total_price|floatformat:0 }}</span>) at delivery
+                                            </p>
+                                        </div>
+                                        <span class="badge badge-warning">Popular</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Online Payment Option -->
+                        <div class="payment-option mb-4 p-4 border rounded cursor-pointer" onclick="selectPaymentMethod(this, 'sslcommerz')">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="payment_method" id="online_method" value="sslcommerz">
+                                <label class="form-check-label w-100" for="online_method">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h5 class="mb-2">💳 Pay Full Amount Online (SSLCommerz)</h5>
+                                            <p class="text-muted mb-0">
+                                                Pay complete amount (৳<span id="online_total" class="text-success">{{ order.total_price|floatformat:2 }}</span>) now<br>
+                                                Safe, secure, and instant payment processing
+                                            </p>
+                                        </div>
+                                        <span class="badge badge-primary">Secure</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Comparison Table -->
+                        <div class="table-responsive mt-5">
+                            <table class="table table-sm table-bordered">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Feature</th>
+                                        <th class="text-center">COD</th>
+                                        <th class="text-center">Online Payment</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Immediate Payment Required</td>
+                                        <td class="text-center"><span class="badge badge-warning">20% Only</span></td>
+                                        <td class="text-center"><span class="badge badge-danger">Full Amount</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Payment at Delivery</td>
+                                        <td class="text-center"><span class="badge badge-success">80% Remaining</span></td>
+                                        <td class="text-center"><span class="badge badge-secondary">None</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Processing Time</td>
+                                        <td class="text-center">Instant</td>
+                                        <td class="text-center">Instant</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Refund Policy</td>
+                                        <td class="text-center">Cash Return</td>
+                                        <td class="text-center">Bank Transfer</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-group mt-5">
+                            <button type="submit" class="btn btn-success btn-lg btn-block" id="submitBtn" disabled>
+                                <i class="fas fa-arrow-right"></i> Continue to Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Back Link -->
+            <div class="mt-3">
+                <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Order
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .payment-option {
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+    }
+    
+    .payment-option:hover {
+        background-color: #e9ecef;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .payment-option.selected {
+        background-color: #e7f5e7;
+        border-color: #28a745 !important;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+    }
+    
+    .cursor-pointer {
+        cursor: pointer;
+    }
+</style>
+
+<script>
+function selectPaymentMethod(element, method) {
+    // Remove selected class from all options
+    document.querySelectorAll('.payment-option').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked option
+    element.classList.add('selected');
+    
+    // Enable submit button
+    document.getElementById('submitBtn').disabled = false;
+    
+    // Update calculation for COD
+    if (method === 'cod') {
+        const total = {{ order.total_price|floatformat:2 }};
+        const upfront = (total * 0.20).toFixed(2);
+        const remaining = (total * 0.80).toFixed(2);
+        document.getElementById('cod_upfront').textContent = upfront;
+        document.getElementById('cod_remaining').textContent = remaining;
+    }
+}
+
+// Handle radio button click directly
+document.querySelectorAll('input[name="payment_method"]').forEach(input => {
+    input.addEventListener('change', function() {
+        selectPaymentMethod(this.closest('.payment-option'), this.value);
+    });
+});
+</script>
+{% endblock %}

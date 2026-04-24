@@ -15,7 +15,13 @@ from marketplace import views as marketplace_views
 from admin_panel import views as admin_views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Custom Admin Interface (replaces default Django admin)
+    path('admin/', admin_views.custom_admin_login, name='custom_admin_login'),
+    path('admin/logout/', admin_views.custom_admin_logout, name='custom_admin_logout'),
+    path('admin/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
+    
+    # Default Django admin (disabled from public access)
+    # path('admin/', admin.site.urls),
     
     # Google OAuth (django-allauth)
     path('auth/google/', user_views.start_google_login, name='start_google_login'),
@@ -57,6 +63,7 @@ urlpatterns = [
     path('my-reports/', user_views.my_reports, name='my_reports'),
     
     # Farmer URLs
+    path('farmer/dashboard/', farmer_views.farmer_dashboard, name='farmer_dashboard'),
     path('farmer/crops/', farmer_views.farmer_crops, name='farmer_crops'),
     path('farmer/orders/', farmer_views.farmer_orders, name='farmer_orders'),
     path('farmer/add-crop/', farmer_views.add_crop, name='add_crop'),
@@ -81,6 +88,7 @@ urlpatterns = [
     path('farmer/send-message/<int:recipient_id>/', farmer_views.send_message, name='send_message'),
     path('farmer/ratings/', farmer_views.ratings_view, name='farmer_ratings'),
     path('farmer/order/<int:order_id>/', farmer_views.order_detail, name='order_detail'),
+    path('farmer/submit-nid/', farmer_views.submit_nid, name='submit_nid'),
     
     # Buyer URLs
     path('buyer/marketplace/', buyer_views.marketplace, name='marketplace'),
@@ -95,6 +103,11 @@ urlpatterns = [
     path('buyer/confirm-receipt/<int:order_id>/', buyer_views.confirm_receipt, name='confirm_receipt'),
     path('buyer/cancel-order/<int:order_id>/', buyer_views.cancel_order, name='cancel_order'),
     path('buyer/purchase-history/', buyer_views.purchase_history, name='purchase_history'),
+    # Payment Integration
+    path('buyer/payment-status/<int:order_id>/', buyer_views.check_order_payment_status, name='check_payment_status'),
+    path('buyer/payment/<int:order_id>/', buyer_views.buyer_payment_choice, name='buyer_payment_choice'),
+    path('buyer/payment/cod/<int:order_id>/', buyer_views.buyer_initiate_cod_payment, name='buyer_initiate_cod_payment'),
+    path('payment/success/<str:payment_id>/', buyer_views.payment_success_detail, name='payment_success_detail'),
     
     # Marketplace URLs
     path('marketplace/', marketplace_views.marketplace_home, name='marketplace_home'),
@@ -122,6 +135,8 @@ urlpatterns = [
     path('admin-panel/settings/', admin_views.admin_settings, name='admin_settings'),
     path('admin-panel/ai-monitoring/', admin_views.ai_monitoring, name='ai_monitoring'),
     path('admin-panel/activity-logs/', admin_views.activity_logs, name='activity_logs'),
+    path('admin-panel/nid-submissions/', admin_views.nid_submissions, name='nid_submissions'),
+    path('admin-panel/nid-submission/<int:farmer_id>/', admin_views.nid_approval_detail, name='nid_approval_detail'),
     path('admin-panel/irrigation/', admin_views.irrigation_crops_admin, name='irrigation_crops_admin'),
     path('admin-panel/irrigation/add/', admin_views.add_irrigation_crop_admin, name='add_irrigation_crop_admin'),
     path('admin-panel/irrigation/<int:crop_id>/edit/', admin_views.edit_irrigation_crop_admin, name='edit_irrigation_crop_admin'),
@@ -141,6 +156,9 @@ urlpatterns = [
     
     # Chat URLs (Real-time messaging between farmers and buyers)
     path('chat/', include('chat.urls')),
+    
+    # Payment URLs (SSLCommerz and payment management)
+    path('payment/', include('payment.urls')),
 ]
 
 if settings.DEBUG:

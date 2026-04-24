@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Verify COD Payment - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Header -->
+    <div class="mb-4">
+        <h2 class="text-success">
+            <i class="fas fa-money-check-alt"></i> Verify Cash on Delivery Payment
+        </h2>
+        <p class="text-muted">Confirm receipt of remaining balance from buyer</p>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Order Summary -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-box"></i> Order Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Order ID:</strong></p>
+                            <p class="text-primary fs-5">#{{ order.id }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Buyer:</strong></p>
+                            <p>{{ order.buyer.get_full_name|default:order.buyer.username }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Crop:</strong></p>
+                            <p>{{ order.crop.crop_name }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Quantity:</strong></p>
+                            <p>{{ order.quantity }} {{ order.crop.unit }}</p>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Order Status:</strong></p>
+                            <p><span class="badge bg-info">{{ order.get_status_display }}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Delivery Date:</strong></p>
+                            <p>{{ order.delivery_date|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Status -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-credit-card"></i> Payment Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle"></i> COD Payment Schedule</h6>
+                        <p class="mb-2">This is a Cash on Delivery order. Payment was split into two parts:</p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="payment-box p-3 border rounded bg-light">
+                                <h6 class="mb-2"><i class="fas fa-check-circle text-success"></i> Upfront Payment (Completed)</h6>
+                                <p class="mb-0"><strong class="text-success">৳{{ payment.upfront_amount|floatformat:2 }}</strong></p>
+                                <small class="text-muted">← 20% paid at order placement</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="payment-box p-3 border rounded bg-warning-light">
+                                <h6 class="mb-2"><i class="fas fa-hourglass-half text-warning"></i> Remaining Balance (Pending)</h6>
+                                <p class="mb-0"><strong class="text-warning">৳{{ payment.remaining_amount|floatformat:2 }}</strong></p>
+                                <small class="text-muted">← 80% due at delivery</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Please verify the remaining payment before marking this order as delivered.</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Verification Form -->
+            <div class="card shadow-sm">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-check-square"></i> Verify Payment Receipt</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirm_payment" name="confirm_payment" required>
+                                <label class="form-check-label" for="confirm_payment">
+                                    I confirm that I have received the remaining payment of <strong>৳{{ payment.remaining_amount|floatformat:2 }}</strong> from the buyer.
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="payment_method" class="form-label"><strong>Payment Received By (Method):</strong></label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">-- Select Payment Method --</option>
+                                <option value="cash">Cash</option>
+                                <option value="bkash">bKash</option>
+                                <option value="nagad">Nagad</option>
+                                <option value="rocket">Rocket</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="notes" class="form-label"><strong>Additional Notes (Optional):</strong></label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional notes about the payment..."></textarea>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                            <a href="{% url 'farmer_orders' %}" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-arrow-left"></i> Back to Orders
+                            </a>
+                            <button type="submit" name="action" value="confirm_delivery_payment" class="btn btn-success btn-lg">
+                                <i class="fas fa-check"></i> Confirm Payment & Complete Order
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Important Information -->
+            <div class="card shadow-sm mt-4 border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Important</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Please verify the payment amount carefully before confirming.</li>
+                        <li>Make sure you have physically received the payment from the buyer.</li>
+                        <li>Record the payment method for your records.</li>
+                        <li>Once confirmed, the order will be marked as completed.</li>
+                        <li>The buyer will be notified about the payment confirmation.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-warning-light {
+        background-color: rgba(255, 193, 7, 0.1) !important;
+    }
+    
+    .payment-box {
+        transition: all 0.3s ease;
+    }
+    
+    .payment-box:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}

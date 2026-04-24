@@ -28,6 +28,23 @@ def buyer_dashboard(request):
     recent_messages = Message.objects.filter(recipient=request.user).order_by('-created_at')[:5]
     wishlist_items = WishlistItem.objects.filter(buyer=request.user)
     
+    # Get payment statistics
+    from payment.models import Payment
+    payments = Payment.objects.filter(order__buyer=request.user)
+    completed_payments = payments.filter(status='completed').count()
+    pending_payments = payments.filter(status='pending').count()
+    
+    # Get accepted orders awaiting payment
+    accepted_orders = orders.filter(status='accepted')
+    orders_pending_payment = []
+    for order in accepted_orders:
+        try:
+            payment = Payment.objects.get(order=order)
+            if payment.status not in ['completed']:
+                orders_pending_payment.append(order)
+        except Payment.DoesNotExist:
+            orders_pending_payment.append(order)
+    
     context = {
         'orders': orders,
         'recent_messages': recent_messages,
@@ -36,6 +53,9 @@ def buyer_dashboard(request):
         'wishlist_count': wishlist_items.count(),
         'pending_orders': orders.filter(status='pending').count(),
         'is_approved': is_buyer_approved(request.user),
+        'completed_payments': completed_payments,
+        'pending_payments': pending_payments,
+        'orders_pending_payment': orders_pending_payment,
     }
     return render(request, 'buyer/dashboard.html', context)
 
@@ -455,3 +475,147 @@ def cancel_order(request, order_id):
 
     messages.success(request, 'Order cancelled successfully.')
     return redirect('buyer_orders')
+
+
+@login_required(login_url='login')
+def check_order_payment_status(request, order_id):
+    """Check payment status for an accepted order - AJAX endpoint"""
+    order = get_object_or_404(Order, id=order_id)
+    
+    # Allow buyer or farmer to check payment status
+    if request.user not in [order.buyer, order.farmer]:
+        return redirect('dashboard')
+    
+    # Get or create payment record
+    from payment.models import Payment
+    try:
+        payment = Payment.objects.get(order=order)
+    except Payment.DoesNotExist:
+        # Payment hasn't been initiated yet
+        if request.user == order.buyer and order.status == 'accepted':
+            # Redirect to payment page
+            return redirect('buyer_payment_choice', order_id=order.id)
+        payment = None
+    
+    context = {
+        'order': order,
+        'payment': payment,
+        'title': 'Payment Status'
+    }
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Return JSON for AJAX
+        import json
+        from django.http import JsonResponse
+        return JsonResponse({
+            'order_id': order.id,
+            'order_status': order.status,
+            'payment_status': payment.status if payment else 'not_initiated',
+            'payment_method': payment.payment_method if payment else None,
+            'total_amount': order.total_price,
+            'paid_amount': payment.paid_amount if payment else 0,
+        })
+    
+    return render(request, 'buyer/payment_status.html', context)
+
+
+@login_required(login_url='login')
+def buyer_payment_choice(request, order_id):
+    """Buyer chooses payment method for accepted order"""
+    order = get_object_or_404(Order, id=order_id, buyer=request.user)
+    
+    # Payment only allowed after farmer accepts
+    if order.status != 'accepted':
+        messages.error(request, 'This order has not been accepted by the farmer yet.')
+        return redirect('order_detail', order_id=order.id)
+    
+    # Check if payment already exists
+    from payment.models import Payment
+    try:
+        payment = Payment.objects.get(order=order)
+        if payment.status == 'completed':
+            messages.info(request, 'This order has already been paid.')
+            return redirect('payment_success_detail', payment_id=str(payment.id))
+        elif payment.status in ['pending', 'initiating']:
+            # Show existing payment form
+            context = {'order': order, 'payment': payment}
+            return render(request, 'buyer/payment_method_choice.html', context)
+    except Payment.DoesNotExist:
+        pass
+    
+    if request.method == 'POST':
+        payment_method = request.POST.get('payment_method')
+        
+        if payment_method not in ['cod', 'sslcommerz']:
+            messages.error(request, 'Invalid payment method.')
+            return redirect('buyer_payment_choice', order_id=order.id)
+        
+        # Create payment record
+        if payment_method == 'cod':
+            upfront = order.total_price * 0.20  # 20% upfront
+            remaining = order.total_price * 0.80  # 80% at delivery
+            payment = Payment.objects.create(
+                order=order,
+                payment_method='cod',
+                status='pending',
+                total_amount=order.total_price,
+                upfront_amount=upfront,
+                remaining_amount=remaining,
+            )
+            messages.success(request, f'COD selected! You need to pay ৳{upfront:.2f} now and ৳{remaining:.2f} at delivery.')
+            return redirect('buyer_initiate_cod_payment', order_id=order.id)
+        
+        elif payment_method == 'sslcommerz':
+            payment = Payment.objects.create(
+                order=order,
+                payment_method='sslcommerz',
+                status='pending',
+                total_amount=order.total_price,
+            )
+            # Redirect to SSLCommerz payment
+            return redirect('initiate_sslcommerz_payment', payment_id=str(payment.id))
+    
+    context = {'order': order}
+    return render(request, 'buyer/payment_method_choice.html', context)
+
+
+@login_required(login_url='login')
+def buyer_initiate_cod_payment(request, order_id):
+    """Buyer initiates COD upfront payment"""
+    order = get_object_or_404(Order, id=order_id, buyer=request.user)
+    
+    from payment.models import Payment
+    payment = get_object_or_404(Payment, order=order)
+    
+    if payment.payment_method != 'cod':
+        messages.error(request, 'Invalid payment method.')
+        return redirect('order_detail', order_id=order.id)
+    
+    context = {
+        'order': order,
+        'payment': payment,
+        'upfront_amount': payment.upfront_amount,
+        'remaining_amount': payment.remaining_amount,
+        'title': 'COD Payment Details'
+    }
+    return render(request, 'buyer/cod_payment_details.html', context)
+
+
+@login_required(login_url='login')
+def payment_success_detail(request, payment_id):
+    """View payment success detailed page"""
+    from payment.models import Payment
+    payment = get_object_or_404(Payment, id=payment_id)
+    order = payment.order
+    
+    # Only buyer and farmer can view
+    if request.user not in [order.buyer, order.farmer]:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard')
+    
+    context = {
+        'payment': payment,
+        'order': order,
+        'title': 'Payment Confirmation'
+    }
+    return render(request, 'buyer/payment_success_detail.html', context)

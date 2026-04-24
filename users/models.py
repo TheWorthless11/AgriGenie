@@ -121,6 +121,24 @@ class FarmerProfile(models.Model):
         default='not_submitted'
     )
     
+    # NID Verification fields
+    nid_number = models.CharField(max_length=20, blank=True, null=True, help_text="National ID Number")
+    nid_photo = models.ImageField(upload_to='nid_photos/', blank=True, null=True, help_text="NID Photo/Document")
+    nid_submission_date = models.DateTimeField(blank=True, null=True, help_text="When NID was submitted")
+    nid_approval_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('not_submitted', 'Not Submitted'),
+            ('pending', 'Pending Review'),
+            ('approved', 'Approved'),
+            ('rejected', 'Rejected')
+        ],
+        default='not_submitted',
+        help_text="NID verification status"
+    )
+    nid_admin_notes = models.TextField(blank=True, null=True, help_text="Admin notes on NID verification")
+    nid_approved_date = models.DateTimeField(blank=True, null=True, help_text="When NID was approved by admin")
+    
     def __str__(self):
         return self.farm_name
 

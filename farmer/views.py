@@ -19,7 +19,7 @@ from farmer.models import (
     IrrigationRecord,
     IrrigationSchedule,
 )
-from farmer.forms import CropForm, OrderForm, MessageForm, WeatherAlertForm, CropDiseaseForm
+from farmer.forms import CropForm, OrderForm, MessageForm, WeatherAlertForm, CropDiseaseForm, NIDSubmissionForm
 from farmer.decorators import farmer_approval_required
 from farmer.services.irrigation import (
     ensure_default_irrigation_crops,
@@ -525,6 +525,11 @@ def farmer_dashboard(request):
     unread_messages = Message.objects.filter(recipient=request.user, is_read=False).count()
     farmer_profile = FarmerProfile.objects.filter(user=request.user).first()
     
+    # NID verification status
+    nid_status = 'not_submitted'
+    if farmer_profile:
+        nid_status = farmer_profile.nid_approval_status
+    
     context = {
         'crops': crops,
         'orders': orders,
@@ -539,6 +544,8 @@ def farmer_dashboard(request):
         'total_revenue': sum([order.total_price for order in orders.filter(status='delivered')]),
         'is_approved': is_farmer_approved(request.user),
         'farmer_profile': farmer_profile,
+        'nid_status': nid_status,
+        'nid_submission_pending': nid_status == 'not_submitted' or nid_status == 'pending' or nid_status == 'rejected',
     }
     return render(request, 'farmer/dashboard.html', context)
 
@@ -685,7 +692,19 @@ def order_detail(request, order_id):
             messages.success(request, 'Order status updated!')
             return redirect('order_detail', order_id=order.id)
     
-    context = {'order': order, 'title': 'Order Detail'}
+    # Get payment information if it exists
+    from payment.models import Payment
+    payment = None
+    try:
+        payment = Payment.objects.get(order=order)
+    except Payment.DoesNotExist:
+        pass
+    
+    context = {
+        'order': order, 
+        'payment': payment,
+        'title': 'Order Detail'
+    }
     return render(request, 'farmer/order_detail.html', context)
 
 
@@ -1383,3 +1402,48 @@ def ratings_view(request):
         'title': 'My Ratings'
     }
     return render(request, 'farmer/ratings.html', context)
+
+
+@login_required(login_url='login')
+def submit_nid(request):
+    """Submit NID photo and number for farmer verification"""
+    if request.user.role != 'farmer':
+        messages.error(request, 'Access denied! Only farmers can submit NID.')
+        return redirect('dashboard')
+    
+    # Get or create farmer profile
+    try:
+        farmer_profile = request.user.farmer_profile
+    except FarmerProfile.DoesNotExist:
+        messages.error(request, 'Farmer profile not found. Please complete onboarding first.')
+        return redirect('farmer_onboarding')
+    
+    if request.method == 'POST':
+        form = NIDSubmissionForm(request.POST, request.FILES, instance=farmer_profile)
+        if form.is_valid():
+            nid_obj = form.save(commit=False)
+            nid_obj.nid_submission_date = timezone.now()
+            nid_obj.nid_approval_status = 'pending'  # Set to pending for admin review
+            nid_obj.save()
+            
+            # Create a notification for the admin
+            admin_users = CustomUser.objects.filter(role='admin', is_superuser=True)
+            for admin in admin_users:
+                Notification.objects.create(
+                    user=admin,
+                    notification_type='system',
+                    title='New NID Submission for Review',
+                    message=f'{request.user.username} ({request.user.get_full_name}) has submitted NID for verification. NID: {nid_obj.nid_number}'
+                )
+            
+            messages.success(request, 'NID submitted successfully! Awaiting admin approval.')
+            return redirect('farmer_dashboard')
+    else:
+        form = NIDSubmissionForm(instance=farmer_profile)
+    
+    context = {
+        'form': form,
+        'farmer_profile': farmer_profile,
+        'title': 'Submit NID for Verification'
+    }
+    return render(request, 'farmer/submit_nid.html', context)

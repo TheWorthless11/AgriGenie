@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Status - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Payment Status</h3>
+                </div>
+                <div class="card-body p-5">
+                    <!-- Order Information -->
+                    <div class="mb-4">
+                        <h5>Order #{{ order.id }}</h5>
+                        <p class="text-muted">{{ order.crop.crop_name }} - {{ order.quantity }} {{ order.crop.unit }}</p>
+                    </div>
+
+                    {% if payment %}
+                        <!-- Payment Found -->
+                        <div class="timeline mb-5">
+                            <!-- Order Status -->
+                            <div class="timeline-item mb-4">
+                                <div class="timeline-marker bg-info text-white">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Order Placed</h6>
+                                    <p class="text-muted">{{ order.order_date|date:"M d, Y - H:i" }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Farmer Response -->
+                            {% if order.status == 'accepted' %}
+                            <div class="timeline-item mb-4">
+                                <div class="timeline-marker bg-success text-white">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Farmer Accepted</h6>
+                                    <p class="text-muted">Ready for payment</p>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Payment Status -->
+                            <div class="timeline-item {% if payment.status != 'completed' %}opacity-50{% endif %}">
+                                <div class="timeline-marker {% if payment.status == 'completed' %}bg-success{% else %}bg-warning{% endif %} text-white">
+                                    <i class="fas fa-{% if payment.status == 'completed' %}check-circle{% elif payment.status == 'failed' %}times-circle{% else %}hourglass-end{% endif %}"></i>
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>Payment: 
+                                        <span class="badge badge-{% if payment.status == 'completed' %}success{% elif payment.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                            {{ payment.get_status_display }}
+                                        </span>
+                                    </h6>
+                                    {% if payment.completed_at %}
+                                    <p class="text-muted">{{ payment.completed_at|date:"M d, Y - H:i" }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Details -->
+                        <div class="card mb-4 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">Payment Details</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Payment Method:</strong></p>
+                                        <p>{{ payment.get_payment_method_display }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Amount:</strong></p>
+                                        <p class="h5 text-success">৳{{ payment.total_amount|floatformat:2 }}</p>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Paid Amount:</strong></p>
+                                        <p>৳{{ payment.paid_amount|floatformat:2 }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Status:</strong></p>
+                                        <p>
+                                            <span class="badge badge-{% if payment.status == 'completed' %}success{% elif payment.status == 'failed' %}danger{% else %}warning{% endif %}">
+                                                {{ payment.get_status_display }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {% if payment.payment_method == 'cod' %}
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Upfront (20%):</strong></p>
+                                        <p class="text-warning">৳{{ payment.upfront_amount|floatformat:2 }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Remaining (80%):</strong></p>
+                                        <p class="text-info">৳{{ payment.remaining_amount|floatformat:2 }}</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if payment.status == 'completed' %}
+                        <!-- Payment Completed Successfully -->
+                        <div class="alert alert-success">
+                            <h6 class="alert-heading">✓ Payment Confirmed</h6>
+                            <p class="mb-0">Your payment has been successfully processed. Your order is now ready for shipment.</p>
+                        </div>
+                        {% elif payment.status == 'failed' %}
+                        <!-- Payment Failed -->
+                        <div class="alert alert-danger">
+                            <h6 class="alert-heading">✕ Payment Failed</h6>
+                            <p>{{ payment.ssl_error_message }}</p>
+                            <p class="mb-0">Please try again with a different payment method.</p>
+                        </div>
+                        {% elif payment.status == 'pending' %}
+                        <!-- Payment Pending -->
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading">⏳ Payment Pending</h6>
+                            <p class="mb-0">Your payment is awaiting confirmation. Please complete the payment to proceed.</p>
+                        </div>
+                        <a href="{% url 'buyer_payment_choice' order.id %}" class="btn btn-primary btn-block">
+                            Complete Payment
+                        </a>
+                        {% endif %}
+
+                    {% else %}
+                        <!-- No Payment Found -->
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">ℹ️ No Payment Initiated</h6>
+                            <p>This order has not been paid yet.</p>
+                        </div>
+
+                        {% if order.status == 'accepted' %}
+                        <p class="text-muted">The farmer has accepted your order. You can now proceed with payment.</p>
+                        <a href="{% url 'buyer_payment_choice' order.id %}" class="btn btn-success btn-block">
+                            <i class="fas fa-credit-card"></i> Proceed to Payment
+                        </a>
+                        {% else %}
+                        <p class="text-muted">Payment is only available after the farmer accepts your order.</p>
+                        <p>Current order status: <span class="badge badge-info">{{ order.get_status_display }}</span></p>
+                        {% endif %}
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-arrow-left"></i> Back to Order
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{% url 'buyer_orders' %}" class="btn btn-outline-secondary btn-block">
+                                <i class="fas fa-list"></i> All Orders
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding: 20px 0;
+    }
+
+    .timeline-item {
+        display: flex;
+        margin-bottom: 30px;
+    }
+
+    .timeline-marker {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 20px;
+        flex-shrink: 0;
+        font-size: 20px;
+    }
+
+    .timeline-content h6 {
+        margin-top: 5px;
+    }
+
+    .opacity-50 {
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Submit NID for Verification - AgriGenie{% endblock %}
+
+{% block extra_css %}
+<style>
+    .nid-submission-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .nid-info-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        margin-bottom: 2rem;
+    }
+
+    .nid-info-box h5 {
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .nid-info-box ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .nid-info-box li {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .form-file-input {
+        position: relative;
+    }
+
+    .form-file-label {
+        display: inline-block;
+        padding: 0.75rem 1.5rem;
+        background-color: #e9ecef;
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .form-file-label:hover {
+        background-color: #dee2e6;
+        border-color: #667eea;
+    }
+
+    .form-file-input input[type="file"] {
+        display: none;
+    }
+
+    .file-name-display {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    .nid-requirements {
+        background-color: #f3f4f6;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .nid-requirements h6 {
+        margin-bottom: 1rem;
+        color: #374151;
+        font-weight: 600;
+    }
+
+    .nid-requirements ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .nid-requirements li {
+        margin-bottom: 0.5rem;
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+
+    .btn-submit-nid {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-submit-nid:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .security-badge {
+        display: inline-block;
+        background-color: #dcfce7;
+        color: #166534;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 1.5rem;
+    }
+
+    @media (max-width: 576px) {
+        .nid-submission-container {
+            padding: 1rem;
+        }
+
+        .nid-info-box {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container nid-submission-container py-5">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="mb-4">
+                <a href="{% url 'farmer_dashboard' %}" class="btn btn-sm btn-outline-secondary mb-3">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <h1 class="fw-bold mb-2">
+                    <i class="fas fa-id-card text-primary"></i> NID Verification
+                </h1>
+                <p class="text-muted">Submit your National ID information to verify your account and unlock full features.</p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="nid-info-box">
+                <h5><i class="fas fa-shield-alt"></i> Why NID Verification?</h5>
+                <ul>
+                    <li>Enhances platform security and trust</li>
+                    <li>Protects both farmers and buyers</li>
+                    <li>Required for full account approval</li>
+                    <li>Takes only 2-3 working days for review</li>
+                </ul>
+            </div>
+
+            <!-- Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" id="nidForm">
+                        {% csrf_token %}
+
+                        <!-- NID Number Field -->
+                        <div class="mb-4">
+                            <label for="{{ form.nid_number.id_for_label }}" class="form-label">
+                                <i class="fas fa-hashtag"></i> National ID Number <span class="text-danger">*</span>
+                            </label>
+                            {{ form.nid_number }}
+                            {% if form.nid_number.errors %}
+                                <div class="alert alert-danger alert-sm mt-2">
+                                    {{ form.nid_number.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted d-block mt-2">
+                                Enter your complete 10-digit or 13-digit National ID number
+                            </small>
+                        </div>
+
+                        <!-- NID Photo Field -->
+                        <div class="mb-4">
+                            <label for="{{ form.nid_photo.id_for_label }}" class="form-label">
+                                <i class="fas fa-image"></i> NID Photo/Document <span class="text-danger">*</span>
+                            </label>
+                            
+                            <div class="form-file-input">
+                                <label for="{{ form.nid_photo.id_for_label }}" class="form-file-label w-100 text-center">
+                                    <div>
+                                        <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-primary"></i>
+                                        <p class="mb-0"><strong>Click to upload or drag and drop</strong></p>
+                                        <small class="text-muted">PNG, JPG, or PDF (Max 5MB)</small>
+                                    </div>
+                                </label>
+                                {{ form.nid_photo }}
+                                <div class="file-name-display" id="fileName"></div>
+                            </div>
+
+                            {% if form.nid_photo.errors %}
+                                <div class="alert alert-danger alert-sm mt-2">
+                                    {{ form.nid_photo.errors.0 }}
+                                </div>
+                            {% endif %}
+
+                            <small class="form-text text-muted d-block mt-2">
+                                Upload a clear photo of both sides of your NID (front and back on one image recommended)
+                            </small>
+                        </div>
+
+                        <!-- Current Status Display -->
+                        {% if farmer_profile.nid_approval_status != 'not_submitted' %}
+                        <div class="alert alert-info mb-4">
+                            <strong>Current Status:</strong>
+                            {% if farmer_profile.nid_approval_status == 'pending' %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-hourglass-half"></i> Under Review
+                                </span>
+                                <p class="mb-0 mt-2 small">Your NID submission is being reviewed by our admin team. You'll be notified once the review is complete.</p>
+                            {% elif farmer_profile.nid_approval_status == 'approved' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle"></i> Approved
+                                </span>
+                                <p class="mb-0 mt-2 small">Your NID has been verified successfully!</p>
+                            {% elif farmer_profile.nid_approval_status == 'rejected' %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle"></i> Rejected
+                                </span>
+                                <p class="mb-0 mt-2 small">{{ farmer_profile.nid_admin_notes|default:"Please resubmit with clearer photos." }}</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-submit-nid btn-lg">
+                                <i class="fas fa-upload"></i> Submit for Verification
+                            </button>
+                        </div>
+
+                        <div class="security-badge text-center w-100">
+                            <i class="fas fa-lock"></i> Your information is encrypted and secure
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Requirements Box -->
+            <div class="nid-requirements">
+                <h6><i class="fas fa-check-square"></i> Requirements for Approval</h6>
+                <ul>
+                    <li>National ID number must be valid and readable</li>
+                    <li>Photo must show both front and back of NID clearly</li>
+                    <li>Image quality should be clear (not blurry or dark)</li>
+                    <li>All text must be legible and in correct orientation</li>
+                    <li>No altered or edited IDs will be accepted</li>
+                </ul>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="mt-4">
+                <h6 class="fw-bold mb-3"><i class="fas fa-question-circle"></i> Frequently Asked Questions</h6>
+                
+                <div class="accordion" id="nidFAQ">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                How long does NID verification take?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#nidFAQ">
+                            <div class="accordion-body">
+                                Typically, NID verification takes 2-3 working days. You'll receive a notification once the review is complete.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                Is my personal information safe?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#nidFAQ">
+                            <div class="accordion-body">
+                                Yes! Your NID information is encrypted, securely stored, and only visible to authorized admin personnel. We follow strict data protection standards.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                What formats are accepted for NID photos?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#nidFAQ">
+                            <div class="accordion-body">
+                                We accept JPEG, PNG, and PDF formats. Make sure the image is clear, well-lit, and all text is readable. Maximum file size is 5MB.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                What if my NID is rejected?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#nidFAQ">
+                            <div class="accordion-body">
+                                If your submission is rejected, you'll receive feedback on why. Simply resubmit with clearer photos or correct information. You can try again immediately.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // File input change listener
+    const fileInput = document.getElementById('{{ form.nid_photo.id_for_label }}');
+    const fileNameDisplay = document.getElementById('fileName');
+
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const fileName = this.files[0].name;
+            const fileSize = (this.files[0].size / 1024).toFixed(2);
+            fileNameDisplay.innerHTML = `<strong>Selected:</strong> ${fileName} (${fileSize} KB)`;
+        }
+    });
+
+    // Drag and drop functionality
+    const fileLabel = document.querySelector('.form-file-label');
+    
+    fileLabel.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        fileLabel.style.backgroundColor = '#667eea';
+        fileLabel.style.color = 'white';
+    });
+
+    fileLabel.addEventListener('dragleave', function() {
+        fileLabel.style.backgroundColor = '#e9ecef';
+        fileLabel.style.color = 'inherit';
+    });
+
+    fileLabel.addEventListener('drop', function(e) {
+        e.preventDefault();
+        fileLabel.style.backgroundColor = '#e9ecef';
+        fileLabel.style.color = 'inherit';
+        
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+            const event = new Event('change', { bubbles: true });
+            fileInput.dispatchEvent(event);
+        }
+    });
+</script>
+{% endblock %}

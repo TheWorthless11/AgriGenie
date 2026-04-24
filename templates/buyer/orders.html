@@ -4,24 +4,43 @@
 {% block title %}My Orders - AgriGenie{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
     <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-success">
-            <i class="fas fa-shopping-bag"></i> My Orders
-        </h2>
-        <a href="{% url 'marketplace' %}" class="btn btn-success">
-            <i class="fas fa-store"></i> Browse Marketplace
-        </a>
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="fas fa-shopping-bag text-success"></i> My Orders
+            </h1>
+            <p class="text-muted">Manage and track your crop orders</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'marketplace' %}" class="btn btn-success">
+                <i class="fas fa-store"></i> Browse Marketplace
+            </a>
+        </div>
     </div>
     
+    <!-- Filter & Messages -->
+    <div class="row mb-4">
+        <div class="col-12">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-info-circle"></i> {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Filter Section -->
-    <div class="card shadow-sm mb-4">
+    <div class="card dashboard-table-card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label">Filter by Status</label>
-                    <select name="status" class="form-select">
+                    <label class="form-label fw-bold">Filter by Status</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
                         <option value="">All Orders</option>
                         {% for value, label in status_choices %}
                             <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
@@ -31,7 +50,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-success w-100">
                         <i class="fas fa-filter"></i> Filter
                     </button>
                 </div>
@@ -39,65 +58,75 @@
         </div>
     </div>
     
-    <!-- Orders List -->
+    <!-- Orders Table -->
     {% if orders %}
-        <div class="row">
-            {% for order in orders %}
-                <div class="col-12 mb-3">
-                    <div class="card shadow-sm border-0">
-                        <div class="card-body">
-                            <div class="row align-items-center">
-                                <!-- Crop Image -->
-                                <div class="col-md-2">
-                                    {% if order.crop.crop_image %}
-                                        <img src="{{ order.crop.crop_image.url }}" class="img-fluid rounded" 
-                                             alt="{{ order.crop.master_crop.crop_name }}" style="max-height: 100px; object-fit: cover;">
-                                    {% elif order.crop.master_crop.generic_image %}
-                                        <img src="{{ order.crop.master_crop.generic_image.url }}" class="img-fluid rounded" 
-                                             alt="{{ order.crop.master_crop.crop_name }}" style="max-height: 100px; object-fit: cover;">
+        <div class="card dashboard-table-card">
+            <div class="card-header dashboard-table-card-header">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Order Summary</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Crop</th>
+                            <th>Farmer</th>
+                            <th>Quantity</th>
+                            <th>Total Price</th>
+                            <th>Status</th>
+                            <th>Order Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td><strong>#{{ order.id }}</strong></td>
+                                <td>{{ order.crop.master_crop.crop_name }}</td>
+                                <td>{{ order.farmer.username }}</td>
+                                <td>{{ order.quantity }} {{ order.crop.unit }}</td>
+                                <td><strong>৳{{ order.total_price|floatformat:0 }}</strong></td>
+                                <td>
+                                    {% if order.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                    {% elif order.status == 'accepted' %}
+                                        <span class="badge bg-info">Accepted</span>
+                                    {% elif order.status == 'shipped' %}
+                                        <span class="badge bg-primary">Shipped</span>
+                                    {% elif order.status == 'delivered' %}
+                                        <span class="badge bg-success">Delivered</span>
+                                    {% elif order.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
                                     {% else %}
-                                        <div class="bg-light rounded d-flex align-items-center justify-content-center" 
-                                             style="height: 100px; width: 100px;">
-                                            <i class="fas fa-seedling fa-2x text-success"></i>
-                                        </div>
+                                        <span class="badge bg-secondary">{{ order.get_status_display }}</span>
                                     {% endif %}
-                                </div>
-                                
-                                <!-- Order Details -->
-                                <div class="col-md-4">
-                                    <h5 class="mb-1">{{ order.crop.master_crop.crop_name }}</h5>
-                                    <p class="text-muted mb-1">
-                                        <i class="fas fa-user"></i> Seller: {{ order.farmer.username }}
-                                    </p>
-                                    <p class="text-muted mb-0 small">
-                                        <i class="fas fa-hashtag"></i> Order #{{ order.id }}
-                                    </p>
-                                </div>
-                                
-                                <!-- Quantity & Price -->
-                                <div class="col-md-2">
-                                    <p class="mb-1"><strong>Qty:</strong> {{ order.quantity }} {{ order.crop.unit }}</p>
-                                    <p class="mb-0 h5 text-success">৳{{ order.total_price|floatformat:2 }}</p>
-                                </div>
-                                
-                                <!-- Dates -->
-                                <div class="col-md-2">
-                                    <p class="mb-1 small">
-                                        <i class="fas fa-calendar"></i> {{ order.order_date|date:"M d, Y" }}
-                                    </p>
-                                    {% if order.delivery_date %}
-                                        <p class="mb-0 small text-muted">
-                                            <i class="fas fa-truck"></i> Delivery: {{ order.delivery_date|date:"M d, Y" }}
-                                        </p>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Status & Actions -->
-                                <div class="col-md-2 text-end">
-                                    <span class="badge mb-2 
-                                        {% if order.status == 'pending' %}bg-warning text-dark
-                                        {% elif order.status == 'accepted' %}bg-info
-                                        {% elif order.status == 'shipped' %}bg-primary
+                                </td>
+                                <td>{{ order.order_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No Orders Found</h5>
+                <p class="text-muted">Start browsing the marketplace to place your first order!</p>
+                <a href="{% url 'marketplace' %}" class="btn btn-success mt-3">
+                    <i class="fas fa-store"></i> Browse Marketplace
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
                                         {% elif order.status == 'delivered' %}bg-success
                                         {% elif order.status == 'rejected' %}bg-danger
                                         {% elif order.status == 'cancelled' %}bg-secondary
@@ -109,6 +138,13 @@
                                         <a href="{% url 'order_detail' order_id=order.id %}" class="btn btn-sm btn-outline-success">
                                             <i class="fas fa-eye"></i> View
                                         </a>
+                                        
+                                        <!-- Payment Button for Accepted Orders -->
+                                        {% if order.status == 'accepted' %}
+                                            <a href="{% url 'buyer_payment_choice' order.id %}" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-credit-card"></i> Pay Now
+                                            </a>
+                                        {% endif %}
                                         
                                         {% if order.status == 'delivered' and not order.is_confirmed_by_buyer %}
                                             <form action="{% url 'confirm_receipt' order_id=order.id %}" method="POST" class="d-inline">

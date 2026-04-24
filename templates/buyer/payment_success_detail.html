@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Confirmation - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Success Badge -->
+            <div class="text-center mb-4">
+                <div class="display-1 text-success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 class="text-success mt-3 mb-1">Payment Successful!</h2>
+                <p class="text-muted">Your payment has been confirmed</p>
+            </div>
+
+            <!-- Payment Confirmation Card -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Payment Confirmation</h4>
+                </div>
+                <div class="card-body p-5">
+                    <!-- Order and Payment Info -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">ORDER DETAILS</h6>
+                            <p class="h5 mb-1">Order #{{ order.id }}</p>
+                            <p class="text-muted small">{{ order.order_date|date:"M d, Y" }}</p>
+                        </div>
+                        <div class="col-md-6 text-right">
+                            <h6 class="text-muted">PAYMENT ID</h6>
+                            <p class="h5 mb-1" title="{{ payment.id }}">{{ payment.id|truncatechars:20 }}</p>
+                            <p class="text-muted small">{{ payment.completed_at|date:"M d, Y - H:i" }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Crop and Quantity Info -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">PRODUCT INFORMATION</h6>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <p class="h6 mb-1">{{ order.crop.crop_name }}</p>
+                                <p class="text-muted small">{{ order.crop.crop_type }}</p>
+                            </div>
+                            <p class="h6 mb-0">{{ order.quantity }} {{ order.crop.unit }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Payment Summary -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">PAYMENT SUMMARY</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="text-muted small">Subtotal</p>
+                                <p class="h6">৳{{ payment.total_amount|floatformat:2 }}</p>
+                            </div>
+                            <div class="col-6 text-right">
+                                <p class="text-muted small">Amount Paid</p>
+                                <p class="h6">৳{{ payment.paid_amount|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        <hr>
+                        {% if payment.payment_method == 'cod' %}
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="text-muted small">Upfront Payment (20%)</p>
+                                <p class="h6 text-warning">৳{{ payment.upfront_amount|floatformat:2 }} ✓ Paid</p>
+                            </div>
+                            <div class="col-6 text-right">
+                                <p class="text-muted small">Remaining (80%) @ Delivery</p>
+                                <p class="h6 text-info">৳{{ payment.remaining_amount|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <!-- Payment Method -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">PAYMENT METHOD</h6>
+                            <p class="h6">
+                                {% if payment.payment_method == 'cod' %}
+                                💰 Cash on Delivery
+                                {% else %}
+                                💳 Online Payment (SSLCommerz)
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-2">STATUS</h6>
+                            <p>
+                                <span class="badge badge-success badge-lg p-2">
+                                    <i class="fas fa-check-circle"></i> {{ payment.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Next Steps -->
+                    <div class="alert alert-info mt-5 mb-4">
+                        <h6 class="alert-heading">📋 What Happens Next?</h6>
+                        <ol class="mb-0">
+                            {% if payment.payment_method == 'cod' %}
+                            <li>Your farmer will prepare the order for shipment</li>
+                            <li>You will receive tracking information via email</li>
+                            <li>Pay the remaining ৳{{ payment.remaining_amount|floatformat:2 }} upon delivery</li>
+                            <li>Confirm receipt and complete the transaction</li>
+                            {% else %}
+                            <li>Your farmer will prepare the order for shipment immediately</li>
+                            <li>You will receive tracking information via email</li>
+                            <li>Complete delivery and confirm receipt</li>
+                            <li>Leave a review and rating</li>
+                            {% endif %}
+                        </ol>
+                    </div>
+
+                    <!-- Farmer Info -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">👨‍🌾 Seller Information</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="h6 mb-1">{{ order.farmer.first_name }} {{ order.farmer.last_name }}</p>
+                                    <p class="text-muted small">Farm: {{ order.farmer.username }}</p>
+                                </div>
+                                <a href="{% url 'contact_farmer' order.farmer.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-envelope"></i> Contact
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Address -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">📦 Delivery Information</h6>
+                            <p class="mb-1"><strong>Expected Delivery Date:</strong></p>
+                            <p>{{ order.delivery_date|date:"M d, Y" }}</p>
+                            {% if order.special_requirements %}
+                            <hr>
+                            <p class="mb-1"><strong>Special Requirements:</strong></p>
+                            <p class="text-muted">{{ order.special_requirements }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Important Notes -->
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">⚠️ Important Notes</h6>
+                        <ul class="mb-0 small">
+                            <li>Save this confirmation for your records</li>
+                            <li>Check your email for tracking updates</li>
+                            {% if payment.payment_method == 'cod' %}
+                            <li>Keep cash ready for the remaining amount at delivery</li>
+                            {% endif %}
+                            <li>Report any issues immediately to the farmer or support</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row mt-4">
+                <div class="col-md-6 mb-2">
+                    <a href="{% url 'order_detail' order.id %}" class="btn btn-primary btn-block">
+                        <i class="fas fa-eye"></i> View Order Details
+                    </a>
+                </div>
+                <div class="col-md-6 mb-2">
+                    <a href="{% url 'buyer_orders' %}" class="btn btn-secondary btn-block">
+                        <i class="fas fa-list"></i> View All Orders
+                    </a>
+                </div>
+            </div>
+
+            <!-- Print Button -->
+            <div class="text-center mt-3">
+                <button class="btn btn-link" onclick="window.print()">
+                    <i class="fas fa-print"></i> Print Confirmation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .badge-lg {
+        font-size: 1rem;
+    }
+    
+    @media print {
+        .no-print {
+            display: none;
+        }
+    }
+</style>
+{% endblock %}

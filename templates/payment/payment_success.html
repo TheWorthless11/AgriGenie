@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Successful - AgriGenie{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Success Message -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    <h2 class="text-success mb-2">Payment Successful!</h2>
+                    <p class="text-muted fs-5">Your order has been confirmed and is ready for processing</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order & Payment Details -->
+    <div class="row">
+        <!-- Order Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-box"></i> Order Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="order-detail mb-3">
+                        <p class="mb-1"><strong>Order ID:</strong></p>
+                        <p class="text-primary fs-5">#{{ order.id }}</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="order-detail mb-3">
+                        <p class="mb-1"><strong>Crop:</strong></p>
+                        <p>{{ order.crop.crop_name }}</p>
+                    </div>
+                    
+                    <div class="order-detail mb-3">
+                        <p class="mb-1"><strong>Farmer:</strong></p>
+                        <p>{{ order.farmer.get_full_name|default:order.farmer.username }}</p>
+                    </div>
+                    
+                    <div class="order-detail mb-3">
+                        <p class="mb-1"><strong>Quantity:</strong></p>
+                        <p>{{ order.quantity }} {{ order.crop.unit }} @ ৳{{ order.crop.price_per_unit|floatformat:2 }} per unit</p>
+                    </div>
+                    
+                    <div class="order-detail mb-3">
+                        <p class="mb-1"><strong>Delivery Date:</strong></p>
+                        <p>{{ order.delivery_date|date:"l, F j, Y" }}</p>
+                    </div>
+                    
+                    {% if order.special_requirements %}
+                    <div class="order-detail mb-3">
+                        <p class="mb-1"><strong>Special Requirements:</strong></p>
+                        <p class="text-muted">{{ order.special_requirements }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header agri-card-header">
+                    <h5 class="mb-0"><i class="fas fa-credit-card"></i> Payment Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="payment-detail mb-3">
+                        <p class="mb-1"><strong>Payment ID:</strong></p>
+                        <p class="text-primary"><code>{{ payment.id }}</code></p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="payment-detail mb-3">
+                        <p class="mb-1"><strong>Payment Method:</strong></p>
+                        {% if payment.payment_method == 'cod' %}
+                            <p><span class="badge bg-warning text-dark">Cash on Delivery</span></p>
+                        {% else %}
+                            <p><span class="badge bg-primary">Online Payment (SSLCommerz)</span></p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="payment-detail mb-3">
+                        <p class="mb-1"><strong>Status:</strong></p>
+                        <p><span class="badge bg-success">{{ payment.get_status_display }}</span></p>
+                    </div>
+                    
+                    <div class="payment-detail mb-3">
+                        <p class="mb-1"><strong>Total Amount:</strong></p>
+                        <p class="fs-5"><strong>৳{{ payment.total_amount|floatformat:2 }}</strong></p>
+                    </div>
+                    
+                    {% if payment.payment_method == 'cod' %}
+                    <hr>
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle"></i> COD Payment Schedule</h6>
+                        <p class="mb-2"><strong>Upfront Payment (20%):</strong> <span class="text-success">৳{{ upfront_amount|floatformat:2 }}</span></p>
+                        <p class="mb-0"><strong>Delivery Payment (80%):</strong> <span class="text-warning">৳{{ remaining_amount|floatformat:2 }}</span></p>
+                    </div>
+                    {% elif payment.transaction_id %}
+                    <hr>
+                    <div class="alert alert-success">
+                        <h6 class="alert-heading"><i class="fas fa-check"></i> Transaction Confirmed</h6>
+                        <p class="mb-0"><strong>Transaction ID:</strong> <code>{{ payment.transaction_id }}</code></p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- What Happens Next -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> What Happens Next</h5>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                <div class="timeline-item mb-4">
+                    <div class="d-flex">
+                        <div class="timeline-marker bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-1">Payment Confirmed</h6>
+                            <p class="text-muted mb-0">Your payment has been processed successfully</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="timeline-item mb-4">
+                    <div class="d-flex">
+                        <div class="timeline-marker bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-1">Farmer Confirmation</h6>
+                            <p class="text-muted mb-0">{{ order.farmer.get_full_name|default:order.farmer.username }} will confirm and prepare the order</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="timeline-item mb-4">
+                    <div class="d-flex">
+                        <div class="timeline-marker bg-info text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-1">Shipping</h6>
+                            <p class="text-muted mb-0">Your order will be shipped on the agreed date: <strong>{{ order.delivery_date|date:"M d, Y" }}</strong></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="d-flex">
+                        <div class="timeline-marker bg-success text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-1">Delivery</h6>
+                            <p class="text-muted mb-0">Receive your order and confirm receipt</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <a href="{% url 'buyer_orders' %}" class="btn btn-primary btn-lg w-100">
+                <i class="fas fa-shopping-bag"></i> View My Orders
+            </a>
+        </div>
+        <div class="col-md-6 mb-3">
+            <a href="{% url 'marketplace' %}" class="btn btn-outline-success btn-lg w-100">
+                <i class="fas fa-store"></i> Continue Shopping
+            </a>
+        </div>
+    </div>
+    
+    <!-- Contact Information -->
+    <div class="card shadow-sm">
+        <div class="card-header agri-card-header">
+            <h5 class="mb-0"><i class="fas fa-headset"></i> Support & Questions</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-3">If you have any questions about your order or payment, feel free to contact the farmer:</p>
+            <a href="{% url 'send_message' order.farmer.id %}" class="btn btn-outline-primary">
+                <i class="fas fa-envelope"></i> Message Farmer
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline-marker {
+        min-width: 40px;
+        min-height: 40px;
+    }
+    
+    .card {
+        border: none;
+        transition: transform 0.2s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
