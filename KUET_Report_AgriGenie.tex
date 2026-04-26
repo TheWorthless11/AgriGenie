@@ -1326,60 +1326,19 @@ For the price prediction module, historical price data spanning the last 10 year
 \section{Development Tools and Technologies}
 
 \subsection{Backend Stack}
-\begin{itemize}
-	\item \textbf{Framework: Django 6.0 with Python 3.12} \\
-	Django is used as the main framework as it work well with machine learning related feature and Python 3.12 was used to make user it can use the stable and latest libraries
-	
-	\item \textbf{Database: PostgreSQL (production), Mysql (development)} \\
-	At the beginning of the development of this system Mysql was used but for deployment we switch to PostgreSQL as it can handles large ammount of data.
-	
-	\item \textbf{API: Django REST Framework} \\
-	REST APIs were used to connect the backend and frontend in a organized and clean way
-	
-	\item \textbf{Real-time: Django Channels with Daphne ASGI} \\
-	For handling WebSocket connections Django Channels were used which make real time chatting possible.
-	
 
-	\item \textbf{Task Queue: Celery with Redis broker} \\
-	
-	To prevent the system from delay and slow donw Celery was used
 
-	
-	\item \textbf{Authentication: Django-allauth + OTP} \\
-	Django Allauth was used to set up Login with Google which is a powerful and life easy feature.
-	
-	\item \textbf{Payment Gateway: SSLCommerz Integration} \\
-	Payment system support both cash on delivery and online payment through Bkash development mode by making safe transaction
-\end{itemize}
+	Django is used as the main framework as it work well with machine learning related feature and Python 3.12 was used to make user it can use the stable and latest libraries.At the beginning of the development of this system Mysql was used but for deployment we switch to PostgreSQL as it can handles large ammount of data.REST APIs were used to connect the backend and frontend in a organized and clean way.For handling WebSocket connections Django Channels were used which make real time chatting possible.To prevent the system from delay and slow down Celery was used.Django Allauth was used to set up Login with Google which is a powerful and life easy feature.Payment system support both cash on delivery and online payment through Bkash development mode by making safe transaction
+
 
 \subsection{Frontend Stack}
-\begin{itemize}
-	\item \textbf{Styling: Tailwind CSS + Bootstrap 5} \\
-	For responsitive design these tools are used.
-	
-	\item \textbf{Charts: Chart.js} \\
-	Chart.js was used to show price trends, AI monitoring
-	
-	\item \textbf{API Client: Axios} \\
-	Axios was used to handle communication with backend APIs.
-	\item \textbf{Real-time: Socket.io} \\
-	Django Channels was used to implement real time communication
-\end{itemize}
+	For responsitive design Tailwind CSS and Bootstrap 5 tools are used. Chart.js was used to show price trends, AI monitoring.Axios was used to handle communication with backend APIs. Django Channels was used to implement real time communication
+
 
 \subsection{Machine Learning Components}
-\begin{itemize}
-	\item \textbf{Disease Detection: ResNet-50 with TensorFlow 2.11} \\
-	This model is trained using 12,000 agricultural disease images which achieve 94.2\% accuracy. It support for now only tomato, potato and bell peppers.
-	
-	\item \textbf{Price Prediction: LSTM + Genetic Algorithm} \\
-	It Combines temporal dependencies with external features (weather, commodity indices). It also have achieved 7.3\% MAPE, guiding farmers on optimal selling times.
-	
-	\item \textbf{Weather Service: OpenWeatherMap API} \\
-	Detects disasters such as flood, drought, cyclones, frost, and heatwaves using threshold based rules. Farmer gets timely alert to save their crops.
-	
-	\item \textbf{Model Serving: TensorFlow Serving} \\
-	They provides REST API endpoints for scalable inference, ensuring real-time disease detection and price forecasting.
-\end{itemize}
+
+	ResNet-50 with TensorFlow 2.11 model is used for disease detection which is trained using 12,000 agricultural disease images which achieve 94.2\% accuracy. It support for now only tomato, potato and bell peppers.For Price Prediction LSTM and VMD with Genetic Algorithm is used .It Combines temporal dependencies with external features (weather, commodity indices). It also have achieved 7.3\% MAPE, guiding farmers on optimal selling times.TensorFlow Serving provides REST API endpoints for scalable inference, ensuring real-time disease detection and price forecasting.
+
 
 \section{Feature Implementation}
 
