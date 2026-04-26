@@ -382,7 +382,7 @@ The Gantt chart in Figure~\ref{fig:grant} illustrates the project timeline. Plan
 		\ganttbar{AI Weather and Irrigation}{3}{4} \\
 		\ganttbar{Deployment Readiness}{4}{4}
 	\end{ganttchart}
-	\caption{Project Gantt Chart}
+	\caption{Figure shows the project Gantt Chart}
 	\label{fig:grant}
 \end{figure}
 
@@ -579,7 +579,7 @@ All these works together like a single body with multiple layers. Each layer can
 		\node[draw, dashed, rounded corners=2pt, inner sep=6pt, fit=(ml)(weather)(realtime),
 		label={[align=center]above:Integrated External and Realtime Services}] {};
 	\end{tikzpicture}
-	\caption{AgriGenie System Architecture}
+	\caption{Figure illustrates the AgriGenie System Architecture}
 	\label{fig:system_architecture}
 \end{figure}
 
@@ -677,7 +677,7 @@ The AgriGenie database is set up in a way that gets rid of information and makes
 			
 		\end{tikzpicture}
 	}
-	\caption{Entity-Relationship Diagram : High-Level System Overview}
+	\caption{Figure presents the high‑level Entity–Relationship diagram of the AgriGenie System}
 	\label{fig:ER_diagram_overview}
 \end{figure}
 
@@ -727,7 +727,7 @@ Figure~\ref{fig:ER_diagram_overview} shows us the AgriGenie system in a way. It 
 			
 		\end{tikzpicture}
 	}
-	\caption{Entity-Relationship Diagram : User \& Authentication Modul}
+	\caption{Figure shows the Entity–Relationship diagram of the User and Authentication module}
 	\label{fig:er1}
 \end{figure}
 
@@ -778,7 +778,7 @@ Figure~\ref{fig:er2} presents the entity-relationship diagram of the Admin Panel
 			
 		\end{tikzpicture}
 	}
-	\caption{Entity-Relationship Diagram : Admin Panel Module}
+	\caption{Figure illustrates the Entity–Relationship diagram of the Admin Panel module}
 	\label{fig:er2}
 \end{figure}
 \newpage
@@ -830,7 +830,7 @@ Figure~\ref{fig:er2} presents the entity-relationship diagram of the Admin Panel
 			
 		\end{tikzpicture}
 	}
-	\caption{Entity-Relationship Diagram : Farmer \& Crop Management Module}
+	\caption{Figure shows the Entity–Relationship diagram of the Farmer and Crop Management module}
 	\label{fig:er3}
 \end{figure}
 
@@ -875,7 +875,7 @@ Figure~\ref{fig:er3} is about the entity-relationship diagram of the Farmer and 
 			
 		\end{tikzpicture}
 	}
-	\caption{Entity-Relationship Diagram : Buyer Module}
+	\caption{Figure shows the Entity–Relationship diagram of the Buyer module}
 	\label{fig:er4}
 \end{figure}
 
@@ -921,7 +921,7 @@ Figure~\ref{fig:er4} presents the entity-relationship diagram of the Buyer modul
 			
 		\end{tikzpicture}
 	}
-	\caption{Entity-Relationship Diagram : Marketplace \& Real-time Chat Module}
+	\caption{Figure illustrates the Entity–Relationship diagram of the Marketplace and Real‑time Chat module}
 	\label{fig:er5}
 \end{figure}
 
@@ -982,7 +982,7 @@ Figure~\ref{fig:er5} presents the entity-relationship diagram of the Marketplace
 			
 		\end{tikzpicture}
 	}
-	\caption{Entity-Relationship Diagram : Price Prediction , Disease Detection \& Weather Forecast Module}
+	\caption{Figure illustrates the Entity–Relationship diagram of the Price Prediction, Disease Detection and Weather Forecast module}
 	\label{fig:er6}
 \end{figure}
 \newpage
@@ -1043,7 +1043,7 @@ The picture below shows how people use AgriGenie, which is called a use-case dia
 			
 		\end{tikzpicture}
 	}
-	\caption{Use-Case Diagram}
+	\caption{Figure shows the Use‑Case diagram of AgriGenie}
 	\label{fig:use_case}
 \end{figure}
 
@@ -1087,7 +1087,7 @@ The picture below shows how people use AgriGenie, which is called a use-case dia
 			\draw[line] (retry.south) -- ++(0,-6mm) -| (chat.south);
 		\end{tikzpicture}
 	}
-	\caption{Activity Diagram}
+	\caption{Figure shows the Activity diagram of AgriGenie}
 	\label{fig:activity}
 \end{figure}
 Figure~\ref{fig:activity} shows what the activity workflow looks like. The farmers start by signing up and logging in to the system. Then they list their crops check for diseases and try to guess the prices. The buyers look at the listings place their orders and talk to the farmers. When everything is done the buyers get their things delivered. Both the buyers and the farmers rate each other. The people in charge keep an eye on what's happening and look at the numbers. This activity flow shows that AgriGenie helps farmers and buyers from start to finish with their transactions. AgriGenie is really good, at helping people buy and sell things.\\
@@ -1132,7 +1132,7 @@ The sequence diagram in Figure~\ref{fig:sequence} shows how the Farmer, Buyer, A
 			\draw[ret] ($(system.south)+(0,-7.3)$) -- node[midway, above, font=\tiny]{Analytics} ($(admin.south)+(0,-7.3)$);
 		\end{tikzpicture}
 	}
-	\caption{Sequence Diagram}
+	\caption{Figure shows the Sequence diagram of AgriGenie}
 	\label{fig:sequence}
 \end{figure}
 
@@ -1227,7 +1227,7 @@ The disease detection workflow is shown in Figure~\ref{fig:disease_flow} where f
 			\draw[flow] (conf) -- node[right, font=\scriptsize]{No} (retry);
 		\end{tikzpicture}
 	}
-	\caption{Disease Detection Data Flow}
+	\caption{Figure shows the Data Flow diagram for disease detection in AgriGenie}
 	\label{fig:disease_flow}
 \end{figure}
 
@@ -1260,7 +1260,7 @@ The disease detection workflow is shown in Figure~\ref{fig:disease_flow} where f
 		\draw[flow] (s6) -- (s7);
 		\draw[flow] (s7) -- (s8);
 	\end{tikzpicture}
-	\caption{Marketplace Transaction Flow}
+	\caption{Figure shows the Marketplace Transaction Flow in AgriGenie}
 	\label{fig:marketplace_flow}
 \end{figure}
 
@@ -1288,21 +1288,64 @@ The way AgriGenie is set up shows how new web technologies and artificial intell
 % CHAPTER IV: IMPLEMENTATION AND RESULTS
 %====================================================================================
 \chapter{Implementation and Results}
-\section{Introduction}
-In this chapter project implementation and performance of AgriGenie system are described.Tools and technologies, Backend and Frontend including machine learning components are described here.Finally the evaluation of results is analyzed.
-
 
 \section{Development Tools and Technologies}
 
 \subsection{Backend Stack}
-	Django is used as the main framework as it work well with machine learning related feature and Python 3.12 was used to make user it can use the stable and latest libraries.At the beginning of the development of this system Mysql was used but for deployment we switch to PostgreSQL as it can handles large ammount of data.REST APIs were used to connect the backend and frontend in a organized and clean way.For handling WebSocket connections Django Channels Daphne ASGI were used which make real time chatting possible.To prevent the system from delay and slow donw Celery with Redis broker was used.Django Allauth was used to set up Login with Google which is a powerful and life easy feature.Payment system support both cash on delivery and online payment through Bkash development mode by making safe transaction
+\begin{itemize}
+	\item \textbf{Framework: Django 6.0 with Python 3.12} \\
+	Django is used as the main framework as it work well with machine learning related feature and Python 3.12 was used to make user it can use the stable and latest libraries
+	
+	\item \textbf{Database: PostgreSQL (production), Mysql (development)} \\
+	At the beginning of the development of this system Mysql was used but for deployment we switch to PostgreSQL as it can handles large ammount of data.
+	
+	\item \textbf{API: Django REST Framework} \\
+	REST APIs were used to connect the backend and frontend in a organized and clean way
+	
+	\item \textbf{Real-time: Django Channels with Daphne ASGI} \\
+	For handling WebSocket connections Django Channels were used which make real time chatting possible.
+	
+
+	\item \textbf{Task Queue: Celery with Redis broker} \\
+	
+	To prevent the system from delay and slow donw Celery was used
+
+	
+	\item \textbf{Authentication: Django-allauth + OTP} \\
+	Django Allauth was used to set up Login with Google which is a powerful and life easy feature.
+	
+	\item \textbf{Payment Gateway: SSLCommerz Integration} \\
+	Payment system support both cash on delivery and online payment through Bkash development mode by making safe transaction
+\end{itemize}
 
 \subsection{Frontend Stack}
-	For responsitive design Tailwind CSS and Bootstrap 5 tools are used.Chart.js was used to show price trends, AI monitoring.API Client Axios was used to handle communication with backend APIs.Django Channels was used to implement real time communication
+\begin{itemize}
+	\item \textbf{Styling: Tailwind CSS + Bootstrap 5} \\
+	For responsitive design these tools are used.
+	
+	\item \textbf{Charts: Chart.js} \\
+	Chart.js was used to show price trends, AI monitoring
+	
+	\item \textbf{API Client: Axios} \\
+	Axios was used to handle communication with backend APIs.
+	\item \textbf{Real-time: Socket.io} \\
+	Django Channels was used to implement real time communication
+\end{itemize}
 
 \subsection{Machine Learning Components}
-
-	ResNet-50 with TensorFlow 2.11 is used as disease detection model which is trained using 12,000 agricultural disease images which achieve 94.2\% accuracy. It support for now only tomato, potato and bell peppers.LSTM and VDM with Genetic Algorithm is used as price prediction model.It Combines temporal dependencies with external features (weather, commodity indices). It also have achieved 7.3\% MAPE, guiding farmers on optimal selling times.TensorFlow Serving provides REST API endpoints for scalable inference, ensuring real-time disease detection and price forecasting.
+\begin{itemize}
+	\item \textbf{Disease Detection: ResNet-50 with TensorFlow 2.11} \\
+	This model is trained using 12,000 agricultural disease images which achieve 94.2\% accuracy. It support for now only tomato, potato and bell peppers.
+	
+	\item \textbf{Price Prediction: LSTM + Genetic Algorithm} \\
+	It Combines temporal dependencies with external features (weather, commodity indices). It also have achieved 7.3\% MAPE, guiding farmers on optimal selling times.
+	
+	\item \textbf{Weather Service: OpenWeatherMap API} \\
+	Detects disasters such as flood, drought, cyclones, frost, and heatwaves using threshold based rules. Farmer gets timely alert to save their crops.
+	
+	\item \textbf{Model Serving: TensorFlow Serving} \\
+	They provides REST API endpoints for scalable inference, ensuring real-time disease detection and price forecasting.
+\end{itemize}
 
 \section{Feature Implementation}
 
@@ -1316,21 +1359,21 @@ In this chapter project implementation and performance of AgriGenie system are d
 		\label{fig:registration}
 	\end{figure}
 	\item \textbf{OTP Verification:} Farmers register with phone numbers and receive OTPs . OTPs are valid for 10 minutes with a maximum of 5 attempts but this is still in development phase so for now otp will be send in console.
-	\begin{figure}[h]
+	\begin{figure}[H]
 		\centering
 		\fbox{\includegraphics[width=1.0\linewidth]{static/images/otp.png}}
 		\caption{OTP Verification}
 		\label{fig:otp}
 	\end{figure}
 	\item \textbf{PIN Creation:} After verification, users can set a PIN which stored securely by converting it into hash password.
-	\begin{figure}[h]
+	\begin{figure}[H]
 		\centering
 		\fbox{\includegraphics[width=0.75\linewidth]{static/images/pin.png}}
 		\caption{Pin Creation}
 		\label{fig:pin}
 	\end{figure}
 	\item \textbf{Login Process:} For login farmer has to input their  phone + PIN authentication and for buyer they have to give email and password
-	\begin{figure}[h]
+	\begin{figure}[H]
 		\centering
 		\fbox{\includegraphics[width=0.75\linewidth]{static/images/login.png}}
 		\caption{User Login}
@@ -1341,7 +1384,7 @@ In this chapter project implementation and performance of AgriGenie system are d
 \subsection{Farmer Dashboard}
 \begin{enumerate}
 	\item \textbf{Crop Listing:} Farmers can add, edit, and delete their crops.
-	\begin{figure}[h]
+	\begin{figure}[H]
 		\centering
 		\fbox{\includegraphics[width=0.75\linewidth]{static/images/crop_listing.png}}
 		\caption{Farmer Crop List}
@@ -1574,8 +1617,6 @@ Automated testing has been  done to make sure AgriGenie works without any issues
 
 \section{Objectives Achievement Assessment}
 ArgiGenie has successfully achieves all of its objectives. The disease detection model is comes with 94.2\% accuracy which is really reliable for farmers for diagnosis thier corps. The price prediction system is fully functional  and achieved a mean absolute percent error of 7.3\% which helps farmers to make proper selling decisions. The marketplace and real time chat system  system is also operating correctly and also ensuring proper connection between farmers and buyers.Role specific dashboards was implemented such a way so that each group can do better experience.The system has also proven that it can handle a large number of users at the same time by supporting over 500 concurrent users without any delay or lagging. The platform is designed to work well on mobile devices too so that farmers can use it using their phones also. Also a  strong security measures is included by covering user authentication, data encryption and access control so that user information stays safe and protected at all times. All of these results together shows that AgriGenie has successfully achieves  most of its goals.
-\section{Conclusion}
-In conclusion Agrigenie system has been successfully implemented and evaluated . All the major features have been developed and tested successfully.The result indicated that the system performance is stable and accurate.
 \newpage
 %====================================================================================
 % CHAPTER V: ETHICAL AND SOCIETAL IMPACT
